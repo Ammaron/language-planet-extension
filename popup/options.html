@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div id="options-app">
+    <div class="options-header">
+      <span class="logo">🌍</span>
+      <h1>Vocab Pass Settings</h1>
+    </div>
+
+    <div class="options-section">
+      <h2>Server Configuration</h2>
+      <label for="api-base">API Base URL</label>
+      <input type="url" id="api-base" placeholder="http://localhost:8080/api">
+
+      <label for="frontend-url">Frontend URL</label>
+      <input type="url" id="frontend-url" placeholder="http://localhost:3000">
+
+      <button id="reset-urls" class="secondary-btn">Reset to Defaults</button>
+    </div>
+
+    <div class="options-section">
+      <h2>Sync Interval</h2>
+      <div class="slider-row">
+        <input type="range" id="sync-interval" min="15" max="240" step="15" value="60">
+        <span id="sync-interval-label">60 min</span>
+      </div>
+    </div>
+
+    <div class="options-section">
+      <h2>Behavior</h2>
+      <label class="toggle-option">
+        <span>Auto-exclude sensitive sites (banking, government, login pages)</span>
+        <input type="checkbox" id="exclude-sensitive" checked>
+      </label>
+    </div>
+
+    <div class="options-footer">
+      <button id="save-btn" class="primary-btn">Save Settings</button>
+      <span id="save-status" class="save-status hidden">Settings saved!</span>
+    </div>
+  </div>
+  <script src="../vendor/browser-polyfill.min.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Login view (shown when logged out) -->
+    <div id="login-view" class="view hidden">
+      <div class="logo-section">
+        <div class="logo">🌍</div>
+        <h1>Language Planet</h1>
+        <p class="subtitle">Vocab Pass Extension</p>
+      </div>
+      <form id="login-form">
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="password" id="password" placeholder="Password" required>
+        <button type="submit" id="login-btn">Log In</button>
+        <div id="login-error" class="error hidden"></div>
+      </form>
+    </div>
+
+    <!-- Settings view (shown when logged in) -->
+    <div id="settings-view" class="view hidden">
+      <div class="header-bar">
+        <div class="header-left">
+          <span class="logo-small">🌍</span>
+          <span class="header-title">Vocab Pass</span>
+          <span id="status-indicator" class="status-dot unknown" title="Unknown"></span>
+        </div>
+        <button id="logout-btn" class="link-btn">Log out</button>
+      </div>
+
+      <!-- Status banner (offline/stale) -->
+      <div id="status-banner" class="status-banner hidden"></div>
+
+      <!-- Difficulty -->
+      <div class="section">
+        <label class="section-label">Difficulty</label>
+        <div class="difficulty-group">
+          <button class="diff-btn" data-level="easy">Easy</button>
+          <button class="diff-btn active" data-level="normal">Normal</button>
+          <button class="diff-btn" data-level="challenge">Challenge</button>
+        </div>
+      </div>
+
+      <!-- Whitelist toggle for current site -->
+      <div class="section">
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Active on this site</div>
+            <div id="current-domain" class="toggle-sublabel"></div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="site-toggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Sync status -->
+      <div class="section">
+        <label class="section-label">Status</label>
+        <div class="status-row">
+          <span class="status-label">Words loaded</span>
+          <span id="word-count" class="status-value">0</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Last sync</span>
+          <span id="last-sync" class="status-value">—</span>
+        </div>
+        <button id="sync-btn" class="secondary-btn">Sync Now</button>
+      </div>
+
+      <!-- Link to VocabPass page -->
+      <div class="section footer-link">
+        <a id="open-vocabpass" href="#">Open Vocab Pass Dashboard →</a>
+      </div>
+    </div>
+  </div>
+  <script src="../vendor/browser-polyfill.min.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

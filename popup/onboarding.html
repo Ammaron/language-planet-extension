@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="onboarding.css">
+</head>
+<body>
+  <div id="onboarding-app">
+    <!-- Step 1: Welcome -->
+    <div id="step-1" class="step">
+      <div class="step-icon">🌍</div>
+      <h1>Welcome to Vocab Pass</h1>
+      <p>See your learned vocabulary words replaced on any webpage as you browse.</p>
+      <div class="step-features">
+        <div class="feature-row">📖 Words appear in context while you read</div>
+        <div class="feature-row">🔊 Click any word to hear pronunciation</div>
+        <div class="feature-row">📊 Track your progress automatically</div>
+      </div>
+      <button id="next-1" class="primary-btn">Get Started</button>
+    </div>
+
+    <!-- Step 2: Login -->
+    <div id="step-2" class="step hidden">
+      <div class="step-icon">🔐</div>
+      <h1>Sign In</h1>
+      <p>Use your Language Planet account to sync your vocabulary.</p>
+      <form id="onboard-login-form">
+        <input type="email" id="onboard-email" placeholder="Email" required>
+        <input type="password" id="onboard-password" placeholder="Password" required>
+        <button type="submit" id="onboard-login-btn" class="primary-btn">Log In</button>
+        <div id="onboard-error" class="error hidden"></div>
+      </form>
+      <p class="hint-text">Don't have an account? Sign up at languageplanet.app</p>
+    </div>
+
+    <!-- Step 3: Success -->
+    <div id="step-3" class="step hidden">
+      <div class="step-icon">🎉</div>
+      <h1>You're All Set!</h1>
+      <p>Your vocabulary is synced and ready to go.</p>
+      <div class="step-features">
+        <div class="feature-row">💡 Hover over blue words to see the original</div>
+        <div class="feature-row">🖱️ Click a word for details and pronunciation</div>
+        <div class="feature-row">⚙️ Use the popup menu to adjust difficulty</div>
+      </div>
+      <button id="finish-btn" class="primary-btn">Start Browsing</button>
+    </div>
+
+    <!-- Step indicator -->
+    <div class="step-dots">
+      <span id="dot-1" class="dot active"></span>
+      <span id="dot-2" class="dot"></span>
+      <span id="dot-3" class="dot"></span>
+    </div>
+  </div>
+  <script src="../vendor/browser-polyfill.min.js"></script>
+  <script src="onboarding.js"></script>
+</body>
+</html>
