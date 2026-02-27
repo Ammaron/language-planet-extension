@@ -42,6 +42,25 @@ let matcher = null;
 let whitelistedDomains = [];
 let popupEl = null;
 
+// ─── Theme Detection ─────────────────────────────
+function detectTheme() {
+  const bg = getComputedStyle(document.body).backgroundColor;
+  const match = bg.match(/\d+/g);
+  if (!match || match.length < 3) return; // transparent or unparseable
+
+  const [r, g, b] = match.map(Number);
+  // Relative luminance (ITU-R BT.709)
+  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+
+  const osDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const pageDark = luminance < 0.4;
+
+  // Only override if page disagrees with OS setting
+  if (pageDark !== osDark) {
+    document.documentElement.setAttribute('data-lp-theme', pageDark ? 'dark' : 'light');
+  }
+}
+
 // ─── Batched Encounter Recording ─────────────────
 const encounterBuffer = [];
 let flushTimer = null;
@@ -62,8 +81,16 @@ function flushEncounterBuffer() {
 
 // ─── Initialization ──────────────────────────────
 async function init() {
-  const { vocabWords } = await browser.storage.local.get('vocabWords');
+  const { vocabWords, frontendUrl } = await browser.storage.local.get(['vocabWords', 'frontendUrl']);
   if (!vocabWords || vocabWords.length === 0) return;
+
+  // Never translate on Language Planet's own site (would interfere with lessons)
+  try {
+    const lpHost = frontendUrl ? new URL(frontendUrl).hostname : 'localhost';
+    if (window.location.hostname === lpHost) return;
+  } catch (_) {
+    // frontendUrl is malformed — skip check, allow translation
+  }
 
   // Check whitelist
   const domain = window.location.hostname;
@@ -74,6 +101,7 @@ async function init() {
   }
 
   matcher = new VocabMatcher(vocabWords);
+  detectTheme();
   processDocument();
   observeMutations();
 
@@ -149,11 +177,11 @@ function replaceInTextNode(textNode) {
     // Create vocab span
     const span = document.createElement('span');
     span.className = LP_CLASS;
-    span.textContent = match.word.translation;
+    span.textContent = match.word.term;
     span.setAttribute(LP_PROCESSED, 'true');
     span.dataset.wordId = match.word.id;
     span.dataset.original = match.original;
-    span.dataset.translation = match.word.translation;
+    span.dataset.translation = match.word.term;
     span.dataset.pos = match.word.part_of_speech || '';
     span.dataset.hint = match.word.context_hint || '';
     span.dataset.example = match.word.example_sentence || '';
@@ -180,6 +208,7 @@ function replaceInTextNode(textNode) {
     fragment.appendChild(document.createTextNode(text.substring(lastEnd)));
   }
 
+  if (!textNode.parentNode) return; // node removed from DOM since collection
   textNode.parentNode.replaceChild(fragment, textNode);
 }
 
@@ -322,6 +351,7 @@ browser.runtime.onMessage.addListener((message) => {
   if (message.type === 'VOCAB_UPDATED' && message.words) {
     // Remove existing replacements
     document.querySelectorAll(`.${LP_CLASS}`).forEach(el => {
+      if (!el.parentNode) return; // node already removed from DOM
       const text = document.createTextNode(el.dataset.original || el.textContent);
       el.parentNode.replaceChild(text, el);
     });

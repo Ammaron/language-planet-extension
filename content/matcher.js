@@ -29,7 +29,8 @@ class VocabMatcher {
     this.wordMap.clear();
 
     for (const word of words) {
-      const key = word.term.toLowerCase();
+      // Search pages for the English translation, replace with target-language term
+      const key = word.translation.toLowerCase();
 
       // Track in wordMap for disambiguation
       if (!this.wordMap.has(key)) {
@@ -113,7 +114,7 @@ class VocabMatcher {
       // Collect all matches ending at position i
       if (node.output.length > 0) {
         for (const word of node.output) {
-          const termLen = word.term.length;
+          const termLen = word.translation.length;
           const start = i - termLen + 1;
           rawMatches.push({ start, end: i + 1, word });
         }
@@ -143,7 +144,7 @@ class VocabMatcher {
       if (overlap) continue;
 
       // Disambiguation for homonyms
-      const term = match.word.term.toLowerCase();
+      const term = match.word.translation.toLowerCase();
       const candidates = this.wordMap.get(term);
       const resolved = this.disambiguate(candidates, text, match.start);
       if (!resolved) continue;
@@ -184,7 +185,7 @@ class VocabMatcher {
     if (!candidates || candidates.length === 1) return candidates ? candidates[0] : null;
 
     const withHints = candidates.filter(c => c.context_hint);
-    if (withHints.length === 0) return null;
+    if (withHints.length === 0) return candidates[0];
 
     const contextStart = Math.max(0, matchIdx - 50);
     const contextEnd = Math.min(text.length, matchIdx + 50);
@@ -209,7 +210,7 @@ class VocabMatcher {
       }
     }
 
-    return bestScore > 0 ? bestCandidate : null;
+    return bestScore > 0 ? bestCandidate : candidates[0];
   }
 }
 
