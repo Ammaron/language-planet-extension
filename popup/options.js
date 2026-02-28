@@ -1,5 +1,5 @@
 /* global browser */
-const DEFAULTS = { apiBase: 'http://localhost:8080/api', frontendUrl: 'http://localhost:3000', syncInterval: 60, excludeSensitive: true };
+const DEFAULTS = { apiBase: 'http://localhost:8000/api', frontendUrl: 'http://localhost:3000', syncInterval: 60, excludeSensitive: true };
 
 const apiBaseInput = document.getElementById('api-base');
 const frontendUrlInput = document.getElementById('frontend-url');

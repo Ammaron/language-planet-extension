@@ -6,7 +6,7 @@ try {
 }
 
 // ─── Configurable API URLs ──────────────────────
-const DEFAULTS = { apiBase: 'http://localhost:8080/api', frontendUrl: 'http://localhost:3000' };
+const DEFAULTS = { apiBase: 'http://localhost:8000/api', frontendUrl: 'http://localhost:3000' };
 
 async function getConfig() {
   const { apiBase, frontendUrl } = await browser.storage.local.get(['apiBase', 'frontendUrl']);
@@ -285,7 +285,108 @@ browser.runtime.onMessage.addListener((message) => {
       return { success: true };
     })();
   }
+
+  // ─── Phrase Translation ───────────────────────
+  if (message.type === 'PHRASE_TRANSLATE') {
+    return (async () => {
+      try {
+        const { source_phrase, source_language, target_language, word_ids } = message;
+        const cacheKey = `phrase_${source_phrase}_${source_language}_${target_language}`;
+
+        // 1. Check local browser cache first
+        const cached = await browser.storage.local.get(cacheKey);
+        if (cached[cacheKey]) {
+          return { success: true, ...cached[cacheKey] };
+        }
+
+        // 2. Call backend
+        const { apiBase } = await getConfig();
+        const res = await authFetch(`${apiBase}/lessons/vocabpass/phrase-translate/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source_phrase, source_language, target_language, word_ids }),
+        });
+
+        if (!res || !res.ok) {
+          return { success: false, error: 'Translation request failed' };
+        }
+
+        const data = await res.json();
+
+        // 3. Store in local cache (LRU eviction handled by periodic cleanup)
+        if (data.translated_phrase) {
+          const entry = {
+            translated_phrase: data.translated_phrase,
+            source: data.source,
+            model_used: data.model_used || '',
+            cache_entry_id: data.cache_entry_id || '',
+            cached_at: Date.now(),
+          };
+          await browser.storage.local.set({ [cacheKey]: entry });
+
+          // LRU eviction: cap at ~1000 phrase cache entries
+          _evictPhraseCacheIfNeeded();
+        }
+
+        return { success: true, ...data };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    })();
+  }
+
+  if (message.type === 'PHRASE_FLAG') {
+    return (async () => {
+      try {
+        const { apiBase } = await getConfig();
+        const res = await authFetch(`${apiBase}/lessons/vocabpass/phrase-translate/flag/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cache_entry_id: message.cache_entry_id,
+            reason: message.reason || '',
+          }),
+        });
+        return { success: res && res.ok };
+      } catch {
+        return { success: false };
+      }
+    })();
+  }
 });
+
+// ─── Phrase Cache Eviction ───────────────────────
+async function _evictPhraseCacheIfNeeded() {
+  const PHRASE_CACHE_MAX = 1000;
+  const PHRASE_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+  try {
+    const all = await browser.storage.local.get(null);
+    const phraseKeys = Object.keys(all).filter(k => k.startsWith('phrase_'));
+
+    // Remove expired entries
+    const now = Date.now();
+    const expired = phraseKeys.filter(k => {
+      const entry = all[k];
+      return entry && entry.cached_at && (now - entry.cached_at) > PHRASE_CACHE_TTL_MS;
+    });
+    if (expired.length > 0) {
+      await browser.storage.local.remove(expired);
+    }
+
+    // LRU eviction if still over limit
+    const remaining = phraseKeys.filter(k => !expired.includes(k));
+    if (remaining.length > PHRASE_CACHE_MAX) {
+      const sorted = remaining
+        .map(k => ({ key: k, time: all[k]?.cached_at || 0 }))
+        .sort((a, b) => a.time - b.time);
+      const toRemove = sorted.slice(0, remaining.length - PHRASE_CACHE_MAX).map(e => e.key);
+      await browser.storage.local.remove(toRemove);
+    }
+  } catch {
+    // Non-critical — eviction failure doesn't break functionality
+  }
+}
 
 // ─── Install / Startup ──────────────────────────
 browser.runtime.onInstalled.addListener((details) => {

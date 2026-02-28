@@ -163,6 +163,11 @@
   color: var(--lp-popup-translation);
 }
 
+.lp-popup-base {
+  font-size: 12px;
+  color: var(--lp-popup-hint);
+}
+
 .lp-popup-pos {
   font-size: 10px;
   font-weight: 600;
@@ -225,4 +230,81 @@
 
 .lp-popup-listen:hover {
   background: var(--lp-popup-btn-hover);
+}
+
+/* ─── Phrase Span Styling ──────────────────── */
+.lp-vocab-phrase {
+  color: inherit;
+  border-bottom: 2px dashed currentColor;
+  border-bottom-color: color-mix(in srgb, currentColor 35%, transparent);
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+  border-radius: 2px;
+  padding: 0 2px;
+  position: relative;
+}
+
+.lp-vocab-phrase:hover {
+  border-bottom-color: color-mix(in srgb, currentColor 60%, transparent);
+  background: color-mix(in srgb, currentColor 5%, transparent);
+}
+
+/* Hover tooltip for phrases — shows original source text */
+.lp-vocab-phrase::after {
+  content: attr(data-original);
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2937;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 2147483646;
+}
+
+.lp-vocab-phrase:hover::after {
+  opacity: 1;
+}
+
+/* Pending phrase — waiting for backend translation */
+.lp-phrase-pending {
+  border-bottom-style: dotted;
+}
+
+/* Words inside a pending phrase keep their own underlines */
+.lp-phrase-pending .lp-vocab-word {
+  border-bottom: none;
+  padding: 0;
+}
+
+/* ─── Phrase Popup Extras ──────────────────── */
+.lp-phrase-words {
+  border-top: 1px solid var(--lp-popup-border);
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.lp-phrase-word-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  font-size: 13px;
+}
+
+.lp-phrase-word-original {
+  color: var(--lp-popup-text);
+  font-weight: 500;
+}
+
+.lp-phrase-word-term {
+  color: var(--lp-popup-translation);
+  font-weight: 500;
 }

@@ -10,7 +10,7 @@ class TrieNode {
   constructor() {
     this.children = new Map(); // char → TrieNode
     this.fail = null;          // suffix/failure link
-    this.output = [];          // VocabWord[] that end at this node
+    this.output = [];          // { word, key }[] that end at this node
     this.depth = 0;
   }
 }
@@ -18,7 +18,7 @@ class TrieNode {
 class VocabMatcher {
   constructor(words) {
     this.root = new TrieNode();
-    this.wordMap = new Map(); // lowercaseTerm → VocabWord[] (for disambiguation)
+    this.wordMap = new Map(); // lowercaseKey → VocabWord[] (for disambiguation)
     this.buildTrie(words);
     this.buildFailureLinks();
   }
@@ -29,30 +29,50 @@ class VocabMatcher {
     this.wordMap.clear();
 
     for (const word of words) {
-      // Search pages for the English translation, replace with target-language term
-      const key = word.translation.toLowerCase();
+      const keys = new Set();
+      keys.add(this.normalizeKey(word.translation));
 
-      // Track in wordMap for disambiguation
-      if (!this.wordMap.has(key)) {
-        this.wordMap.set(key, []);
-      }
-      this.wordMap.get(key).push(word);
-
-      // Insert into trie
-      let node = this.root;
-      for (const ch of key) {
-        if (!node.children.has(ch)) {
-          const child = new TrieNode();
-          child.depth = node.depth + 1;
-          node.children.set(ch, child);
+      if (Array.isArray(word.searchable_forms)) {
+        for (const form of word.searchable_forms) {
+          keys.add(this.normalizeKey(form));
         }
-        node = node.children.get(ch);
       }
-      // Store word at terminal node
-      if (!node.output.some(w => w.id === word.id)) {
-        node.output.push(word);
+
+      for (const key of keys) {
+        if (key) {
+          this.insertWord(key, word);
+        }
       }
     }
+  }
+
+  insertWord(key, word) {
+    if (!this.wordMap.has(key)) {
+      this.wordMap.set(key, []);
+    }
+    const candidates = this.wordMap.get(key);
+    if (!candidates.some(candidate => candidate.id === word.id)) {
+      candidates.push(word);
+    }
+
+    let node = this.root;
+    for (const ch of key) {
+      if (!node.children.has(ch)) {
+        const child = new TrieNode();
+        child.depth = node.depth + 1;
+        node.children.set(ch, child);
+      }
+      node = node.children.get(ch);
+    }
+
+    if (!node.output.some(entry => entry.word.id === word.id && entry.key === key)) {
+      node.output.push({ word, key });
+    }
+  }
+
+  normalizeKey(value) {
+    if (typeof value !== 'string') return '';
+    return value.trim().toLowerCase();
   }
 
   buildFailureLinks() {
@@ -95,7 +115,10 @@ class VocabMatcher {
 
   /**
    * Find all vocab matches in a text string.
-   * Returns array of { start, end, original, word } objects, sorted by position.
+   * Returns { singles: Match[], phrases: PhraseCandidate[] }.
+   *
+   * singles — matches that have no adjacent neighbor (current behavior).
+   * phrases — groups of ≥2 adjacent matched words with glue-only gaps.
    */
   findMatches(text) {
     const lowerText = text.toLowerCase();
@@ -113,21 +136,24 @@ class VocabMatcher {
 
       // Collect all matches ending at position i
       if (node.output.length > 0) {
-        for (const word of node.output) {
-          const termLen = word.translation.length;
+        for (const entry of node.output) {
+          const termLen = entry.key.length;
           const start = i - termLen + 1;
-          rawMatches.push({ start, end: i + 1, word });
+          rawMatches.push({ start, end: i + 1, entry });
         }
       }
     }
 
     // Post-process: word boundaries, disambiguation, overlap resolution
-    return this.postProcess(rawMatches, text);
+    const resolved = this.postProcess(rawMatches, text);
+
+    // Group adjacent matches into phrase candidates
+    return this.groupAdjacentMatches(resolved, text);
   }
 
   postProcess(rawMatches, text) {
     // Filter by word boundary
-    const bounded = rawMatches.filter(m => this.isWordBoundary(text, m.start, m.end - m.start));
+    const bounded = rawMatches.filter(m => this.isWordBoundary(text, m.start, m.end - m.start, m.entry.key));
 
     // Sort: by start position, then longest first for overlap resolution
     bounded.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
@@ -144,8 +170,8 @@ class VocabMatcher {
       if (overlap) continue;
 
       // Disambiguation for homonyms
-      const term = match.word.translation.toLowerCase();
-      const candidates = this.wordMap.get(term);
+      const key = match.entry.key;
+      const candidates = this.wordMap.get(key);
       const resolved = this.disambiguate(candidates, text, match.start);
       if (!resolved) continue;
 
@@ -156,6 +182,7 @@ class VocabMatcher {
         start: match.start,
         end: match.end,
         original: text.substring(match.start, match.end),
+        matchedForm: key,
         word: resolved,
       });
     }
@@ -164,12 +191,85 @@ class VocabMatcher {
   }
 
   /**
+   * Group adjacent matches into phrase candidates.
+   * Walks the sorted match list left-to-right, merging matches whose
+   * gap contains only whitespace and/or glue words.
+   *
+   * @param {Array} matches - Sorted matches from postProcess
+   * @param {string} text - The original text
+   * @returns {{ singles: Match[], phrases: PhraseCandidate[] }}
+   */
+  groupAdjacentMatches(matches, text) {
+    if (matches.length === 0) return { singles: [], phrases: [] };
+
+    const { isGlueGap, MAX_GAP_CHARS, MIN_PHRASE_WORDS } = window.GrammarRules || {};
+
+    // If grammar-rules.js isn't loaded, fall back to all-singles
+    if (!isGlueGap) return { singles: matches, phrases: [] };
+
+    // Detect source language from the first match's search data
+    const sourceLang = this.detectSourceLanguage(matches);
+
+    const groups = []; // Array of arrays of matches
+    let currentGroup = [matches[0]];
+
+    for (let i = 1; i < matches.length; i++) {
+      const prev = currentGroup[currentGroup.length - 1];
+      const curr = matches[i];
+      const gapText = text.substring(prev.end, curr.start);
+
+      const isAdjacent = gapText.length <= MAX_GAP_CHARS && isGlueGap(gapText, sourceLang);
+
+      if (isAdjacent) {
+        currentGroup.push(curr);
+      } else {
+        groups.push(currentGroup);
+        currentGroup = [curr];
+      }
+    }
+    groups.push(currentGroup);
+
+    const singles = [];
+    const phrases = [];
+
+    for (const group of groups) {
+      if (group.length >= (MIN_PHRASE_WORDS || 2)) {
+        phrases.push({
+          matches: group,
+          sourceText: text.substring(group[0].start, group[group.length - 1].end),
+          start: group[0].start,
+          end: group[group.length - 1].end,
+        });
+      } else {
+        singles.push(...group);
+      }
+    }
+
+    return { singles, phrases };
+  }
+
+  /**
+   * Detect the source language from vocab word metadata.
+   * Falls back to 'en' if no search_language data is available.
+   */
+  detectSourceLanguage(matches) {
+    for (const m of matches) {
+      if (m.word && m.word.search_language) return m.word.search_language;
+    }
+    return 'en';
+  }
+
+  /**
    * Check word boundaries — match must be surrounded by
    * whitespace, punctuation, or string boundaries.
    */
-  isWordBoundary(text, start, length) {
+  isWordBoundary(text, start, length, key = '') {
+    if (this.isBoundarylessScript(key)) {
+      return true;
+    }
+
     const end = start + length;
-    const boundaryRe = /[\s.,;:!?'"()\[\]{}\-\/\\<>@#$%^&*+=|~`\u2014\u2013]/;
+    const boundaryRe = /[\s.,;:!?'"()\[\]{}\-\/\\<>@#$%^&*+=|~`\u2014\u2013\u00a1\u00bf]/;
 
     if (start > 0 && !boundaryRe.test(text[start - 1])) return false;
     if (end < text.length && !boundaryRe.test(text[end])) return false;
@@ -177,8 +277,12 @@ class VocabMatcher {
     return true;
   }
 
+  isBoundarylessScript(text) {
+    return /[\u0e00-\u0e7f\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uac00-\ud7af]/.test(text);
+  }
+
   /**
-   * Disambiguate when multiple translations exist for the same English term.
+   * Disambiguate when multiple vocab entries share the same source-page form.
    * Examines ~50 chars of surrounding context for keyword overlap with context_hint.
    */
   disambiguate(candidates, text, matchIdx) {

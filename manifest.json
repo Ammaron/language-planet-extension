@@ -13,6 +13,7 @@
       "matches": ["<all_urls>"],
       "js": [
         "vendor/browser-polyfill.min.js",
+        "content/grammar-rules.js",
         "content/matcher.js",
         "content/content.js"
       ],
