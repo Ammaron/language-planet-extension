@@ -158,6 +158,106 @@ const SPANISH_RULES = [
       };
     },
   },
+
+  // VERB + ADV — preserve order ("runs quickly" → "corre rápidamente")
+  {
+    match(words) {
+      return words.length === 2
+        && words[0].pos === 'verb'
+        && words[1].pos === 'adverb';
+    },
+    apply(words) {
+      return { translation: `${words[0].term} ${words[1].term}`, confidence: 0.85 };
+    },
+  },
+
+  // ADV + ADJ — preserve order ("very big" → "muy grande")
+  {
+    match(words) {
+      return words.length === 2
+        && words[0].pos === 'adverb'
+        && words[1].pos === 'adjective';
+    },
+    apply(words) {
+      return { translation: `${words[0].term} ${words[1].term}`, confidence: 0.9 };
+    },
+  },
+
+  // PRONOUN + VERB — preserve order ("I eat" → "yo como")
+  {
+    match(words) {
+      return words.length === 2
+        && words[0].pos === 'pronoun'
+        && words[1].pos === 'verb';
+    },
+    apply(words) {
+      return { translation: `${words[0].term} ${words[1].term}`, confidence: 0.9 };
+    },
+  },
+
+  // NOUN + PREP + NOUN — preserve order ("cat on table" → "gato en mesa")
+  {
+    match(words) {
+      return words.length === 3
+        && words[0].pos === 'noun'
+        && words[1].pos === 'preposition'
+        && words[2].pos === 'noun';
+    },
+    apply(words) {
+      return {
+        translation: `${words[0].term} ${words[1].term} ${words[2].term}`,
+        confidence: 0.85,
+      };
+    },
+  },
+
+  // NOUN + CONJ + NOUN — preserve order ("cat and dog" → "gato y perro")
+  {
+    match(words) {
+      return words.length === 3
+        && words[0].pos === 'noun'
+        && words[1].pos === 'conjunction'
+        && words[2].pos === 'noun';
+    },
+    apply(words) {
+      return {
+        translation: `${words[0].term} ${words[1].term} ${words[2].term}`,
+        confidence: 0.9,
+      };
+    },
+  },
+
+  // PRONOUN + ADJ + NOUN → PRONOUN + NOUN + ADJ ("my red cat" → "mi gato rojo")
+  {
+    match(words) {
+      return words.length === 3
+        && words[0].pos === 'pronoun'
+        && words[1].pos === 'adjective'
+        && words[2].pos === 'noun';
+    },
+    apply(words) {
+      return {
+        translation: `${words[0].term} ${words[2].term} ${words[1].term}`,
+        confidence: 0.8,
+      };
+    },
+  },
+
+  // PRONOUN + NOUN + ADJ — already correct Spanish order ("mi gato rojo")
+  {
+    match(words) {
+      return words.length === 3
+        && words[0].pos === 'pronoun'
+        && words[1].pos === 'noun'
+        && words[2].pos === 'adjective';
+    },
+    apply(words) {
+      return {
+        translation: `${words[0].term} ${words[1].term} ${words[2].term}`,
+        confidence: 0.85,
+      };
+    },
+  },
 ];
 
 /**
@@ -242,6 +342,106 @@ const ENGLISH_RULES = [
     },
     apply(words) {
       return { translation: `${words[0].term} ${words[1].term}`, confidence: 0.8 };
+    },
+  },
+
+  // VERB + ADV — preserve order ("corre rápidamente" → "runs quickly")
+  {
+    match(words) {
+      return words.length === 2
+        && words[0].pos === 'verb'
+        && words[1].pos === 'adverb';
+    },
+    apply(words) {
+      return { translation: `${words[0].term} ${words[1].term}`, confidence: 0.85 };
+    },
+  },
+
+  // ADV + ADJ — preserve order ("muy grande" → "very big")
+  {
+    match(words) {
+      return words.length === 2
+        && words[0].pos === 'adverb'
+        && words[1].pos === 'adjective';
+    },
+    apply(words) {
+      return { translation: `${words[0].term} ${words[1].term}`, confidence: 0.9 };
+    },
+  },
+
+  // PRONOUN + VERB — preserve order ("yo como" → "I eat")
+  {
+    match(words) {
+      return words.length === 2
+        && words[0].pos === 'pronoun'
+        && words[1].pos === 'verb';
+    },
+    apply(words) {
+      return { translation: `${words[0].term} ${words[1].term}`, confidence: 0.9 };
+    },
+  },
+
+  // NOUN + PREP + NOUN — preserve order ("gato en mesa" → "cat on table")
+  {
+    match(words) {
+      return words.length === 3
+        && words[0].pos === 'noun'
+        && words[1].pos === 'preposition'
+        && words[2].pos === 'noun';
+    },
+    apply(words) {
+      return {
+        translation: `${words[0].term} ${words[1].term} ${words[2].term}`,
+        confidence: 0.85,
+      };
+    },
+  },
+
+  // NOUN + CONJ + NOUN — preserve order ("gato y perro" → "cat and dog")
+  {
+    match(words) {
+      return words.length === 3
+        && words[0].pos === 'noun'
+        && words[1].pos === 'conjunction'
+        && words[2].pos === 'noun';
+    },
+    apply(words) {
+      return {
+        translation: `${words[0].term} ${words[1].term} ${words[2].term}`,
+        confidence: 0.9,
+      };
+    },
+  },
+
+  // PRONOUN + NOUN + ADJ → PRONOUN + ADJ + NOUN ("mi gato rojo" → "my red cat")
+  {
+    match(words) {
+      return words.length === 3
+        && words[0].pos === 'pronoun'
+        && words[1].pos === 'noun'
+        && words[2].pos === 'adjective';
+    },
+    apply(words) {
+      return {
+        translation: `${words[0].term} ${words[2].term} ${words[1].term}`,
+        confidence: 0.8,
+      };
+    },
+  },
+
+  // PRONOUN + ADJ + NOUN — already correct English order ("my red cat")
+  {
+    match(words) {
+      return words.length === 3
+        && words[0].pos === 'pronoun'
+        && words[1].pos === 'adjective'
+        && words[2].pos === 'noun';
+    },
+    apply(words) {
+      return {
+        translation: `${words[0].term} ${words[1].term} ${words[2].term}`,
+        confidence: 0.85,
+      };
     },
   },
 ];

@@ -249,9 +249,12 @@ browser.runtime.onMessage.addListener((message) => {
       const res = await authFetch(`${apiBase}/lessons/vocabpass/whitelist/`);
       if (res && res.ok) {
         const data = await res.json();
-        return { domains: data.map(d => d.domain) };
+        return {
+          domains: data.map(d => d.domain),
+          entries: data,
+        };
       }
-      return { domains: [] };
+      return { domains: [], entries: [] };
     })();
   }
 
@@ -265,6 +268,31 @@ browser.runtime.onMessage.addListener((message) => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ domain }),
         });
+      } else {
+        // Remove matching whitelist entries so users can re-enable a site
+        // directly from the popup toggle.
+        const listRes = await authFetch(`${apiBase}/lessons/vocabpass/whitelist/`);
+        if (listRes && listRes.ok) {
+          const entries = await listRes.json();
+          const normalizedDomain = String(domain || '').toLowerCase();
+          const matchesDomain = (entryDomain) => {
+            const d = String(entryDomain || '').toLowerCase();
+            return (
+              normalizedDomain === d ||
+              normalizedDomain.endsWith(`.${d}`) ||
+              d.endsWith(`.${normalizedDomain}`)
+            );
+          };
+
+          const toDelete = entries.filter((entry) => matchesDomain(entry.domain));
+          await Promise.all(
+            toDelete.map((entry) =>
+              authFetch(`${apiBase}/lessons/vocabpass/whitelist/${entry.id}/delete/`, {
+                method: 'DELETE',
+              })
+            )
+          );
+        }
       }
       return { success: true };
     })();
@@ -353,6 +381,72 @@ browser.runtime.onMessage.addListener((message) => {
       }
     })();
   }
+
+  // ─── Word Sense Disambiguation ───────────────
+  if (message.type === 'DISAMBIGUATE') {
+    return (async () => {
+      try {
+        const { items } = message;
+        if (!items || items.length === 0) return { results: [] };
+
+        // 1. Check browser cache for each item
+        const results = new Array(items.length).fill(null);
+        const uncached = [];
+
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          const cacheKey = _disambigCacheKey(item);
+          const cached = await browser.storage.local.get(cacheKey);
+          if (cached[cacheKey]) {
+            results[i] = cached[cacheKey];
+          } else {
+            uncached.push(i);
+          }
+        }
+
+        // All cached — return early
+        if (uncached.length === 0) {
+          return { results };
+        }
+
+        // 2. Call backend for uncached items
+        const uncachedItems = uncached.map(i => items[i]);
+        const { apiBase } = await getConfig();
+        const res = await authFetch(`${apiBase}/lessons/vocabpass/disambiguate/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: uncachedItems }),
+        });
+
+        if (!res || !res.ok) {
+          return { results };
+        }
+
+        const data = await res.json();
+        const backendResults = data.results || [];
+
+        // 3. Merge backend results and cache them
+        for (let j = 0; j < uncached.length; j++) {
+          const originalIdx = uncached[j];
+          const result = backendResults[j];
+          if (result) {
+            results[originalIdx] = result;
+            // Cache in browser storage
+            const cacheKey = _disambigCacheKey(items[originalIdx]);
+            const entry = { ...result, cached_at: Date.now() };
+            await browser.storage.local.set({ [cacheKey]: entry });
+          }
+        }
+
+        // 4. Evict old disambiguation cache entries
+        _evictDisambigCacheIfNeeded();
+
+        return { results };
+      } catch (err) {
+        return { results: [], error: err.message };
+      }
+    })();
+  }
 });
 
 // ─── Phrase Cache Eviction ───────────────────────
@@ -381,6 +475,50 @@ async function _evictPhraseCacheIfNeeded() {
         .map(k => ({ key: k, time: all[k]?.cached_at || 0 }))
         .sort((a, b) => a.time - b.time);
       const toRemove = sorted.slice(0, remaining.length - PHRASE_CACHE_MAX).map(e => e.key);
+      await browser.storage.local.remove(toRemove);
+    }
+  } catch {
+    // Non-critical — eviction failure doesn't break functionality
+  }
+}
+
+// ─── Disambiguation Cache Helpers ────────────────
+function _disambigCacheKey(item) {
+  const candidatesSorted = [...(item.candidate_ids || [])].sort().join(',');
+  const raw = `${item.sentence || ''}|${item.matched_text || ''}|${candidatesSorted}`;
+  // Simple hash using btoa (base64) — good enough for cache keys
+  try {
+    return `disambig_${btoa(unescape(encodeURIComponent(raw))).slice(0, 64)}`;
+  } catch {
+    return `disambig_${raw.length}_${candidatesSorted.slice(0, 32)}`;
+  }
+}
+
+async function _evictDisambigCacheIfNeeded() {
+  const DISAMBIG_CACHE_MAX = 2000;
+  const DISAMBIG_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+  try {
+    const all = await browser.storage.local.get(null);
+    const disambigKeys = Object.keys(all).filter(k => k.startsWith('disambig_'));
+
+    // Remove expired entries
+    const now = Date.now();
+    const expired = disambigKeys.filter(k => {
+      const entry = all[k];
+      return entry && entry.cached_at && (now - entry.cached_at) > DISAMBIG_CACHE_TTL_MS;
+    });
+    if (expired.length > 0) {
+      await browser.storage.local.remove(expired);
+    }
+
+    // LRU eviction if still over limit
+    const remaining = disambigKeys.filter(k => !expired.includes(k));
+    if (remaining.length > DISAMBIG_CACHE_MAX) {
+      const sorted = remaining
+        .map(k => ({ key: k, time: all[k]?.cached_at || 0 }))
+        .sort((a, b) => a.time - b.time);
+      const toRemove = sorted.slice(0, remaining.length - DISAMBIG_CACHE_MAX).map(e => e.key);
       await browser.storage.local.remove(toRemove);
     }
   } catch {

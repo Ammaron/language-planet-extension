@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>VocabPass Phrase Composition Test</title>
+  <style>
+    body { font-family: Georgia, serif; max-width: 800px; margin: 40px auto; line-height: 1.8; padding: 0 20px; color: #1a1a1a; }
+    h1 { font-size: 1.4em; border-bottom: 2px solid #333; padding-bottom: 8px; }
+    h2 { font-size: 1.1em; color: #555; margin-top: 30px; }
+    .test-section { background: #f9f9f9; border: 1px solid #ddd; border-radius: 6px; padding: 16px 20px; margin: 16px 0; }
+    .expected { color: #666; font-style: italic; font-size: 0.9em; margin-top: 4px; }
+    code { background: #eee; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+    .setup-instructions { background: #fffde7; border: 1px solid #f9a825; padding: 16px; border-radius: 6px; margin-bottom: 24px; }
+    .setup-instructions h3 { margin-top: 0; color: #f57f17; }
+    pre { background: #263238; color: #eeffff; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85em; }
+  </style>
+</head>
+<body>
+  <h1>VocabPass — Phrase Composition Test Page</h1>
+
+  <div class="setup-instructions">
+    <h3>Setup Instructions</h3>
+    <p>1. Open the browser DevTools console on this page.</p>
+    <p>2. Run the following to inject test vocabulary into the extension storage:</p>
+    <pre>
+// Run in DevTools console (this page must have the extension loaded)
+const testWords = [
+  { id: "w_cat",      term: "gato",    translation: "cat",       part_of_speech: "noun",      search_language: "en", searchable_forms: ["cat", "cats"], is_vocab_pass_word: true, term_language: "es", context_hint: "", example_sentence: "", example_translation: "", pronunciation_audio: "", gender: "m" },
+  { id: "w_red",      term: "rojo",    translation: "red",       part_of_speech: "adjective",  search_language: "en", searchable_forms: ["red"], is_vocab_pass_word: true, term_language: "es", context_hint: "", example_sentence: "", example_translation: "", pronunciation_audio: "" },
+  { id: "w_big",      term: "grande",  translation: "big",       part_of_speech: "adjective",  search_language: "en", searchable_forms: ["big"], is_vocab_pass_word: true, term_language: "es", context_hint: "", example_sentence: "", example_translation: "", pronunciation_audio: "" },
+  { id: "w_dog",      term: "perro",   translation: "dog",       part_of_speech: "noun",      search_language: "en", searchable_forms: ["dog", "dogs"], is_vocab_pass_word: true, term_language: "es", context_hint: "", example_sentence: "", example_translation: "", pronunciation_audio: "", gender: "m" },
+  { id: "w_house",    term: "casa",    translation: "house",     part_of_speech: "noun",      search_language: "en", searchable_forms: ["house", "houses"], is_vocab_pass_word: true, term_language: "es", context_hint: "", example_sentence: "", example_translation: "", pronunciation_audio: "", gender: "f" },
+  { id: "w_eat",      term: "comer",   translation: "eat",       part_of_speech: "verb",      search_language: "en", searchable_forms: ["eat", "eats", "eating"], is_vocab_pass_word: true, term_language: "es", context_hint: "", example_sentence: "", example_translation: "", pronunciation_audio: "" },
+  { id: "w_food",     term: "comida",  translation: "food",      part_of_speech: "noun",      search_language: "en", searchable_forms: ["food"], is_vocab_pass_word: true, term_language: "es", context_hint: "", example_sentence: "", example_translation: "", pronunciation_audio: "", gender: "f" },
+  { id: "w_sleep",    term: "dormir",  translation: "sleep",     part_of_speech: "verb",      search_language: "en", searchable_forms: ["sleep", "sleeps", "sleeping"], is_vocab_pass_word: true, term_language: "es", context_hint: "", example_sentence: "", example_translation: "", pronunciation_audio: "" },
+  { id: "w_small",    term: "peque\u00f1o", translation: "small",part_of_speech: "adjective",  search_language: "en", searchable_forms: ["small"], is_vocab_pass_word: true, term_language: "es", context_hint: "", example_sentence: "", example_translation: "", pronunciation_audio: "" },
+  { id: "w_book",     term: "libro",   translation: "book",      part_of_speech: "noun",      search_language: "en", searchable_forms: ["book", "books"], is_vocab_pass_word: true, term_language: "es", context_hint: "", example_sentence: "", example_translation: "", pronunciation_audio: "", gender: "m" },
+  { id: "w_good",     term: "bueno",   translation: "good",      part_of_speech: "adjective",  search_language: "en", searchable_forms: ["good"], is_vocab_pass_word: true, term_language: "es", context_hint: "", example_sentence: "", example_translation: "", pronunciation_audio: "" },
+  { id: "w_water",    term: "agua",    translation: "water",     part_of_speech: "noun",      search_language: "en", searchable_forms: ["water"], is_vocab_pass_word: true, term_language: "es", context_hint: "", example_sentence: "", example_translation: "", pronunciation_audio: "", gender: "f" },
+];
+browser.storage.local.set({ vocabWords: testWords });
+// Then reload this page
+    </pre>
+    <p>3. After running the above, reload this page. The extension will process the text below.</p>
+  </div>
+
+  <h2>Test 1: ADJ + NOUN (should reorder)</h2>
+  <div class="test-section">
+    <p>I saw a red cat sitting on the fence yesterday.</p>
+    <p class="expected">Expected: "red cat" → "gato rojo" (ADJ+NOUN reorder, confidence 0.9)</p>
+  </div>
+
+  <h2>Test 2: ADJ + NOUN (another pair)</h2>
+  <div class="test-section">
+    <p>The big dog was running in the park.</p>
+    <p class="expected">Expected: "big dog" → "perro grande" (ADJ+NOUN reorder)</p>
+  </div>
+
+  <h2>Test 3: NOUN + VERB (should preserve order)</h2>
+  <div class="test-section">
+    <p>The cat sleeps all day on the couch.</p>
+    <p class="expected">Expected: "cat sleeps" → "gato dormir" (NOUN+VERB, preserve order)</p>
+  </div>
+
+  <h2>Test 4: VERB + NOUN (should preserve order)</h2>
+  <div class="test-section">
+    <p>We eat food together every evening.</p>
+    <p class="expected">Expected: "eat food" → "comer comida" (VERB+NOUN, preserve order)</p>
+  </div>
+
+  <h2>Test 5: Solo word (should NOT form phrase)</h2>
+  <div class="test-section">
+    <p>I put some water in my bag and then grabbed a book from the shelf.</p>
+    <p class="expected">Expected: "water" → "agua" and "book" → "libro" as separate single replacements (too far apart to group)</p>
+  </div>
+
+  <h2>Test 6: Three-word with glue (ADJ + NOUN + VERB)</h2>
+  <div class="test-section">
+    <p>The small cat sleeps on the mat.</p>
+    <p class="expected">Expected: "small cat sleeps" → composed phrase (ADJ+NOUN+VERB → NOUN+ADJ+VERB = "gato peque&ntilde;o dormir", confidence 0.75)</p>
+  </div>
+
+  <h2>Test 7: Words separated by glue words</h2>
+  <div class="test-section">
+    <p>A good book is hard to find.</p>
+    <p class="expected">Expected: "good book" grouped through "a" glue word → "libro bueno" (ADJ+NOUN reorder)</p>
+  </div>
+
+  <h2>Test 8: Complex sentence (should defer to backend)</h2>
+  <div class="test-section">
+    <p>The big red cat eats good food and sleeps in a small house near the water.</p>
+    <p class="expected">Expected: Multiple phrase groups detected. Some may compose locally, others defer to backend. Check DevTools network tab for PHRASE_TRANSLATE requests.</p>
+  </div>
+
+  <h2>Test 9: No vocab words (should be untouched)</h2>
+  <div class="test-section">
+    <p>The weather is sunny today and I went to the store.</p>
+    <p class="expected">Expected: No replacements — none of these words are in the test vocabulary.</p>
+  </div>
+
+  <hr>
+  <h2>Console Inspection</h2>
+  <p>Open DevTools and run these to inspect matcher state:</p>
+  <pre>
+// Check if GrammarRules loaded
+console.log(window.GrammarRules);
+
+// Check what the matcher found (need access to matcher variable)
+// The matcher is scoped inside content.js, but you can inspect DOM:
+document.querySelectorAll('.lp-vocab-phrase').forEach(el => {
+  console.log({
+    original: el.dataset.original,
+    phraseType: el.dataset.phraseType,
+    source: el.dataset.source,
+    confidence: el.dataset.confidence,
+    text: el.textContent,
+  });
+});
+
+// Check individual word replacements
+document.querySelectorAll('.lp-vocab-word').forEach(el => {
+  console.log({
+    original: el.dataset.original,
+    translation: el.dataset.translation,
+    wordId: el.dataset.wordId,
+  });
+});
+  </pre>
+</body>
+</html>

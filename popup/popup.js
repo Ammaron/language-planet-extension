@@ -165,8 +165,20 @@ siteToggle.addEventListener('change', async () => {
   if (!siteToggle.checked) {
     // Add to whitelist (disable on this site)
     await browser.runtime.sendMessage({ type: 'TOGGLE_WHITELIST', domain, add: true });
+  } else {
+    // Remove from whitelist (re-enable on this site)
+    await browser.runtime.sendMessage({ type: 'TOGGLE_WHITELIST', domain, add: false });
   }
-  // Note: removing from whitelist requires the entry ID, handled via VocabPassPage
+
+  // Force immediate refresh of word list and page processing state.
+  await browser.runtime.sendMessage({ type: 'SYNC_NOW' });
+  const status = await browser.runtime.sendMessage({ type: 'GET_STATUS' });
+  updateStatus(status);
+
+  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+  if (tab && tab.id) {
+    await browser.tabs.reload(tab.id);
+  }
 });
 
 // ─── Open Dashboard ──────────────────────────

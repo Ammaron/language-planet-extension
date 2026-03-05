@@ -2,7 +2,7 @@
  * Content Script — DOM scanning, word replacement, and popup UI.
  * Runs on every page, processes text nodes and replaces matched vocabulary.
  */
-/* global browser, VocabMatcher, GrammarRules */
+/* global browser, VocabMatcher, VocabPopup, GrammarRules */
 
 // ─── Sensitive Page Exclusion ────────────────────
 const SENSITIVE_PATTERNS = [
@@ -60,7 +60,6 @@ const LP_CLASS = 'lp-vocab-word';
 
 let matcher = null;
 let whitelistedDomains = [];
-let popupEl = null;
 
 // ─── Theme Detection ─────────────────────────────
 function detectTheme() {
@@ -167,6 +166,9 @@ function processNode(root) {
     }
     if (index < textNodes.length) {
       requestIdleCallback(processBatch);
+    } else {
+      // All text nodes processed — request async disambiguation for ambiguous words
+      requestDisambiguation();
     }
   }
 
@@ -175,6 +177,7 @@ function processNode(root) {
       requestIdleCallback(processBatch);
     } else {
       textNodes.forEach(replaceInTextNode);
+      requestDisambiguation();
     }
   }
 }
@@ -244,10 +247,19 @@ function buildSingleWordSpan(match, domain) {
   span.dataset.exampleTranslation = match.word.example_translation || '';
   span.dataset.audioUrl = match.word.pronunciation_audio || '';
 
+  // Mark ambiguous words for async backend disambiguation
+  if (match.word._isAmbiguous) {
+    span.classList.add('lp-disambig-pending');
+    span.dataset.disambigCandidates = JSON.stringify(match.word._candidateIds);
+    span.dataset.disambigSentence = match.word._sentenceContext;
+    span.dataset.disambigOffset = String(match.word._matchOffset);
+    span.dataset.disambigSourceLang = match.word.search_language || 'en';
+  }
+
   span.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    showPopup(span);
+    VocabPopup.showWord(span);
     recordEncounter(match.word.id, domain, true);
   });
 
@@ -336,7 +348,7 @@ function buildPhraseSpan(phrase, fullText, domain) {
   span.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    showPhrasePopup(span, matches);
+    VocabPopup.showPhrase(span, matches);
     for (const m of matches) {
       recordEncounter(m.word.id, domain, true);
     }
@@ -372,9 +384,93 @@ function requestPhraseTranslation(span, sourcePhrase, targetLang, matches) {
       span.classList.remove('lp-phrase-pending');
       span.dataset.phraseType = 'composed';
       span.dataset.source = response.source || 'backend';
+      if (response.cache_entry_id) {
+        span.dataset.cacheEntryId = response.cache_entry_id;
+      }
     }
   }).catch(() => {
     // Silent failure — word-by-word rendering remains as fallback
+  });
+}
+
+/**
+ * Collect all ambiguous word spans and request spaCy-based disambiguation
+ * from the backend. On response, upgrades spans where the backend chose
+ * a different candidate than the local keyword heuristic.
+ */
+function requestDisambiguation() {
+  const pending = document.querySelectorAll('.lp-disambig-pending');
+  if (pending.length === 0) return;
+
+  const items = [];
+  const spanMap = new Map(); // index → span element
+
+  pending.forEach((span, i) => {
+    try {
+      const candidates = JSON.parse(span.dataset.disambigCandidates || '[]');
+      if (candidates.length < 2) return;
+
+      items.push({
+        sentence: span.dataset.disambigSentence || '',
+        matched_text: span.dataset.matchedForm || span.dataset.original || '',
+        match_offset: parseInt(span.dataset.disambigOffset || '0', 10),
+        candidate_ids: candidates,
+        source_language: span.dataset.disambigSourceLang || 'en',
+      });
+      spanMap.set(items.length - 1, span);
+    } catch {
+      // Skip malformed data
+    }
+  });
+
+  if (items.length === 0) return;
+
+  browser.runtime.sendMessage({
+    type: 'DISAMBIGUATE',
+    items,
+  }).then(response => {
+    if (!response || !response.results) return;
+
+    for (let i = 0; i < response.results.length; i++) {
+      const result = response.results[i];
+      const span = spanMap.get(i);
+      if (!result || !span || !span.isConnected) continue;
+
+      // Only upgrade if backend chose a different word
+      if (result.chosen_id && result.chosen_id !== span.dataset.wordId) {
+        upgradeDisambiguatedSpan(span, result.chosen_id);
+      }
+
+      // Remove pending class regardless
+      span.classList.remove('lp-disambig-pending');
+    }
+  }).catch(() => {
+    // Silent failure — local disambiguation remains
+    pending.forEach(span => span.classList.remove('lp-disambig-pending'));
+  });
+}
+
+/**
+ * Upgrade a span to use a different VocabularyWord after disambiguation.
+ * Looks up the new word from the cached vocabWords in storage.
+ */
+function upgradeDisambiguatedSpan(span, newWordId) {
+  browser.storage.local.get('vocabWords').then(({ vocabWords }) => {
+    if (!vocabWords) return;
+    const newWord = vocabWords.find(w => w.id === newWordId);
+    if (!newWord || !span.isConnected) return;
+
+    // Update the span content and data attributes
+    span.textContent = newWord.term;
+    span.dataset.wordId = newWord.id;
+    span.dataset.translation = newWord.term;
+    span.dataset.baseTranslation = newWord.translation || '';
+    span.dataset.termLanguage = newWord.term_language || 'es';
+    span.dataset.pos = newWord.part_of_speech || '';
+    span.dataset.hint = newWord.context_hint || '';
+    span.dataset.example = newWord.example_sentence || '';
+    span.dataset.exampleTranslation = newWord.example_translation || '';
+    span.dataset.audioUrl = newWord.pronunciation_audio || '';
   });
 }
 
@@ -404,208 +500,6 @@ function observeMutations() {
     childList: true,
     subtree: true,
   });
-}
-
-// ─── Popup UI (safe DOM construction) ────────────
-function createEl(tag, className, textContent) {
-  const el = document.createElement(tag);
-  if (className) el.className = className;
-  if (textContent) el.textContent = textContent;
-  return el;
-}
-
-function showPhrasePopup(span, matches) {
-  hidePopup();
-
-  const original = span.dataset.original || '';
-  const phraseType = span.dataset.phraseType || 'word-by-word';
-  const composedText = phraseType === 'composed' ? span.textContent : null;
-
-  popupEl = document.createElement('div');
-  popupEl.className = 'lp-vocab-popup lp-phrase-popup';
-  popupEl.setAttribute(LP_PROCESSED, 'true');
-
-  // Phrase header
-  const header = createEl('div', 'lp-popup-header');
-  header.appendChild(createEl('span', 'lp-popup-original', original));
-  if (composedText) {
-    header.appendChild(createEl('span', 'lp-popup-arrow', '\u2192'));
-    header.appendChild(createEl('span', 'lp-popup-translation', composedText));
-  }
-  const badge = createEl('span', 'lp-popup-pos', 'phrase');
-  header.appendChild(badge);
-  popupEl.appendChild(header);
-
-  // Component words list
-  const wordsList = createEl('div', 'lp-phrase-words');
-  for (const m of matches) {
-    const wordRow = createEl('div', 'lp-phrase-word-row');
-    wordRow.appendChild(createEl('span', 'lp-phrase-word-original', m.original));
-    wordRow.appendChild(createEl('span', 'lp-popup-arrow', '\u2192'));
-    wordRow.appendChild(createEl('span', 'lp-phrase-word-term', m.word.term));
-    if (m.word.part_of_speech) {
-      wordRow.appendChild(createEl('span', 'lp-popup-pos', m.word.part_of_speech));
-    }
-    wordsList.appendChild(wordRow);
-  }
-  popupEl.appendChild(wordsList);
-
-  // Report button for composed phrases
-  if (composedText) {
-    const actions = createEl('div', 'lp-popup-actions');
-    const reportBtn = createEl('button', 'lp-popup-listen', '\u26A0 Report');
-    reportBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      reportPhraseTranslation(span, original, composedText);
-      reportBtn.textContent = '\u2713 Reported';
-      reportBtn.disabled = true;
-    });
-    actions.appendChild(reportBtn);
-    popupEl.appendChild(actions);
-  }
-
-  document.body.appendChild(popupEl);
-
-  // Position popup
-  const rect = span.getBoundingClientRect();
-  const popupRect = popupEl.getBoundingClientRect();
-
-  let top = rect.bottom + window.scrollY + 6;
-  let left = rect.left + window.scrollX;
-
-  if (left + popupRect.width > window.innerWidth) {
-    left = window.innerWidth - popupRect.width - 10;
-  }
-  if (left < 10) left = 10;
-
-  popupEl.style.top = `${top}px`;
-  popupEl.style.left = `${left}px`;
-
-  setTimeout(() => {
-    document.addEventListener('click', handleOutsideClick);
-  }, 10);
-}
-
-function reportPhraseTranslation(span, original, translated) {
-  browser.runtime.sendMessage({
-    type: 'PHRASE_TRANSLATE_FLAG',
-    source_phrase: original,
-    translated_phrase: translated,
-    reason: 'user_reported',
-  }).catch(() => {});
-}
-
-function showPopup(span) {
-  hidePopup();
-
-  const {
-    original,
-    translation,
-    baseTranslation,
-    termLanguage,
-    pos,
-    hint,
-    example,
-    exampleTranslation,
-    audioUrl,
-  } = span.dataset;
-
-  popupEl = document.createElement('div');
-  popupEl.className = 'lp-vocab-popup';
-  popupEl.setAttribute(LP_PROCESSED, 'true');
-
-  // Header: matched_form → term (base translation) [POS]
-  const header = createEl('div', 'lp-popup-header');
-  header.appendChild(createEl('span', 'lp-popup-original', original));
-  header.appendChild(createEl('span', 'lp-popup-arrow', '\u2192'));
-  header.appendChild(createEl('span', 'lp-popup-translation', translation));
-  if (baseTranslation && baseTranslation.toLowerCase() !== original.toLowerCase()) {
-    header.appendChild(createEl('span', 'lp-popup-base', `(${baseTranslation})`));
-  }
-  if (pos) header.appendChild(createEl('span', 'lp-popup-pos', pos));
-  popupEl.appendChild(header);
-
-  // Hint
-  if (hint) {
-    popupEl.appendChild(createEl('div', 'lp-popup-hint', hint));
-  }
-
-  // Example
-  if (example) {
-    const exDiv = createEl('div', 'lp-popup-example');
-    exDiv.appendChild(createEl('div', 'lp-popup-example-text', `\u201C${example}\u201D`));
-    if (exampleTranslation) {
-      exDiv.appendChild(createEl('div', 'lp-popup-example-translation', `\u201C${exampleTranslation}\u201D`));
-    }
-    popupEl.appendChild(exDiv);
-  }
-
-  // Listen button
-  const actions = createEl('div', 'lp-popup-actions');
-  const listenBtn = createEl('button', 'lp-popup-listen', '\uD83D\uDD0A Listen');
-  listenBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    playAudioFromPopup(audioUrl, translation, termLanguage);
-  });
-  actions.appendChild(listenBtn);
-  popupEl.appendChild(actions);
-
-  document.body.appendChild(popupEl);
-
-  // Position popup below the word
-  const rect = span.getBoundingClientRect();
-  const popupRect = popupEl.getBoundingClientRect();
-
-  let top = rect.bottom + window.scrollY + 6;
-  let left = rect.left + window.scrollX;
-
-  // Keep within viewport
-  if (left + popupRect.width > window.innerWidth) {
-    left = window.innerWidth - popupRect.width - 10;
-  }
-  if (left < 10) left = 10;
-
-  popupEl.style.top = `${top}px`;
-  popupEl.style.left = `${left}px`;
-
-  // Close on outside click
-  setTimeout(() => {
-    document.addEventListener('click', handleOutsideClick);
-  }, 10);
-}
-
-async function playAudioFromPopup(audioUrl, translation, termLanguage) {
-  if (audioUrl) {
-    const { apiBase } = await getContentConfig();
-    const fullUrl = audioUrl.startsWith('http') ? audioUrl : `${apiBase.replace('/api', '')}${audioUrl}`;
-    const audio = new Audio(fullUrl);
-    audio.play();
-  } else {
-    const utterance = new SpeechSynthesisUtterance(translation);
-    utterance.lang = termLanguage || 'es';
-    speechSynthesis.speak(utterance);
-  }
-}
-
-async function getContentConfig() {
-  const { apiBase } = await browser.storage.local.get('apiBase');
-  return { apiBase: apiBase || 'http://localhost:8000/api' };
-}
-
-function hidePopup() {
-  if (popupEl) {
-    popupEl.remove();
-    popupEl = null;
-  }
-  document.removeEventListener('click', handleOutsideClick);
-}
-
-function handleOutsideClick(e) {
-  if (popupEl && !popupEl.contains(e.target)
-    && !e.target.classList.contains(LP_CLASS)
-    && !e.target.classList.contains('lp-vocab-phrase')) {
-    hidePopup();
-  }
 }
 
 // ─── Message Listener ────────────────────────────

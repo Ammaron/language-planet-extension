@@ -284,37 +284,83 @@ class VocabMatcher {
   /**
    * Disambiguate when multiple vocab entries share the same source-page form.
    * Examines ~50 chars of surrounding context for keyword overlap with context_hint.
+   *
+   * When multiple candidates exist, the chosen word is decorated with
+   * disambiguation metadata (_isAmbiguous, _candidateIds, etc.) so the
+   * content script can request async spaCy-based disambiguation from the backend.
    */
   disambiguate(candidates, text, matchIdx) {
     if (!candidates || candidates.length === 1) return candidates ? candidates[0] : null;
 
     const withHints = candidates.filter(c => c.context_hint);
-    if (withHints.length === 0) return candidates[0];
-
-    const contextStart = Math.max(0, matchIdx - 50);
-    const contextEnd = Math.min(text.length, matchIdx + 50);
-    const surrounding = text.substring(contextStart, contextEnd).toLowerCase();
 
     let bestScore = 0;
     let bestCandidate = null;
 
-    for (const candidate of candidates) {
-      if (!candidate.context_hint) continue;
+    if (withHints.length > 0) {
+      const contextStart = Math.max(0, matchIdx - 50);
+      const contextEnd = Math.min(text.length, matchIdx + 50);
+      const surrounding = text.substring(contextStart, contextEnd).toLowerCase();
 
-      const keywords = candidate.context_hint.toLowerCase().split(/[\s,;/]+/).filter(k => k.length > 2);
-      let score = 0;
+      for (const candidate of candidates) {
+        if (!candidate.context_hint) continue;
 
-      for (const keyword of keywords) {
-        if (surrounding.includes(keyword)) score++;
-      }
+        const keywords = candidate.context_hint.toLowerCase().split(/[\s,;/]+/).filter(k => k.length > 2);
+        let score = 0;
 
-      if (score > bestScore) {
-        bestScore = score;
-        bestCandidate = candidate;
+        for (const keyword of keywords) {
+          if (surrounding.includes(keyword)) score++;
+        }
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestCandidate = candidate;
+        }
       }
     }
 
-    return bestScore > 0 ? bestCandidate : candidates[0];
+    const chosen = bestScore > 0 ? bestCandidate : candidates[0];
+
+    // Mark as ambiguous so the content script can request backend disambiguation
+    if (candidates.length >= 2) {
+      const { sentence, offset } = this._extractSentence(text, matchIdx);
+      chosen._isAmbiguous = true;
+      chosen._candidateIds = candidates.map(c => c.id);
+      chosen._sentenceContext = sentence;
+      chosen._matchOffset = offset;
+    }
+
+    return chosen;
+  }
+
+  /**
+   * Extract the containing sentence around a character position.
+   * Splits on sentence-ending punctuation (.!?\n) and returns
+   * { sentence, offset } where offset is matchIdx relative to sentence start.
+   */
+  _extractSentence(text, position) {
+    // Find sentence start: scan backward for sentence boundary
+    let start = position;
+    while (start > 0 && !/[.!?\n]/.test(text[start - 1])) {
+      start--;
+    }
+    // Skip any leading whitespace
+    while (start < position && /\s/.test(text[start])) {
+      start++;
+    }
+
+    // Find sentence end: scan forward for sentence boundary
+    let end = position;
+    while (end < text.length && !/[.!?\n]/.test(text[end])) {
+      end++;
+    }
+    // Include the punctuation mark
+    if (end < text.length) end++;
+
+    const sentence = text.substring(start, end).trim();
+    const offset = position - start;
+
+    return { sentence, offset: Math.max(0, offset) };
   }
 }
 
