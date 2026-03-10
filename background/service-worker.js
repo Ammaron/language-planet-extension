@@ -27,7 +27,18 @@ async function setTokens(access, refresh) {
 }
 
 async function clearTokens() {
-  await browser.storage.local.remove(['authToken', 'refreshToken', 'vocabWords', 'lastSync', 'difficulty']);
+  await browser.storage.local.remove(['authToken', 'refreshToken', 'vocabWords', 'lastSync', 'difficulty', 'rotation_salt']);
+}
+
+function _generateRotationSalt() {
+  return `${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
+}
+
+async function _ensureRotationSalt() {
+  const { rotation_salt } = await browser.storage.local.get('rotation_salt');
+  if (!rotation_salt) {
+    await browser.storage.local.set({ rotation_salt: _generateRotationSalt() });
+  }
 }
 
 async function refreshAccessToken() {
@@ -165,6 +176,7 @@ browser.runtime.onMessage.addListener((message) => {
         const data = await res.json();
         if (data.access) {
           await setTokens(data.access, data.refresh);
+          await _ensureRotationSalt();
           await browser.storage.local.set({ syncStatus: 'success' });
           await syncVocabulary();
           return { success: true };
@@ -447,6 +459,34 @@ browser.runtime.onMessage.addListener((message) => {
       }
     })();
   }
+
+  if (message.type === 'DISAMBIG_FEEDBACK') {
+    return (async () => {
+      try {
+        const { apiBase } = await getConfig();
+        const res = await authFetch(`${apiBase}/lessons/vocabpass/disambiguate/feedback/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sentence: message.sentence || '',
+            matched_text: message.matched_text || '',
+            match_offset: message.match_offset || 0,
+            candidate_ids: message.candidate_ids || [],
+            source_language: message.source_language || 'en',
+            target_language: message.target_language || 'es',
+            shown_word_id: message.shown_word_id || '',
+            chosen_word_id: message.chosen_word_id || '',
+            was_uncertain: !!message.was_uncertain,
+            method_used: message.method_used || 'spacy',
+          }),
+        });
+
+        return { success: !!(res && res.ok) };
+      } catch {
+        return { success: false };
+      }
+    })();
+  }
 });
 
 // ─── Phrase Cache Eviction ───────────────────────
@@ -485,7 +525,7 @@ async function _evictPhraseCacheIfNeeded() {
 // ─── Disambiguation Cache Helpers ────────────────
 function _disambigCacheKey(item) {
   const candidatesSorted = [...(item.candidate_ids || [])].sort().join(',');
-  const raw = `${item.sentence || ''}|${item.matched_text || ''}|${candidatesSorted}`;
+  const raw = `${item.sentence || ''}|${item.matched_text || ''}|${item.match_offset || 0}|${item.source_language || 'en'}|${candidatesSorted}`;
   // Simple hash using btoa (base64) — good enough for cache keys
   try {
     return `disambig_${btoa(unescape(encodeURIComponent(raw))).slice(0, 64)}`;
@@ -537,5 +577,6 @@ browser.runtime.onInstalled.addListener((details) => {
 });
 
 browser.runtime.onStartup.addListener(() => {
+  _ensureRotationSalt();
   syncVocabulary();
 });

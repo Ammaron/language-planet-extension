@@ -60,6 +60,7 @@ const LP_CLASS = 'lp-vocab-word';
 
 let matcher = null;
 let whitelistedDomains = [];
+let rotationSalt = '';
 
 // ─── Theme Detection ─────────────────────────────
 function detectTheme() {
@@ -100,8 +101,13 @@ function flushEncounterBuffer() {
 
 // ─── Initialization ──────────────────────────────
 async function init() {
-  const { vocabWords, frontendUrl } = await browser.storage.local.get(['vocabWords', 'frontendUrl']);
+  const { vocabWords, frontendUrl, rotation_salt } = await browser.storage.local.get([
+    'vocabWords',
+    'frontendUrl',
+    'rotation_salt',
+  ]);
   if (!vocabWords || vocabWords.length === 0) return;
+  rotationSalt = rotation_salt || '';
 
   // Never translate on Language Planet's own site (would interfere with lessons)
   try {
@@ -119,7 +125,7 @@ async function init() {
     if (whitelistedDomains.some(d => domain.includes(d) || d.includes(domain))) return;
   }
 
-  matcher = new VocabMatcher(vocabWords);
+  matcher = new VocabMatcher(vocabWords, { rotationSalt: rotationSalt });
   detectTheme();
   processDocument();
   observeMutations();
@@ -246,6 +252,14 @@ function buildSingleWordSpan(match, domain) {
   span.dataset.example = match.word.example_sentence || '';
   span.dataset.exampleTranslation = match.word.example_translation || '';
   span.dataset.audioUrl = match.word.pronunciation_audio || '';
+  span.dataset.sourceLanguage = match.word.search_language || 'en';
+  span.dataset.targetLanguage = match.word.term_language || 'es';
+  span.dataset.meaningKey = match.word.meaning_key || match.word._localMeaningKey || '';
+  span.dataset.method = match.word._method || match.word._localMethod || 'local';
+
+  if (Array.isArray(match.word._alternatives) && match.word._alternatives.length > 0) {
+    span.dataset.disambigAlternatives = JSON.stringify(match.word._alternatives);
+  }
 
   // Mark ambiguous words for async backend disambiguation
   if (match.word._isAmbiguous) {
@@ -256,10 +270,18 @@ function buildSingleWordSpan(match, domain) {
     span.dataset.disambigSourceLang = match.word.search_language || 'en';
   }
 
+  const localConfidence = parseFloat(match.word._localConfidence || '0');
+  if (!Number.isNaN(localConfidence) && localConfidence > 0 && localConfidence < 0.62) {
+    span.classList.add('lp-uncertain');
+    span.dataset.uncertain = 'true';
+  } else {
+    span.dataset.uncertain = 'false';
+  }
+
   span.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    VocabPopup.showWord(span);
+    Promise.resolve(VocabPopup.showWord(span)).catch(() => {});
     recordEncounter(match.word.id, domain, true);
   });
 
@@ -348,7 +370,7 @@ function buildPhraseSpan(phrase, fullText, domain) {
   span.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    VocabPopup.showPhrase(span, matches);
+    Promise.resolve(VocabPopup.showPhrase(span, matches)).catch(() => {});
     for (const m of matches) {
       recordEncounter(m.word.id, domain, true);
     }
@@ -416,6 +438,7 @@ function requestDisambiguation() {
         match_offset: parseInt(span.dataset.disambigOffset || '0', 10),
         candidate_ids: candidates,
         source_language: span.dataset.disambigSourceLang || 'en',
+        rotation_salt: rotationSalt,
       });
       spanMap.set(items.length - 1, span);
     } catch {
@@ -436,12 +459,10 @@ function requestDisambiguation() {
       const span = spanMap.get(i);
       if (!result || !span || !span.isConnected) continue;
 
-      // Only upgrade if backend chose a different word
-      if (result.chosen_id && result.chosen_id !== span.dataset.wordId) {
-        upgradeDisambiguatedSpan(span, result.chosen_id);
+      if (result.chosen_id) {
+        upgradeDisambiguatedSpan(span, result.chosen_id, result);
       }
 
-      // Remove pending class regardless
       span.classList.remove('lp-disambig-pending');
     }
   }).catch(() => {
@@ -454,7 +475,7 @@ function requestDisambiguation() {
  * Upgrade a span to use a different VocabularyWord after disambiguation.
  * Looks up the new word from the cached vocabWords in storage.
  */
-function upgradeDisambiguatedSpan(span, newWordId) {
+function upgradeDisambiguatedSpan(span, newWordId, result = null) {
   browser.storage.local.get('vocabWords').then(({ vocabWords }) => {
     if (!vocabWords) return;
     const newWord = vocabWords.find(w => w.id === newWordId);
@@ -471,6 +492,23 @@ function upgradeDisambiguatedSpan(span, newWordId) {
     span.dataset.example = newWord.example_sentence || '';
     span.dataset.exampleTranslation = newWord.example_translation || '';
     span.dataset.audioUrl = newWord.pronunciation_audio || '';
+    span.dataset.sourceLanguage = newWord.search_language || span.dataset.sourceLanguage || 'en';
+    span.dataset.targetLanguage = newWord.term_language || span.dataset.targetLanguage || 'es';
+    span.dataset.meaningKey = (result && result.chosen_meaning_key) || newWord.meaning_key || span.dataset.meaningKey || '';
+    span.dataset.method = (result && result.method) || span.dataset.method || 'spacy';
+
+    if (result && Array.isArray(result.alternatives)) {
+      span.dataset.disambigAlternatives = JSON.stringify(result.alternatives);
+    }
+
+    if (result && typeof result.uncertain === 'boolean') {
+      span.dataset.uncertain = result.uncertain ? 'true' : 'false';
+      if (result.uncertain) {
+        span.classList.add('lp-uncertain');
+      } else {
+        span.classList.remove('lp-uncertain');
+      }
+    }
   });
 }
 
@@ -518,8 +556,11 @@ browser.runtime.onMessage.addListener((message) => {
       el.parentNode.replaceChild(text, el);
     });
     // Rebuild with new words
-    matcher = new VocabMatcher(message.words);
-    processDocument();
+    browser.storage.local.get('rotation_salt').then(({ rotation_salt }) => {
+      rotationSalt = rotation_salt || '';
+      matcher = new VocabMatcher(message.words, { rotationSalt });
+      processDocument();
+    });
   }
 });
 

@@ -1,24 +1,23 @@
 /**
  * VocabMatcher — Aho-Corasick automaton for O(T+Z) word matching.
  *
- * Replaces the previous O(T*W) indexOf-per-term approach.
- * Builds a trie with failure links for multi-pattern matching in a single
- * left-to-right pass through the text.
+ * Replaces O(T*W) indexOf-per-term scans with a single multi-pattern pass.
  */
 
 class TrieNode {
   constructor() {
-    this.children = new Map(); // char → TrieNode
-    this.fail = null;          // suffix/failure link
-    this.output = [];          // { word, key }[] that end at this node
+    this.children = new Map();
+    this.fail = null;
+    this.output = [];
     this.depth = 0;
   }
 }
 
 class VocabMatcher {
-  constructor(words) {
+  constructor(words, options = {}) {
     this.root = new TrieNode();
-    this.wordMap = new Map(); // lowercaseKey → VocabWord[] (for disambiguation)
+    this.wordMap = new Map(); // lowercaseKey -> VocabWord[]
+    this.rotationSalt = options.rotationSalt || '';
     this.buildTrie(words);
     this.buildFailureLinks();
   }
@@ -38,10 +37,14 @@ class VocabMatcher {
         }
       }
 
-      for (const key of keys) {
-        if (key) {
-          this.insertWord(key, word);
+      if (Array.isArray(word.source_forms)) {
+        for (const form of word.source_forms) {
+          keys.add(this.normalizeKey(form));
         }
+      }
+
+      for (const key of keys) {
+        if (key) this.insertWord(key, word);
       }
     }
   }
@@ -78,32 +81,27 @@ class VocabMatcher {
   buildFailureLinks() {
     const queue = [];
 
-    // Initialize depth-1 nodes: their fail links point to root
     for (const child of this.root.children.values()) {
       child.fail = this.root;
       queue.push(child);
     }
 
-    // BFS to build failure links
     while (queue.length > 0) {
       const current = queue.shift();
 
       for (const [ch, child] of current.children) {
         queue.push(child);
 
-        // Walk up failure links to find the longest proper suffix
         let failNode = current.fail;
         while (failNode && !failNode.children.has(ch)) {
           failNode = failNode.fail;
         }
         child.fail = failNode ? failNode.children.get(ch) : this.root;
 
-        // Don't point to self
         if (child.fail === child) {
           child.fail = this.root;
         }
 
-        // Merge output lists along failure chain (dictionary suffix links)
         if (child.fail.output.length > 0) {
           child.output = child.output.concat(child.fail.output);
         }
@@ -113,18 +111,10 @@ class VocabMatcher {
 
   // ─── Search Phase ──────────────────────────────
 
-  /**
-   * Find all vocab matches in a text string.
-   * Returns { singles: Match[], phrases: PhraseCandidate[] }.
-   *
-   * singles — matches that have no adjacent neighbor (current behavior).
-   * phrases — groups of ≥2 adjacent matched words with glue-only gaps.
-   */
   findMatches(text) {
     const lowerText = text.toLowerCase();
     const rawMatches = [];
 
-    // Single-pass Aho-Corasick scan
     let node = this.root;
     for (let i = 0; i < lowerText.length; i++) {
       const ch = lowerText[i];
@@ -134,7 +124,6 @@ class VocabMatcher {
       }
       node = node ? node.children.get(ch) : this.root;
 
-      // Collect all matches ending at position i
       if (node.output.length > 0) {
         for (const entry of node.output) {
           const termLen = entry.key.length;
@@ -144,21 +133,15 @@ class VocabMatcher {
       }
     }
 
-    // Post-process: word boundaries, disambiguation, overlap resolution
     const resolved = this.postProcess(rawMatches, text);
-
-    // Group adjacent matches into phrase candidates
     return this.groupAdjacentMatches(resolved, text);
   }
 
   postProcess(rawMatches, text) {
-    // Filter by word boundary
     const bounded = rawMatches.filter(m => this.isWordBoundary(text, m.start, m.end - m.start, m.entry.key));
 
-    // Sort: by start position, then longest first for overlap resolution
     bounded.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
 
-    // Greedy longest-first overlap resolution
     const result = [];
     const used = new Set();
 
@@ -169,13 +152,11 @@ class VocabMatcher {
       }
       if (overlap) continue;
 
-      // Disambiguation for homonyms
       const key = match.entry.key;
       const candidates = this.wordMap.get(key);
       const resolved = this.disambiguate(candidates, text, match.start);
       if (!resolved) continue;
 
-      // Mark positions as used
       for (let i = match.start; i < match.end; i++) used.add(i);
 
       result.push({
@@ -190,27 +171,15 @@ class VocabMatcher {
     return result.sort((a, b) => a.start - b.start);
   }
 
-  /**
-   * Group adjacent matches into phrase candidates.
-   * Walks the sorted match list left-to-right, merging matches whose
-   * gap contains only whitespace and/or glue words.
-   *
-   * @param {Array} matches - Sorted matches from postProcess
-   * @param {string} text - The original text
-   * @returns {{ singles: Match[], phrases: PhraseCandidate[] }}
-   */
   groupAdjacentMatches(matches, text) {
     if (matches.length === 0) return { singles: [], phrases: [] };
 
     const { isGlueGap, MAX_GAP_CHARS, MIN_PHRASE_WORDS } = window.GrammarRules || {};
-
-    // If grammar-rules.js isn't loaded, fall back to all-singles
     if (!isGlueGap) return { singles: matches, phrases: [] };
 
-    // Detect source language from the first match's search data
     const sourceLang = this.detectSourceLanguage(matches);
 
-    const groups = []; // Array of arrays of matches
+    const groups = [];
     let currentGroup = [matches[0]];
 
     for (let i = 1; i < matches.length; i++) {
@@ -248,10 +217,6 @@ class VocabMatcher {
     return { singles, phrases };
   }
 
-  /**
-   * Detect the source language from vocab word metadata.
-   * Falls back to 'en' if no search_language data is available.
-   */
   detectSourceLanguage(matches) {
     for (const m of matches) {
       if (m.word && m.word.search_language) return m.word.search_language;
@@ -259,10 +224,6 @@ class VocabMatcher {
     return 'en';
   }
 
-  /**
-   * Check word boundaries — match must be surrounded by
-   * whitespace, punctuation, or string boundaries.
-   */
   isWordBoundary(text, start, length, key = '') {
     if (this.isBoundarylessScript(key)) {
       return true;
@@ -281,80 +242,162 @@ class VocabMatcher {
     return /[\u0e00-\u0e7f\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uac00-\ud7af]/.test(text);
   }
 
-  /**
-   * Disambiguate when multiple vocab entries share the same source-page form.
-   * Examines ~50 chars of surrounding context for keyword overlap with context_hint.
-   *
-   * When multiple candidates exist, the chosen word is decorated with
-   * disambiguation metadata (_isAmbiguous, _candidateIds, etc.) so the
-   * content script can request async spaCy-based disambiguation from the backend.
-   */
   disambiguate(candidates, text, matchIdx) {
-    if (!candidates || candidates.length === 1) return candidates ? candidates[0] : null;
+    if (!candidates || candidates.length === 0) return null;
 
-    const withHints = candidates.filter(c => c.context_hint);
+    if (candidates.length === 1) {
+      return this.cloneCandidate(candidates[0]);
+    }
 
-    let bestScore = 0;
-    let bestCandidate = null;
+    const { sentence, offset } = this._extractSentence(text, matchIdx);
+    const sentenceHash = String(this._stableHash(sentence));
+    const surrounding = text.substring(Math.max(0, matchIdx - 60), Math.min(text.length, matchIdx + 60)).toLowerCase();
 
-    if (withHints.length > 0) {
-      const contextStart = Math.max(0, matchIdx - 50);
-      const contextEnd = Math.min(text.length, matchIdx + 50);
-      const surrounding = text.substring(contextStart, contextEnd).toLowerCase();
-
-      for (const candidate of candidates) {
-        if (!candidate.context_hint) continue;
-
-        const keywords = candidate.context_hint.toLowerCase().split(/[\s,;/]+/).filter(k => k.length > 2);
-        let score = 0;
-
+    const scored = candidates.map(candidate => {
+      let hintScore = 0;
+      const hint = (candidate.context_hint || '').toLowerCase();
+      if (hint) {
+        const keywords = hint.split(/[\s,;/]+/).filter(k => k.length > 2);
         for (const keyword of keywords) {
-          if (surrounding.includes(keyword)) score++;
-        }
-
-        if (score > bestScore) {
-          bestScore = score;
-          bestCandidate = candidate;
+          if (surrounding.includes(keyword)) hintScore += 1;
         }
       }
+
+      let domainScore = 0;
+      if (Array.isArray(candidate.domain_tags)) {
+        for (const tag of candidate.domain_tags) {
+          if (typeof tag === 'string' && tag.length > 1 && surrounding.includes(tag.toLowerCase())) {
+            domainScore += 1;
+          }
+        }
+      }
+
+      const total = hintScore + Math.min(4, domainScore);
+      return {
+        candidate,
+        score: total,
+        hintScore,
+      };
+    });
+
+    const groups = new Map();
+    for (const row of scored) {
+      const meaningKey = row.candidate.meaning_key || `mk_${row.candidate.id}`;
+      if (!groups.has(meaningKey)) {
+        groups.set(meaningKey, {
+          meaningKey,
+          maxScore: -1,
+          sumScore: 0,
+          hintScore: 0,
+          rows: [],
+        });
+      }
+      const group = groups.get(meaningKey);
+      group.maxScore = Math.max(group.maxScore, row.score);
+      group.sumScore += row.score;
+      group.hintScore += row.hintScore;
+      group.rows.push(row);
     }
 
-    const chosen = bestScore > 0 ? bestCandidate : candidates[0];
+    const sortedGroups = [...groups.values()].sort((a, b) => (
+      b.maxScore - a.maxScore
+      || b.sumScore - a.sumScore
+      || b.hintScore - a.hintScore
+      || a.meaningKey.localeCompare(b.meaningKey)
+    ));
 
-    // Mark as ambiguous so the content script can request backend disambiguation
-    if (candidates.length >= 2) {
-      const { sentence, offset } = this._extractSentence(text, matchIdx);
-      chosen._isAmbiguous = true;
-      chosen._candidateIds = candidates.map(c => c.id);
-      chosen._sentenceContext = sentence;
-      chosen._matchOffset = offset;
+    const bestGroup = sortedGroups[0];
+    if (!bestGroup || bestGroup.rows.length === 0) {
+      const fallback = this.cloneCandidate(candidates[0]);
+      fallback._isAmbiguous = true;
+      fallback._candidateIds = candidates.map(c => c.id);
+      fallback._sentenceContext = sentence;
+      fallback._matchOffset = offset;
+      return fallback;
     }
+
+    const chosenCandidate = this._selectWeightedVariant(bestGroup.rows, bestGroup.meaningKey, sentenceHash);
+    const chosen = this.cloneCandidate(chosenCandidate);
+
+    const sortedByScore = scored
+      .slice()
+      .sort((a, b) => b.score - a.score || String(a.candidate.id).localeCompare(String(b.candidate.id)));
+    const topScore = sortedByScore[0] ? sortedByScore[0].score : 0;
+    const alternatives = sortedByScore.slice(0, 3).map(row => ({
+      id: row.candidate.id,
+      term: row.candidate.term,
+      meaning_key: row.candidate.meaning_key || `mk_${row.candidate.id}`,
+      confidence: topScore > 0 ? Number((row.score / topScore).toFixed(3)) : 0,
+    }));
+
+    chosen._isAmbiguous = true;
+    chosen._candidateIds = candidates.map(c => c.id);
+    chosen._sentenceContext = sentence;
+    chosen._matchOffset = offset;
+    chosen._localMeaningKey = bestGroup.meaningKey;
+    chosen._alternatives = alternatives;
+    chosen._localConfidence = topScore > 0 ? Number((Math.min(1, topScore / 8)).toFixed(3)) : 0;
+    chosen._localMethod = 'local';
 
     return chosen;
   }
 
-  /**
-   * Extract the containing sentence around a character position.
-   * Splits on sentence-ending punctuation (.!?\n) and returns
-   * { sentence, offset } where offset is matchIdx relative to sentence start.
-   */
+  _selectWeightedVariant(rows, meaningKey, sentenceHash) {
+    if (!rows || rows.length === 0) return null;
+    if (rows.length === 1) return rows[0].candidate;
+
+    const weekBucket = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000));
+    const seedText = `${this.rotationSalt}|${meaningKey}|${sentenceHash}|${weekBucket}`;
+    const seed = this._stableHash(seedText);
+
+    const weighted = rows.map(row => ({
+      candidate: row.candidate,
+      weight: Math.min(1000, Math.max(1, parseInt(row.candidate.variant_weight || 100, 10) || 100)),
+    }));
+
+    const totalWeight = weighted.reduce((sum, item) => sum + item.weight, 0);
+    if (totalWeight <= 0) return rows[0].candidate;
+
+    let pick = (seed % totalWeight) + 1;
+    for (const item of weighted) {
+      pick -= item.weight;
+      if (pick <= 0) return item.candidate;
+    }
+
+    return weighted[weighted.length - 1].candidate;
+  }
+
+  cloneCandidate(candidate) {
+    return {
+      ...candidate,
+      source_forms: Array.isArray(candidate.source_forms) ? [...candidate.source_forms] : [],
+      domain_tags: Array.isArray(candidate.domain_tags) ? [...candidate.domain_tags] : [],
+    };
+  }
+
+  _stableHash(input) {
+    const str = String(input || '');
+    let hash = 2166136261;
+    for (let i = 0; i < str.length; i++) {
+      hash ^= str.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+  }
+
   _extractSentence(text, position) {
-    // Find sentence start: scan backward for sentence boundary
     let start = position;
     while (start > 0 && !/[.!?\n]/.test(text[start - 1])) {
       start--;
     }
-    // Skip any leading whitespace
     while (start < position && /\s/.test(text[start])) {
       start++;
     }
 
-    // Find sentence end: scan forward for sentence boundary
     let end = position;
     while (end < text.length && !/[.!?\n]/.test(text[end])) {
       end++;
     }
-    // Include the punctuation mark
     if (end < text.length) end++;
 
     const sentence = text.substring(start, end).trim();
@@ -364,7 +407,6 @@ class VocabMatcher {
   }
 }
 
-// Export for content.js
 if (typeof window !== 'undefined') {
   window.VocabMatcher = VocabMatcher;
 }
