@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build script for Language Planet Vocab Pass extension
+# Build script for Langsly Vocab Pass extension
 # Creates browser-specific builds in dist/chrome and dist/firefox
 
 set -e

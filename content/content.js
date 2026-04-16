@@ -61,6 +61,19 @@ const LP_CLASS = 'lp-vocab-word';
 let matcher = null;
 let whitelistedDomains = [];
 let rotationSalt = '';
+const LEGACY_FRONTEND_URL = 'http://localhost:3000';
+const DEFAULT_FRONTEND_URL = 'https://langsly.com';
+
+function normalizeUrl(url) {
+  return String(url || '').trim().replace(/\/+$/, '');
+}
+
+function resolveFrontendUrl(value) {
+  const normalized = normalizeUrl(value);
+  return !normalized || normalized === normalizeUrl(LEGACY_FRONTEND_URL)
+    ? DEFAULT_FRONTEND_URL
+    : normalized;
+}
 
 // ─── Theme Detection ─────────────────────────────
 function detectTheme() {
@@ -108,10 +121,11 @@ async function init() {
   ]);
   if (!vocabWords || vocabWords.length === 0) return;
   rotationSalt = rotation_salt || '';
+  const resolvedFrontendUrl = resolveFrontendUrl(frontendUrl);
 
-  // Never translate on Language Planet's own site (would interfere with lessons)
+  // Never translate on Langsly's own site (would interfere with lessons)
   try {
-    const lpHost = frontendUrl ? new URL(frontendUrl).hostname : 'localhost';
+    const lpHost = new URL(resolvedFrontendUrl).hostname;
     if (window.location.hostname === lpHost) return;
   } catch (_) {
     // frontendUrl is malformed — skip check, allow translation

@@ -7,8 +7,21 @@
 const VocabPopup = (() => {
   const LP_PROCESSED = 'data-lp-processed';
   const LP_CLASS = 'lp-vocab-word';
+  const LEGACY_API_BASE = 'http://localhost:8000/api';
+  const DEFAULT_API_BASE = 'https://api.langsly.com/api';
 
   let popupEl = null;
+
+  function normalizeUrl(url) {
+    return String(url || '').trim().replace(/\/+$/, '');
+  }
+
+  function resolveApiBase(value) {
+    const normalized = normalizeUrl(value);
+    return !normalized || normalized === normalizeUrl(LEGACY_API_BASE)
+      ? DEFAULT_API_BASE
+      : normalized;
+  }
 
   function createEl(tag, className, textContent) {
     const el = document.createElement(tag);
@@ -55,7 +68,7 @@ const VocabPopup = (() => {
 
   async function getContentConfig() {
     const { apiBase } = await browser.storage.local.get('apiBase');
-    return { apiBase: apiBase || 'http://localhost:8000/api' };
+    return { apiBase: resolveApiBase(apiBase) };
   }
 
   async function playAudio(audioUrl, translation, termLanguage) {

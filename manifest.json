@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Language Planet - Vocab Pass",
+  "name": "Langsly - Vocab Pass",
   "version": "1.0.0",
-  "description": "See your learned vocabulary words replaced on any webpage. Powered by Language Planet.",
+  "description": "See your learned vocabulary words replaced on any webpage. Powered by Langsly.",
   "permissions": ["storage", "alarms", "activeTab"],
   "host_permissions": ["<all_urls>"],
   "background": {

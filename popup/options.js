@@ -1,5 +1,16 @@
 /* global browser */
-const DEFAULTS = { apiBase: 'http://localhost:8000/api', frontendUrl: 'http://localhost:3000', syncInterval: 60, excludeSensitive: true };
+const LEGACY_DEFAULTS = { apiBase: 'http://localhost:8000/api', frontendUrl: 'http://localhost:3000' };
+const DEFAULTS = { apiBase: 'https://api.langsly.com/api', frontendUrl: 'https://langsly.com', syncInterval: 60, excludeSensitive: true };
+
+function normalizeUrl(url) {
+  return String(url || '').trim().replace(/\/+$/, '');
+}
+
+function resolveUrl(value, key) {
+  const normalized = normalizeUrl(value);
+  const normalizedLegacy = normalizeUrl(LEGACY_DEFAULTS[key]);
+  return !normalized || normalized === normalizedLegacy ? DEFAULTS[key] : normalized;
+}
 
 const apiBaseInput = document.getElementById('api-base');
 const frontendUrlInput = document.getElementById('frontend-url');
@@ -15,8 +26,8 @@ async function loadSettings() {
   const { apiBase, frontendUrl, syncInterval, excludeSensitive } = await browser.storage.local.get([
     'apiBase', 'frontendUrl', 'syncInterval', 'excludeSensitive',
   ]);
-  apiBaseInput.value = apiBase || DEFAULTS.apiBase;
-  frontendUrlInput.value = frontendUrl || DEFAULTS.frontendUrl;
+  apiBaseInput.value = resolveUrl(apiBase, 'apiBase');
+  frontendUrlInput.value = resolveUrl(frontendUrl, 'frontendUrl');
   syncIntervalSlider.value = syncInterval || DEFAULTS.syncInterval;
   syncIntervalLabel.textContent = `${syncInterval || DEFAULTS.syncInterval} min`;
   excludeSensitiveToggle.checked = excludeSensitive !== undefined ? excludeSensitive : DEFAULTS.excludeSensitive;

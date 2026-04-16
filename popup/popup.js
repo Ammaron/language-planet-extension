@@ -14,6 +14,19 @@ const openVocabpass = document.getElementById('open-vocabpass');
 const diffBtns = document.querySelectorAll('.diff-btn');
 const statusIndicator = document.getElementById('status-indicator');
 const statusBanner = document.getElementById('status-banner');
+const LEGACY_FRONTEND_URL = 'http://localhost:3000';
+const DEFAULT_FRONTEND_URL = 'https://langsly.com';
+
+function normalizeUrl(url) {
+  return String(url || '').trim().replace(/\/+$/, '');
+}
+
+function resolveFrontendUrl(value) {
+  const normalized = normalizeUrl(value);
+  return !normalized || normalized === normalizeUrl(LEGACY_FRONTEND_URL)
+    ? DEFAULT_FRONTEND_URL
+    : normalized;
+}
 
 // ─── View Management ─────────────────────────
 function showLogin() {
@@ -185,7 +198,7 @@ siteToggle.addEventListener('change', async () => {
 openVocabpass.addEventListener('click', async (e) => {
   e.preventDefault();
   const { frontendUrl } = await browser.storage.local.get('frontendUrl');
-  const url = frontendUrl || 'http://localhost:3000';
+  const url = resolveFrontendUrl(frontendUrl);
   browser.tabs.create({ url: `${url}/vocab-pass` });
 });
 

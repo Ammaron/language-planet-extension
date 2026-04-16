@@ -140,7 +140,12 @@ class VocabMatcher {
   postProcess(rawMatches, text) {
     const bounded = rawMatches.filter(m => this.isWordBoundary(text, m.start, m.end - m.start, m.entry.key));
 
-    bounded.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
+    // Prefer longer multi-word source keys over overlapping single words.
+    bounded.sort((a, b) => (
+      a.start - b.start
+      || this.countKeyWords(b.entry.key) - this.countKeyWords(a.entry.key)
+      || (b.end - b.start) - (a.end - a.start)
+    ));
 
     const result = [];
     const used = new Set();
@@ -169,6 +174,11 @@ class VocabMatcher {
     }
 
     return result.sort((a, b) => a.start - b.start);
+  }
+
+  countKeyWords(key) {
+    const matches = String(key || '').match(/\S+/g);
+    return matches ? matches.length : 0;
   }
 
   groupAdjacentMatches(matches, text) {

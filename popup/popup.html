@@ -2,21 +2,35 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <title>Langsly Extension</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div id="app">
     <!-- Login view (shown when logged out) -->
     <div id="login-view" class="view hidden">
-      <div class="logo-section">
-        <div class="logo">🌍</div>
-        <h1>Language Planet</h1>
-        <p class="subtitle">Vocab Pass Extension</p>
+      <div class="hero-strip">
+        <div class="brand-mark" aria-hidden="true">
+          <span class="brand-core">L</span>
+        </div>
+        <div class="brand-copy">
+          <p class="eyebrow">Langsly Vocab Pass</p>
+          <h1>Bring your study list into the pages you read.</h1>
+          <p class="subtitle">Sign in to sync vocabulary, tune the challenge level, and keep translation active only where you want it.</p>
+        </div>
       </div>
-      <form id="login-form">
-        <input type="email" id="email" placeholder="Email" required>
-        <input type="password" id="password" placeholder="Password" required>
+
+      <form id="login-form" class="auth-form">
+        <label class="field">
+          <span class="field-label">Email</span>
+          <input type="email" id="email" placeholder="you@langsly.com" required>
+        </label>
+        <label class="field">
+          <span class="field-label">Password</span>
+          <input type="password" id="password" placeholder="Your password" required>
+        </label>
         <button type="submit" id="login-btn">Log In</button>
+        <p class="form-note">Uses your Langsly account and syncs automatically in the background.</p>
         <div id="login-error" class="error hidden"></div>
       </form>
     </div>
@@ -25,9 +39,19 @@
     <div id="settings-view" class="view hidden">
       <div class="header-bar">
         <div class="header-left">
-          <span class="logo-small">🌍</span>
-          <span class="header-title">Vocab Pass</span>
-          <span id="status-indicator" class="status-dot unknown" title="Unknown"></span>
+          <div class="brand-mark brand-mark-small" aria-hidden="true">
+            <span class="brand-core">L</span>
+          </div>
+          <div class="header-copy">
+            <span class="eyebrow">Langsly Vocab Pass</span>
+            <div class="header-title-row">
+              <span class="header-title">Extension status</span>
+              <span class="status-pill">
+                <span id="status-indicator" class="status-dot unknown" title="Unknown"></span>
+                <span class="status-pill-label">Connection</span>
+              </span>
+            </div>
+          </div>
         </div>
         <button id="logout-btn" class="link-btn">Log out</button>
       </div>
@@ -35,7 +59,32 @@
       <!-- Status banner (offline/stale) -->
       <div id="status-banner" class="status-banner hidden"></div>
 
-      <!-- Difficulty -->
+      <div class="summary-band">
+        <div class="summary-panel">
+          <span class="summary-label">Words loaded</span>
+          <span id="word-count" class="summary-value">0</span>
+        </div>
+        <div class="summary-panel summary-panel-alt">
+          <span class="summary-label">Last sync</span>
+          <span id="last-sync" class="summary-meta">--</span>
+        </div>
+      </div>
+
+      <!-- Whitelist toggle for current site -->
+      <div class="section">
+        <label class="section-label">Current page</label>
+        <div class="toggle-row">
+          <div class="toggle-copy">
+            <div class="toggle-label">Active on this site</div>
+            <div id="current-domain" class="domain-chip"></div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="site-toggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
       <div class="section">
         <label class="section-label">Difficulty</label>
         <div class="difficulty-group">
@@ -45,37 +94,10 @@
         </div>
       </div>
 
-      <!-- Whitelist toggle for current site -->
-      <div class="section">
-        <div class="toggle-row">
-          <div>
-            <div class="toggle-label">Active on this site</div>
-            <div id="current-domain" class="toggle-sublabel"></div>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="site-toggle" checked>
-            <span class="slider"></span>
-          </label>
-        </div>
-      </div>
-
-      <!-- Sync status -->
-      <div class="section">
-        <label class="section-label">Status</label>
-        <div class="status-row">
-          <span class="status-label">Words loaded</span>
-          <span id="word-count" class="status-value">0</span>
-        </div>
-        <div class="status-row">
-          <span class="status-label">Last sync</span>
-          <span id="last-sync" class="status-value">—</span>
-        </div>
-        <button id="sync-btn" class="secondary-btn">Sync Now</button>
-      </div>
-
-      <!-- Link to VocabPass page -->
-      <div class="section footer-link">
-        <a id="open-vocabpass" href="#">Open Vocab Pass Dashboard →</a>
+      <div class="section action-section">
+        <label class="section-label">Actions</label>
+        <button id="sync-btn" class="secondary-btn">Sync now</button>
+        <a id="open-vocabpass" class="dashboard-link" href="#">Open Langsly dashboard</a>
       </div>
     </div>
   </div>

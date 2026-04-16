@@ -6,14 +6,43 @@ try {
 }
 
 // ─── Configurable API URLs ──────────────────────
-const DEFAULTS = { apiBase: 'http://localhost:8000/api', frontendUrl: 'http://localhost:3000' };
+const LEGACY_DEFAULTS = { apiBase: 'http://localhost:8000/api', frontendUrl: 'http://localhost:3000' };
+const DEFAULTS = { apiBase: 'https://api.langsly.com/api', frontendUrl: 'https://langsly.com' };
+
+function normalizeUrl(url) {
+  return String(url || '').trim().replace(/\/+$/, '');
+}
+
+function resolveConfigValue(value, fallback) {
+  const normalized = normalizeUrl(value);
+  const normalizedLegacy = normalizeUrl(LEGACY_DEFAULTS[fallback]);
+  return !normalized || normalized === normalizedLegacy ? DEFAULTS[fallback] : normalized;
+}
 
 async function getConfig() {
   const { apiBase, frontendUrl } = await browser.storage.local.get(['apiBase', 'frontendUrl']);
   return {
-    apiBase: apiBase || DEFAULTS.apiBase,
-    frontendUrl: frontendUrl || DEFAULTS.frontendUrl,
+    apiBase: resolveConfigValue(apiBase, 'apiBase'),
+    frontendUrl: resolveConfigValue(frontendUrl, 'frontendUrl'),
   };
+}
+
+async function migrateLegacyConfig() {
+  const { apiBase, frontendUrl } = await browser.storage.local.get(['apiBase', 'frontendUrl']);
+  const resolvedApiBase = resolveConfigValue(apiBase, 'apiBase');
+  const resolvedFrontendUrl = resolveConfigValue(frontendUrl, 'frontendUrl');
+  const updates = {};
+
+  if (normalizeUrl(apiBase) !== resolvedApiBase) {
+    updates.apiBase = resolvedApiBase;
+  }
+  if (normalizeUrl(frontendUrl) !== resolvedFrontendUrl) {
+    updates.frontendUrl = resolvedFrontendUrl;
+  }
+
+  if (Object.keys(updates).length > 0) {
+    await browser.storage.local.set(updates);
+  }
 }
 
 // ─── Token Management ───────────────────────────
@@ -146,6 +175,7 @@ async function setupAlarms() {
 }
 
 setupAlarms();
+migrateLegacyConfig().catch(() => {});
 
 browser.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'vocab-sync') syncVocabulary();
