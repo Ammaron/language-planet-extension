@@ -1,8 +1,14 @@
 /* global browser */
 try {
-  importScripts('../vendor/browser-polyfill.min.js');
+  if (typeof importScripts === 'function') {
+    importScripts('../vendor/browser-polyfill.min.js');
+  }
 } catch {
   // Polyfill already available (Firefox background scripts load it via manifest)
+}
+
+if (typeof importScripts === 'function' && !globalThis.LangslyTheme) {
+  importScripts('theme-utils.js');
 }
 
 // ─── Configurable API URLs ──────────────────────
@@ -56,7 +62,19 @@ async function setTokens(access, refresh) {
 }
 
 async function clearTokens() {
-  await browser.storage.local.remove(['authToken', 'refreshToken', 'vocabWords', 'lastSync', 'difficulty', 'rotation_salt']);
+  await browser.storage.local.remove([
+    'authToken',
+    'refreshToken',
+    'vocabWords',
+    'lastSync',
+    'difficulty',
+    'rotation_salt',
+    'themePacks',
+    'activeThemeSlug',
+    'activeThemeName',
+    'themeTokens',
+    'themeSyncStatus',
+  ]);
 }
 
 function _generateRotationSalt() {
@@ -117,6 +135,96 @@ async function authFetch(url, options = {}) {
 }
 
 // ─── Vocabulary Sync ─────────────────────────────
+function getFallbackThemeState() {
+  return {
+    themePacks: [],
+    activeThemeSlug: 'system',
+    activeThemeName: 'System',
+    themeTokens: LangslyTheme.getDefaultThemeTokens(),
+    themeSyncStatus: 'unknown',
+  };
+}
+
+async function getStoredThemeState() {
+  const stored = await browser.storage.local.get([
+    'themePacks',
+    'activeThemeSlug',
+    'activeThemeName',
+    'themeTokens',
+    'themeSyncStatus',
+  ]);
+  const fallback = getFallbackThemeState();
+
+  return {
+    themePacks: Array.isArray(stored.themePacks) ? stored.themePacks : fallback.themePacks,
+    activeThemeSlug: stored.activeThemeSlug || fallback.activeThemeSlug,
+    activeThemeName: stored.activeThemeName || fallback.activeThemeName,
+    themeTokens: LangslyTheme.normalizeThemeTokens(stored.themeTokens),
+    themeSyncStatus: stored.themeSyncStatus || fallback.themeSyncStatus,
+  };
+}
+
+async function persistThemeState(themeState) {
+  const normalizedState = {
+    themePacks: Array.isArray(themeState.themePacks) ? themeState.themePacks : [],
+    activeThemeSlug: themeState.activeThemeSlug || 'system',
+    activeThemeName: themeState.activeThemeName || 'System',
+    themeTokens: LangslyTheme.normalizeThemeTokens(themeState.themeTokens),
+    themeSyncStatus: themeState.themeSyncStatus || 'success',
+  };
+  await browser.storage.local.set(normalizedState);
+  return normalizedState;
+}
+
+async function syncThemes() {
+  const { apiBase } = await getConfig();
+  const [userRes, themesRes] = await Promise.all([
+    authFetch(`${apiBase}/users/current/`),
+    authFetch(`${apiBase}/users/themes/`),
+  ]);
+
+  if (!userRes || !themesRes || !userRes.ok || !themesRes.ok) {
+    const currentState = await getStoredThemeState();
+    await browser.storage.local.set({ themeSyncStatus: 'failed' });
+    return { ...currentState, themeSyncStatus: 'failed' };
+  }
+
+  const currentUser = await userRes.json();
+  const themePacks = await themesRes.json();
+  const activeTheme = LangslyTheme.resolveActiveTheme({
+    currentUser,
+    themePacks,
+    fallbackSlug: 'system',
+  });
+
+  return persistThemeState({
+    themePacks,
+    activeThemeSlug: activeTheme.slug,
+    activeThemeName: activeTheme.name,
+    themeTokens: activeTheme.tokens,
+    themeSyncStatus: 'success',
+  });
+}
+
+async function applyTheme(themeSlug) {
+  const { apiBase } = await getConfig();
+  const requestedSlug = themeSlug && themeSlug !== 'system' ? themeSlug : null;
+  const res = await authFetch(`${apiBase}/users/themes/apply/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ theme_slug: requestedSlug }),
+  });
+
+  if (!res || !res.ok) {
+    const currentState = await getStoredThemeState();
+    await browser.storage.local.set({ themeSyncStatus: 'failed' });
+    return { success: false, ...currentState, themeSyncStatus: 'failed' };
+  }
+
+  const themeState = await syncThemes();
+  return { success: true, ...themeState };
+}
+
 async function syncVocabulary() {
   const { apiBase } = await getConfig();
   const { difficulty } = await browser.storage.local.get('difficulty');
@@ -178,7 +286,10 @@ setupAlarms();
 migrateLegacyConfig().catch(() => {});
 
 browser.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === 'vocab-sync') syncVocabulary();
+  if (alarm.name === 'vocab-sync') {
+    syncVocabulary();
+    syncThemes();
+  }
   if (alarm.name === 'encounter-flush') flushEncounters();
 });
 
@@ -208,7 +319,7 @@ browser.runtime.onMessage.addListener((message) => {
           await setTokens(data.access, data.refresh);
           await _ensureRotationSalt();
           await browser.storage.local.set({ syncStatus: 'success' });
-          await syncVocabulary();
+          await Promise.allSettled([syncVocabulary(), syncThemes()]);
           return { success: true };
         }
         return { success: false, error: 'Unexpected server response' };
@@ -232,7 +343,7 @@ browser.runtime.onMessage.addListener((message) => {
   }
 
   if (message.type === 'SYNC_NOW') {
-    return syncVocabulary().then(() => ({ success: true }));
+    return Promise.allSettled([syncVocabulary(), syncThemes()]).then(() => ({ success: true }));
   }
 
   if (message.type === 'SET_DIFFICULTY') {
@@ -272,8 +383,28 @@ browser.runtime.onMessage.addListener((message) => {
 
   if (message.type === 'GET_STATUS') {
     return (async () => {
-      const { authToken, lastSync, wordCount, difficulty, syncStatus } = await browser.storage.local.get([
-        'authToken', 'lastSync', 'wordCount', 'difficulty', 'syncStatus',
+      const {
+        authToken,
+        lastSync,
+        wordCount,
+        difficulty,
+        syncStatus,
+        themePacks,
+        activeThemeSlug,
+        activeThemeName,
+        themeTokens,
+        themeSyncStatus,
+      } = await browser.storage.local.get([
+        'authToken',
+        'lastSync',
+        'wordCount',
+        'difficulty',
+        'syncStatus',
+        'themePacks',
+        'activeThemeSlug',
+        'activeThemeName',
+        'themeTokens',
+        'themeSyncStatus',
       ]);
       return {
         isLoggedIn: !!authToken,
@@ -281,8 +412,25 @@ browser.runtime.onMessage.addListener((message) => {
         wordCount: wordCount || 0,
         difficulty: difficulty || 'normal',
         syncStatus: syncStatus || 'unknown',
+        themePacks: Array.isArray(themePacks) ? themePacks : [],
+        activeThemeSlug: activeThemeSlug || 'system',
+        activeThemeName: activeThemeName || 'System',
+        themeTokens: LangslyTheme.normalizeThemeTokens(themeTokens),
+        themeSyncStatus: themeSyncStatus || 'unknown',
       };
     })();
+  }
+
+  if (message.type === 'GET_THEME_STATUS') {
+    return getStoredThemeState().then((themeState) => ({ success: true, ...themeState }));
+  }
+
+  if (message.type === 'SYNC_THEMES') {
+    return syncThemes().then((themeState) => ({ success: true, ...themeState }));
+  }
+
+  if (message.type === 'APPLY_THEME') {
+    return applyTheme(message.themeSlug);
   }
 
   if (message.type === 'GET_WHITELIST') {
@@ -609,4 +757,5 @@ browser.runtime.onInstalled.addListener((details) => {
 browser.runtime.onStartup.addListener(() => {
   _ensureRotationSalt();
   syncVocabulary();
+  syncThemes();
 });

@@ -242,6 +242,11 @@
   background: var(--lp-popup-btn-hover);
 }
 
+.lp-popup-listen-fallback {
+  color: var(--lp-popup-hint);
+  border-style: dashed;
+}
+
 .lp-popup-listen:disabled {
   opacity: 0.6;
   cursor: not-allowed;

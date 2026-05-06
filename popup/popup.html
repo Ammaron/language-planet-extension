@@ -98,10 +98,18 @@
         <label class="section-label">Actions</label>
         <button id="sync-btn" class="secondary-btn">Sync now</button>
         <a id="open-vocabpass" class="dashboard-link" href="#">Open Langsly dashboard</a>
+        <label id="theme-row" class="theme-row hidden" for="theme-select">
+          <span class="theme-copy">
+            <span class="theme-label">Theme</span>
+            <span id="theme-status" class="theme-status">Synced from dashboard</span>
+          </span>
+          <select id="theme-select" class="theme-select" aria-label="Theme"></select>
+        </label>
       </div>
     </div>
   </div>
   <script src="../vendor/browser-polyfill.min.js"></script>
+  <script src="../background/theme-utils.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

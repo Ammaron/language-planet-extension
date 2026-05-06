@@ -14,6 +14,7 @@ mkdir -p "$DIST/chrome" "$DIST/firefox"
 # Shared files to copy
 SHARED_FILES=(
   "vendor/browser-polyfill.min.js"
+  "background/theme-utils.js"
   "background/service-worker.js"
   "content/grammar-rules.js"
   "content/matcher.js"
@@ -55,7 +56,7 @@ node -e "
 const m = require('$SCRIPT_DIR/manifest.json');
 delete m.background.service_worker;
 m.background = {
-  scripts: ['vendor/browser-polyfill.min.js', 'background/service-worker.js']
+  scripts: ['vendor/browser-polyfill.min.js', 'background/theme-utils.js', 'background/service-worker.js']
 };
 m.browser_specific_settings = {
   gecko: {

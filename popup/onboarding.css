@@ -1,3 +1,20 @@
+:root {
+  --lp-page-bg: #eef4ff;
+  --lp-surface: #ffffff;
+  --lp-surface-elevated: #eef2ff;
+  --lp-text-primary: #0f172a;
+  --lp-text-secondary: #334155;
+  --lp-text-muted: #64748b;
+  --lp-border: #e2e8f0;
+  --lp-accent: #2563eb;
+  --lp-accent-hover: #1d4ed8;
+  --lp-accent-text: #ffffff;
+  --lp-danger: #ef4444;
+  --lp-success: #10b981;
+  --lp-button-primary-bg: #2563eb;
+  --lp-button-primary-text: #ffffff;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -5,116 +22,203 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  width: 300px;
-  background: #ffffff;
-  color: #1f2937;
+  min-height: 100vh;
+  color: var(--lp-text-primary);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--lp-accent) 15%, transparent), transparent 42%),
+    var(--lp-page-bg);
+  font-family: Inter, "Avenir Next", "Segoe UI", Arial, sans-serif;
   font-size: 13px;
 }
 
-.hidden { display: none !important; }
-
-.step {
-  padding: 28px 20px 16px;
-  text-align: center;
+.hidden {
+  display: none !important;
 }
 
-.step-icon {
-  font-size: 40px;
-  margin-bottom: 12px;
+#onboarding-app {
+  width: min(100%, 440px);
+  margin: 0 auto;
+  padding: 32px 18px;
+}
+
+.step {
+  min-height: 430px;
+  padding: 20px;
+  border: 1px solid var(--lp-border);
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--lp-accent) 10%, transparent), transparent 60%),
+    color-mix(in srgb, var(--lp-surface) 94%, transparent);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.14);
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--lp-accent), color-mix(in srgb, var(--lp-accent-hover) 62%, #8b5cf6));
+  color: var(--lp-accent-text);
+  font-size: 23px;
+  font-weight: 900;
+  box-shadow: 0 13px 26px color-mix(in srgb, var(--lp-accent) 28%, transparent);
+}
+
+.success-mark {
+  background: linear-gradient(135deg, var(--lp-success), var(--lp-accent));
+}
+
+.eyebrow {
+  font-size: 10px;
+  line-height: 1.2;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lp-text-muted);
 }
 
 .step h1 {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 6px;
+  margin-top: 8px;
+  font-size: 28px;
+  line-height: 1.03;
+  font-weight: 900;
+  letter-spacing: -0.04em;
 }
 
-.step p {
-  font-size: 13px;
-  color: #6b7280;
+.subtitle {
+  margin-top: 10px;
+  color: var(--lp-text-secondary);
   line-height: 1.5;
-  margin-bottom: 16px;
 }
 
-.step-features {
-  text-align: left;
-  margin-bottom: 20px;
+.feature-list {
+  display: grid;
+  gap: 9px;
+  margin: 18px 0;
 }
 
 .feature-row {
-  padding: 6px 0;
-  font-size: 13px;
-  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 10px 11px;
+  border: 1px solid var(--lp-border);
+  border-radius: 14px;
+  background: var(--lp-surface);
+  color: var(--lp-text-secondary);
+  line-height: 1.35;
+}
+
+.feature-row span {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--lp-accent) 13%, var(--lp-surface-elevated));
+  color: var(--lp-accent-hover);
+  font-size: 11px;
+  font-weight: 900;
 }
 
 .primary-btn {
   width: 100%;
-  padding: 10px;
-  background: #2563eb;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  min-height: 42px;
+  padding: 11px 14px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--lp-button-primary-bg), var(--lp-accent-hover));
+  color: var(--lp-button-primary-text);
+  font: inherit;
+  font-weight: 900;
   cursor: pointer;
+  box-shadow: 0 12px 22px color-mix(in srgb, var(--lp-accent) 24%, transparent);
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
 }
-.primary-btn:hover { background: #1d4ed8; }
-.primary-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-/* Login form */
+.primary-btn:hover,
+.primary-btn:focus-visible {
+  transform: translateY(-1px);
+}
+
+.primary-btn:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+  transform: none;
+}
+
 #onboard-login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  text-align: left;
+  display: grid;
+  gap: 11px;
+  margin-top: 16px;
+}
+
+#onboard-login-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--lp-text-muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 #onboard-login-form input {
-  padding: 10px 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 13px;
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid var(--lp-border);
+  border-radius: 12px;
   outline: none;
+  background: var(--lp-surface);
+  color: var(--lp-text-primary);
+  font: 13px Inter, "Avenir Next", "Segoe UI", Arial, sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 #onboard-login-form input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: var(--lp-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--lp-accent) 16%, transparent);
 }
 
 .error {
-  background: #fef2f2;
-  color: #dc2626;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--lp-danger) 24%, transparent);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--lp-danger) 12%, var(--lp-surface));
+  color: var(--lp-danger);
   font-size: 12px;
-  padding: 8px 10px;
-  border-radius: 6px;
-  text-align: center;
+  line-height: 1.4;
+  text-align: left;
 }
 
 .hint-text {
-  font-size: 11px;
-  color: #9ca3af;
   margin-top: 12px;
+  color: var(--lp-text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
 }
 
-/* Step indicator dots */
 .step-dots {
   display: flex;
   justify-content: center;
-  gap: 6px;
-  padding: 12px 0 16px;
+  gap: 7px;
+  padding: 13px 0 0;
 }
 
 .dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #d1d5db;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--lp-text-muted) 34%, transparent);
 }
 
 .dot.active {
-  background: #2563eb;
-  width: 18px;
-  border-radius: 3px;
+  width: 22px;
+  background: var(--lp-accent);
 }

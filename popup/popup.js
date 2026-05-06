@@ -14,6 +14,9 @@ const openVocabpass = document.getElementById('open-vocabpass');
 const diffBtns = document.querySelectorAll('.diff-btn');
 const statusIndicator = document.getElementById('status-indicator');
 const statusBanner = document.getElementById('status-banner');
+const themeRow = document.getElementById('theme-row');
+const themeSelect = document.getElementById('theme-select');
+const themeStatus = document.getElementById('theme-status');
 const LEGACY_FRONTEND_URL = 'http://localhost:3000';
 const DEFAULT_FRONTEND_URL = 'https://langsly.com';
 
@@ -26,6 +29,65 @@ function resolveFrontendUrl(value) {
   return !normalized || normalized === normalizeUrl(LEGACY_FRONTEND_URL)
     ? DEFAULT_FRONTEND_URL
     : normalized;
+}
+
+function applyThemeTokens(tokens) {
+  if (window.LangslyTheme) {
+    window.LangslyTheme.applyThemeTokensToDocument(document.documentElement, tokens);
+  }
+}
+
+async function applyStoredTheme() {
+  const { themeTokens } = await browser.storage.local.get('themeTokens');
+  applyThemeTokens(themeTokens);
+}
+
+function getAvailableThemes(themePacks) {
+  return Array.isArray(themePacks)
+    ? themePacks.filter((theme) => theme && (theme.is_free || theme.is_unlocked))
+    : [];
+}
+
+function updateThemeControls(status) {
+  if (!themeRow || !themeSelect) return;
+
+  const availableThemes = getAvailableThemes(status.themePacks);
+  if (!availableThemes.length) {
+    themeRow.classList.add('hidden');
+    return;
+  }
+
+  themeSelect.innerHTML = '';
+  availableThemes.forEach((theme) => {
+    const option = document.createElement('option');
+    option.value = theme.slug;
+    option.textContent = theme.name || theme.slug;
+    themeSelect.appendChild(option);
+  });
+
+  themeSelect.value = status.activeThemeSlug || 'system';
+  themeSelect.dataset.previousValue = themeSelect.value;
+  themeRow.classList.remove('hidden');
+  if (themeStatus) {
+    themeStatus.textContent = status.themeSyncStatus === 'failed'
+      ? 'Using last synced theme'
+      : 'Synced from dashboard';
+  }
+}
+
+async function syncAndRenderThemes(status) {
+  applyThemeTokens(status && status.themeTokens);
+  updateThemeControls(status || {});
+
+  try {
+    const themeStatusResponse = await browser.runtime.sendMessage({ type: 'SYNC_THEMES' });
+    if (themeStatusResponse && themeStatusResponse.success !== false) {
+      applyThemeTokens(themeStatusResponse.themeTokens);
+      updateThemeControls(themeStatusResponse);
+    }
+  } catch {
+    // Theme sync is cosmetic; keep the popup usable with stored/default tokens.
+  }
 }
 
 // ─── View Management ─────────────────────────
@@ -41,7 +103,9 @@ function showSettings() {
 
 // ─── Init ────────────────────────────────────
 async function init() {
+  await applyStoredTheme();
   const status = await browser.runtime.sendMessage({ type: 'GET_STATUS' });
+  applyThemeTokens(status.themeTokens);
 
   if (!status.isLoggedIn) {
     showLogin();
@@ -50,6 +114,7 @@ async function init() {
 
   showSettings();
   updateStatus(status);
+  syncAndRenderThemes(status);
 
   // Get current tab domain
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
@@ -132,6 +197,7 @@ loginForm.addEventListener('submit', async (e) => {
     const status = await browser.runtime.sendMessage({ type: 'GET_STATUS' });
     showSettings();
     updateStatus(status);
+    syncAndRenderThemes(status);
   } else {
     loginError.textContent = response.error || 'Login failed';
     loginError.classList.remove('hidden');
@@ -155,10 +221,38 @@ syncBtn.addEventListener('click', async () => {
   await browser.runtime.sendMessage({ type: 'SYNC_NOW' });
   const status = await browser.runtime.sendMessage({ type: 'GET_STATUS' });
   updateStatus(status);
+  syncAndRenderThemes(status);
 
   syncBtn.textContent = 'Sync Now';
   syncBtn.disabled = false;
 });
+
+if (themeSelect) {
+  themeSelect.addEventListener('change', async () => {
+    const previousValue = themeSelect.dataset.previousValue || 'system';
+    const nextValue = themeSelect.value;
+    themeSelect.disabled = true;
+    if (themeStatus) themeStatus.textContent = 'Applying...';
+
+    try {
+      const response = await browser.runtime.sendMessage({ type: 'APPLY_THEME', themeSlug: nextValue });
+      if (!response || response.success === false) {
+        themeSelect.value = previousValue;
+        if (themeStatus) themeStatus.textContent = 'Could not apply theme';
+        return;
+      }
+
+      applyThemeTokens(response.themeTokens);
+      updateThemeControls(response);
+      themeSelect.dataset.previousValue = response.activeThemeSlug || nextValue;
+    } catch {
+      themeSelect.value = previousValue;
+      if (themeStatus) themeStatus.textContent = 'Could not apply theme';
+    } finally {
+      themeSelect.disabled = false;
+    }
+  });
+}
 
 // ─── Difficulty ──────────────────────────────
 diffBtns.forEach(btn => {

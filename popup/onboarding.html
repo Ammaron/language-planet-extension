@@ -7,54 +7,60 @@
 </head>
 <body>
   <div id="onboarding-app">
-    <!-- Step 1: Welcome -->
     <div id="step-1" class="step">
-      <div class="step-icon">🌍</div>
-      <h1>Welcome to Langsly</h1>
-      <p>See your learned vocabulary words replaced on any webpage as you browse.</p>
-      <div class="step-features">
-        <div class="feature-row">📖 Words appear in context while you read</div>
-        <div class="feature-row">🔊 Click any word to hear pronunciation</div>
-        <div class="feature-row">📊 Track your progress automatically</div>
+      <div class="brand-mark" aria-hidden="true">L</div>
+      <p class="eyebrow">Langsly Vocab Pass</p>
+      <h1>Learn while you browse.</h1>
+      <p class="subtitle">Bring your dashboard vocabulary into the pages you already read.</p>
+      <div class="feature-list">
+        <div class="feature-row"><span>1</span> Words appear in context while you read.</div>
+        <div class="feature-row"><span>2</span> Click any word for details and pronunciation.</div>
+        <div class="feature-row"><span>3</span> Progress syncs with your Langsly account.</div>
       </div>
-      <button id="next-1" class="primary-btn">Get Started</button>
+      <button id="next-1" class="primary-btn">Get started</button>
     </div>
 
-    <!-- Step 2: Login -->
     <div id="step-2" class="step hidden">
-      <div class="step-icon">🔐</div>
-      <h1>Sign In</h1>
-      <p>Use your Langsly account to sync your vocabulary.</p>
+      <div class="brand-mark" aria-hidden="true">L</div>
+      <p class="eyebrow">Sign in</p>
+      <h1>Connect your account.</h1>
+      <p class="subtitle">Use your Langsly login to sync vocabulary and your dashboard theme.</p>
       <form id="onboard-login-form">
-        <input type="email" id="onboard-email" placeholder="Email" required>
-        <input type="password" id="onboard-password" placeholder="Password" required>
-        <button type="submit" id="onboard-login-btn" class="primary-btn">Log In</button>
+        <label>
+          <span>Email</span>
+          <input type="email" id="onboard-email" placeholder="you@langsly.com" required>
+        </label>
+        <label>
+          <span>Password</span>
+          <input type="password" id="onboard-password" placeholder="Your password" required>
+        </label>
+        <button type="submit" id="onboard-login-btn" class="primary-btn">Log in</button>
         <div id="onboard-error" class="error hidden"></div>
       </form>
-      <p class="hint-text">Don't have an account? Sign up at langsly.com</p>
+      <p class="hint-text">Need an account? Sign up at langsly.com.</p>
     </div>
 
-    <!-- Step 3: Success -->
     <div id="step-3" class="step hidden">
-      <div class="step-icon">🎉</div>
-      <h1>You're All Set!</h1>
-      <p>Your vocabulary is synced and ready to go.</p>
-      <div class="step-features">
-        <div class="feature-row">💡 Hover over blue words to see the original</div>
-        <div class="feature-row">🖱️ Click a word for details and pronunciation</div>
-        <div class="feature-row">⚙️ Use the popup menu to adjust difficulty</div>
+      <div class="brand-mark success-mark" aria-hidden="true">L</div>
+      <p class="eyebrow">Ready</p>
+      <h1>Vocab Pass is set.</h1>
+      <p class="subtitle">Your vocabulary and theme are synced. You can adjust difficulty and site access from the popup.</p>
+      <div class="feature-list">
+        <div class="feature-row"><span>A</span> Hover translated words to see the original.</div>
+        <div class="feature-row"><span>B</span> Use the popup to pause a site.</div>
+        <div class="feature-row"><span>C</span> Change themes from the dashboard or popup.</div>
       </div>
-      <button id="finish-btn" class="primary-btn">Start Browsing</button>
+      <button id="finish-btn" class="primary-btn">Start browsing</button>
     </div>
 
-    <!-- Step indicator -->
-    <div class="step-dots">
+    <div class="step-dots" aria-hidden="true">
       <span id="dot-1" class="dot active"></span>
       <span id="dot-2" class="dot"></span>
       <span id="dot-3" class="dot"></span>
     </div>
   </div>
   <script src="../vendor/browser-polyfill.min.js"></script>
+  <script src="../background/theme-utils.js"></script>
   <script src="onboarding.js"></script>
 </body>
 </html>
