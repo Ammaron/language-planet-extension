@@ -168,10 +168,69 @@ const VocabPopup = (() => {
     return 'fallback';
   }
 
-  function applyListenFallbackState(button) {
+  function isSpanishLanguage(languageCode) {
+    return String(languageCode || '').toLowerCase().split('-')[0] === 'es';
+  }
+
+  function fallbackListenText(termLanguage) {
+    return isSpanishLanguage(termLanguage) ? 'Escuchar (voz)' : 'Listen (voice)';
+  }
+
+  function fallbackListenTitle(termLanguage) {
+    return isSpanishLanguage(termLanguage)
+      ? 'No hay audio de pronunciacion disponible; se usara la voz del navegador'
+      : 'No pronunciation audio available; using browser voice';
+  }
+
+  function audioListenTitle(termLanguage) {
+    return isSpanishLanguage(termLanguage) ? 'Reproducir audio de pronunciacion' : 'Play pronunciation audio';
+  }
+
+  async function syncAudioUrlForWord(wordId) {
+    const normalizedWordId = String(wordId || '').trim();
+    if (!normalizedWordId) return '';
+
+    try {
+      await browser.runtime.sendMessage({ type: 'SYNC_NOW' });
+    } catch {
+      // Keep the listen action usable even if sync is unavailable.
+    }
+
+    try {
+      const { vocabWords } = await browser.storage.local.get('vocabWords');
+      if (!Array.isArray(vocabWords)) return '';
+      const latestWord = vocabWords.find(word => String(word && word.id) === normalizedWordId);
+      return String(latestWord && latestWord.pronunciation_audio ? latestWord.pronunciation_audio : '');
+    } catch {
+      return '';
+    }
+  }
+
+  async function playAudioFromSpan(span, translation, termLanguage) {
+    const currentAudioUrl = String(span.dataset.audioUrl || '').trim();
+    if (currentAudioUrl) {
+      return playAudio(currentAudioUrl, translation, termLanguage);
+    }
+
+    const syncedAudioUrl = await syncAudioUrlForWord(span.dataset.wordId);
+    if (syncedAudioUrl) {
+      span.dataset.audioUrl = syncedAudioUrl;
+      return playAudio(syncedAudioUrl, translation, termLanguage);
+    }
+
+    return playAudio('', translation, termLanguage);
+  }
+
+  function applyListenFallbackState(button, termLanguage) {
     button.classList.add('lp-popup-listen-fallback');
-    button.textContent = 'Listen (voice)';
-    button.title = 'No pronunciation audio available; using browser voice';
+    button.textContent = fallbackListenText(termLanguage);
+    button.title = fallbackListenTitle(termLanguage);
+  }
+
+  function applyListenAudioState(button, termLanguage) {
+    button.classList.remove('lp-popup-listen-fallback');
+    button.textContent = '\uD83D\uDD0A Listen';
+    button.title = audioListenTitle(termLanguage);
   }
 
   async function applySelectedAlternative(span, alternativeId) {
@@ -362,20 +421,22 @@ const VocabPopup = (() => {
     // Listen button
     const actions = createEl('div', 'lp-popup-actions');
     const hasAudio = !!String(audioUrl || '').trim();
-    const listenBtn = createEl('button', 'lp-popup-listen', hasAudio ? '\uD83D\uDD0A Listen' : 'Listen (voice)');
+    const listenBtn = createEl('button', 'lp-popup-listen', hasAudio ? '\uD83D\uDD0A Listen' : fallbackListenText(termLanguage));
     listenBtn.type = 'button';
-    listenBtn.title = hasAudio ? 'Play pronunciation audio' : 'No pronunciation audio available; using browser voice';
+    listenBtn.title = hasAudio ? audioListenTitle(termLanguage) : fallbackListenTitle(termLanguage);
     if (!hasAudio) {
-      applyListenFallbackState(listenBtn);
+      applyListenFallbackState(listenBtn, termLanguage);
     }
     listenBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const previousText = listenBtn.textContent;
       listenBtn.disabled = true;
       try {
-        const result = await playAudio(audioUrl, translation, termLanguage);
+        const result = await playAudioFromSpan(span, translation, termLanguage);
         if (result === 'fallback') {
-          applyListenFallbackState(listenBtn);
+          applyListenFallbackState(listenBtn, termLanguage);
+        } else if (result === 'audio') {
+          applyListenAudioState(listenBtn, termLanguage);
         }
       } finally {
         listenBtn.disabled = false;

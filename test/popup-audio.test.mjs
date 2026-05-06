@@ -119,7 +119,7 @@ class TestElement {
   }
 }
 
-function createHarness({ storageData = {}, playResult = Promise.resolve() } = {}) {
+function createHarness({ storageData = {}, playResult = Promise.resolve(), onMessage = async () => ({}) } = {}) {
   const audioInstances = [];
   const speechCalls = [];
   const document = {
@@ -141,7 +141,7 @@ function createHarness({ storageData = {}, playResult = Promise.resolve() } = {}
       },
     },
     runtime: {
-      sendMessage: async () => ({}),
+      sendMessage: onMessage,
     },
   };
 
@@ -266,10 +266,59 @@ test('listen button shows fallback styling when no real audio is available', asy
   const listenButton = harness.document.body.querySelector('.lp-popup-listen');
 
   assert.equal(listenButton.classList.contains('lp-popup-listen-fallback'), true);
+  assert.equal(listenButton.textContent, 'Escuchar (voz)');
+  assert.equal(
+    listenButton.title,
+    'No hay audio de pronunciacion disponible; se usara la voz del navegador',
+  );
 
   await listenButton.click();
   await flushMicrotasks();
 
   assert.equal(harness.audioInstances.length, 0);
   assert.deepEqual(harness.speechCalls, [{ text: 'hola', lang: 'es' }]);
+});
+
+test('listen button syncs stale words and plays newly available audio before voice fallback', async () => {
+  const storageData = {
+    apiBase: 'https://api.langsly.com/api',
+    vocabWords: [
+      {
+        id: 'word_hola',
+        term: 'hola',
+        pronunciation_audio: '',
+      },
+    ],
+  };
+  const syncMessages = [];
+  const harness = createHarness({
+    storageData,
+    onMessage: async (message) => {
+      syncMessages.push(message);
+      if (message.type === 'SYNC_NOW') {
+        storageData.vocabWords = [
+          {
+            id: 'word_hola',
+            term: 'hola',
+            pronunciation_audio: '/api/media/assets/audio-1/content/',
+          },
+        ];
+      }
+      return { success: true };
+    },
+  });
+
+  await harness.VocabPopup.showWord(harness.makeSpan({
+    wordId: 'word_hola',
+    audioUrl: '',
+  }));
+  const listenButton = harness.document.body.querySelector('.lp-popup-listen');
+
+  await listenButton.click();
+  await flushMicrotasks();
+
+  assert.equal(JSON.stringify(syncMessages), JSON.stringify([{ type: 'SYNC_NOW' }]));
+  assert.equal(harness.audioInstances.length, 1);
+  assert.equal(harness.audioInstances[0].src, 'https://api.langsly.com/api/media/assets/audio-1/content/');
+  assert.equal(harness.speechCalls.length, 0);
 });
