@@ -4,6 +4,8 @@ import test from 'node:test';
 import vm from 'node:vm';
 
 const popupSource = await readFile(new URL('../content/popup.js', import.meta.url), 'utf8');
+const toolbarPopupHtml = await readFile(new URL('../popup/popup.html', import.meta.url), 'utf8');
+const toolbarPopupCss = await readFile(new URL('../popup/popup.css', import.meta.url), 'utf8');
 
 class TestClassList {
   constructor(element) {
@@ -72,6 +74,9 @@ class TestElement {
 
   setAttribute(name, value) {
     this.attributes[name] = String(value);
+    if (name === 'class') {
+      this.className = value;
+    }
   }
 
   appendChild(child) {
@@ -135,6 +140,11 @@ function createHarness({ storageData = {}, playResult = Promise.resolve(), onMes
   const document = {
     body: new TestElement('body'),
     createElement: tag => new TestElement(tag),
+    createElementNS: (namespace, tag) => {
+      const el = new TestElement(tag);
+      el.namespaceURI = namespace;
+      return el;
+    },
     addEventListener() {},
     removeEventListener() {},
   };
@@ -245,7 +255,7 @@ test('listen button plays relative synced audio from the API origin', async () =
   assert.equal(harness.speechCalls.length, 0);
 });
 
-test('listen button renders an icon element instead of emoji text', async () => {
+test('listen button renders a Phosphor speaker SVG instead of emoji text', async () => {
   const harness = createHarness();
 
   await harness.VocabPopup.showWord(harness.makeSpan({
@@ -256,7 +266,57 @@ test('listen button renders an icon element instead of emoji text', async () => 
 
   assert.equal(listenButton.textContent.includes('\uD83D\uDD0A'), false);
   assert.ok(icon);
+  assert.equal(icon.tagName, 'SVG');
+  assert.equal(icon.attributes['data-icon-source'], 'phosphor');
+  assert.equal(icon.attributes['data-icon-name'], 'speaker-high');
+  assert.equal(icon.attributes.viewBox, '0 0 256 256');
   assert.equal(icon.attributes['aria-hidden'], 'true');
+});
+
+test('word popup alert actions render Phosphor icons instead of warning emoji text', async () => {
+  const harness = createHarness();
+
+  await harness.VocabPopup.showWord(harness.makeSpan({
+    audioUrl: '/media/pronunciations/hola.mp3',
+  }));
+  const buttons = harness.document.body.querySelectorAll('.lp-popup-listen');
+  const wrongButton = buttons[1];
+  const icon = wrongButton.querySelector('.lp-popup-action-icon');
+
+  assert.equal(wrongButton.textContent.includes('\u26A0'), false);
+  assert.ok(icon);
+  assert.equal(icon.tagName, 'SVG');
+  assert.equal(icon.attributes['data-icon-source'], 'phosphor');
+  assert.equal(icon.attributes['data-icon-name'], 'warning-circle');
+});
+
+test('phrase report action renders a Phosphor alert icon instead of warning emoji text', () => {
+  const harness = createHarness();
+  const span = harness.makeSpan({
+    original: 'hello world',
+    phraseType: 'composed',
+  });
+  span.textContent = 'hola mundo';
+
+  harness.VocabPopup.showPhrase(span, [
+    { original: 'hello', word: { term: 'hola' } },
+    { original: 'world', word: { term: 'mundo' } },
+  ]);
+  const reportButton = harness.document.body.querySelector('.lp-popup-listen');
+  const icon = reportButton.querySelector('.lp-popup-action-icon');
+
+  assert.equal(reportButton.textContent.includes('\u26A0'), false);
+  assert.ok(icon);
+  assert.equal(icon.tagName, 'SVG');
+  assert.equal(icon.attributes['data-icon-source'], 'phosphor');
+  assert.equal(icon.attributes['data-icon-name'], 'warning-circle');
+});
+
+test('toolbar popout dashboard link renders a Phosphor external-link icon', () => {
+  assert.match(toolbarPopupHtml, /class="dashboard-link-icon"/);
+  assert.match(toolbarPopupHtml, /data-icon-source="phosphor"/);
+  assert.match(toolbarPopupHtml, /data-icon-name="arrow-square-out"/);
+  assert.doesNotMatch(toolbarPopupCss, /\.dashboard-link::after/);
 });
 
 test('listen button falls back to speech synthesis when real audio playback fails', async () => {

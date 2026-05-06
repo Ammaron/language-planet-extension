@@ -9,6 +9,12 @@ const VocabPopup = (() => {
   const LP_CLASS = 'lp-vocab-word';
   const LEGACY_API_BASE = 'http://localhost:8000/api';
   const DEFAULT_API_BASE = 'https://api.langsly.com/api';
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const PHOSPHOR_ICON_PATHS = {
+    'speaker-high': 'M160,32.25a8,8,0,0,0-8.78,1.43L80.35,80H32A16,16,0,0,0,16,96v64a16,16,0,0,0,16,16H80.35l70.87,46.32A8,8,0,0,0,164,216V40A8,8,0,0,0,160,32.25ZM148,201.23,87.78,161.88A8,8,0,0,0,83.4,160H32V96H83.4a8,8,0,0,0,4.38-1.31L148,55.25Zm54-106.67a40,40,0,0,1,0,66.88,8,8,0,1,1-8.91-13.29,24,24,0,0,0,0-40.3A8,8,0,1,1,202,94.56Zm32.5-25.08a80,80,0,0,1,0,117,8,8,0,1,1-10.91-11.7,64,64,0,0,0,0-93.62,8,8,0,1,1,10.91-11.7Z',
+    'warning-circle': 'M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z',
+    'check-circle': 'M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z',
+  };
 
   let popupEl = null;
 
@@ -30,16 +36,43 @@ const VocabPopup = (() => {
     return el;
   }
 
-  function createListenIcon() {
-    const icon = createEl('span', 'lp-popup-listen-icon');
+  function createSvgEl(tag) {
+    return typeof document.createElementNS === 'function'
+      ? document.createElementNS(SVG_NS, tag)
+      : document.createElement(tag);
+  }
+
+  function createPhosphorIcon(name, className) {
+    const icon = createSvgEl('svg');
+    icon.setAttribute('class', `lp-popup-icon ${className || ''}`.trim());
     icon.setAttribute('aria-hidden', 'true');
+    icon.setAttribute('focusable', 'false');
+    icon.setAttribute('viewBox', '0 0 256 256');
+    icon.setAttribute('fill', 'currentColor');
+    icon.setAttribute('data-icon-source', 'phosphor');
+    icon.setAttribute('data-icon-name', name);
+
+    const pathData = PHOSPHOR_ICON_PATHS[name];
+    if (pathData) {
+      const path = createSvgEl('path');
+      path.setAttribute('d', pathData);
+      icon.appendChild(path);
+    }
     return icon;
   }
 
-  function setListenButtonContent(button, label) {
+  function setIconButtonContent(button, iconName, label, iconClassName) {
     button.textContent = '';
-    button.appendChild(createListenIcon());
+    button.appendChild(createPhosphorIcon(iconName, iconClassName));
     button.appendChild(createEl('span', 'lp-popup-listen-label', label));
+  }
+
+  function setListenButtonContent(button, label) {
+    setIconButtonContent(button, 'speaker-high', label, 'lp-popup-listen-icon');
+  }
+
+  function setActionButtonContent(button, iconName, label) {
+    setIconButtonContent(button, iconName, label, 'lp-popup-action-icon');
   }
 
   function handleOutsideClick(e) {
@@ -456,7 +489,9 @@ const VocabPopup = (() => {
     });
     actions.appendChild(listenBtn);
 
-    const wrongBtn = createEl('button', 'lp-popup-listen', '\u26A0 Wrong meaning?');
+    const wrongBtn = createEl('button', 'lp-popup-listen');
+    wrongBtn.type = 'button';
+    setActionButtonContent(wrongBtn, 'warning-circle', 'Wrong meaning?');
     actions.appendChild(wrongBtn);
     popupEl.appendChild(actions);
 
@@ -477,7 +512,7 @@ const VocabPopup = (() => {
           e.stopPropagation();
           const beforeWordId = span.dataset.wordId || '';
           await applySelectedAlternative(span, option.id);
-          wrongBtn.textContent = '\u2713 Corrected';
+          setActionButtonContent(wrongBtn, 'check-circle', 'Corrected');
           wrongBtn.disabled = true;
           chooser.style.display = 'none';
           if (safeCandidateIds.length >= 2) {
@@ -496,12 +531,13 @@ const VocabPopup = (() => {
         'lp-popup-example-translation',
         'No learned alternatives yet. Marking this helps improve future guesses.',
       ));
-      const reportOnly = createEl('button', 'lp-popup-listen', '\u2713 Mark incorrect');
+      const reportOnly = createEl('button', 'lp-popup-listen');
       reportOnly.type = 'button';
       reportOnly.disabled = safeCandidateIds.length < 2;
+      setActionButtonContent(reportOnly, 'warning-circle', 'Mark incorrect');
       reportOnly.addEventListener('click', (e) => {
         e.stopPropagation();
-        wrongBtn.textContent = '\u2713 Flagged';
+        setActionButtonContent(wrongBtn, 'check-circle', 'Flagged');
         wrongBtn.disabled = true;
         chooser.style.display = 'none';
         if (safeCandidateIds.length >= 2) {
@@ -568,11 +604,13 @@ const VocabPopup = (() => {
     // Report button for composed phrases
     if (composedText) {
       const actions = createEl('div', 'lp-popup-actions');
-      const reportBtn = createEl('button', 'lp-popup-listen', '\u26A0 Report');
+      const reportBtn = createEl('button', 'lp-popup-listen');
+      reportBtn.type = 'button';
+      setActionButtonContent(reportBtn, 'warning-circle', 'Report');
       reportBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         reportPhraseTranslation(span, original, composedText);
-        reportBtn.textContent = '\u2713 Reported';
+        setActionButtonContent(reportBtn, 'check-circle', 'Reported');
         reportBtn.disabled = true;
       });
       actions.appendChild(reportBtn);

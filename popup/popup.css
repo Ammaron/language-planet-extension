@@ -470,13 +470,16 @@ input:checked + .slider::before {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   margin-top: 9px;
   padding: 12px 13px;
   text-decoration: none;
 }
 
-.dashboard-link::after {
-  content: "->";
+.dashboard-link-icon {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
   color: color-mix(in srgb, var(--lp-button-primary-text) 72%, transparent);
 }
 
