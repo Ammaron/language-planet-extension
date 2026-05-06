@@ -226,7 +226,7 @@
 .lp-popup-listen {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 500;
@@ -236,6 +236,41 @@
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.15s;
+}
+
+.lp-popup-listen-icon {
+  position: relative;
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+  color: currentColor;
+}
+
+.lp-popup-listen-icon::before {
+  content: '';
+  position: absolute;
+  left: 1px;
+  top: 2px;
+  width: 8px;
+  height: 10px;
+  background: currentColor;
+  clip-path: polygon(0 33%, 34% 33%, 100% 0, 100% 100%, 34% 67%, 0 67%);
+}
+
+.lp-popup-listen-icon::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 3px;
+  width: 4px;
+  height: 8px;
+  border: 1.5px solid currentColor;
+  border-left: 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.lp-popup-listen-label {
+  line-height: 1;
 }
 
 .lp-popup-listen:hover {

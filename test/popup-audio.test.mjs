@@ -42,7 +42,7 @@ class TestElement {
     this.dataset = {};
     this.attributes = {};
     this.style = {};
-    this.textContent = '';
+    this._textContent = '';
     this.disabled = false;
     this.type = '';
     this.isConnected = true;
@@ -58,6 +58,16 @@ class TestElement {
   set className(value) {
     this._className = String(value || '');
     this.classList.setFromString(this._className);
+  }
+
+  get textContent() {
+    return this._textContent + this.children.map(child => child.textContent || '').join('');
+  }
+
+  set textContent(value) {
+    this._textContent = String(value || '');
+    for (const child of this.children) child.parentNode = null;
+    this.children = [];
   }
 
   setAttribute(name, value) {
@@ -235,6 +245,20 @@ test('listen button plays relative synced audio from the API origin', async () =
   assert.equal(harness.speechCalls.length, 0);
 });
 
+test('listen button renders an icon element instead of emoji text', async () => {
+  const harness = createHarness();
+
+  await harness.VocabPopup.showWord(harness.makeSpan({
+    audioUrl: '/media/pronunciations/hola.mp3',
+  }));
+  const listenButton = harness.document.body.querySelector('.lp-popup-listen');
+  const icon = listenButton.querySelector('.lp-popup-listen-icon');
+
+  assert.equal(listenButton.textContent.includes('\uD83D\uDD0A'), false);
+  assert.ok(icon);
+  assert.equal(icon.attributes['aria-hidden'], 'true');
+});
+
 test('listen button falls back to speech synthesis when real audio playback fails', async () => {
   const brokenPlayback = {
     then(resolve, reject) {
@@ -269,7 +293,7 @@ test('listen button shows fallback styling when no real audio is available', asy
   assert.equal(listenButton.textContent, 'Escuchar (voz)');
   assert.equal(
     listenButton.title,
-    'No hay audio de pronunciacion disponible; se usara la voz del navegador',
+    'No hay audio de pronunciación disponible; se usará la voz del navegador',
   );
 
   await listenButton.click();

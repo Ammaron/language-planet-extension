@@ -30,6 +30,18 @@ const VocabPopup = (() => {
     return el;
   }
 
+  function createListenIcon() {
+    const icon = createEl('span', 'lp-popup-listen-icon');
+    icon.setAttribute('aria-hidden', 'true');
+    return icon;
+  }
+
+  function setListenButtonContent(button, label) {
+    button.textContent = '';
+    button.appendChild(createListenIcon());
+    button.appendChild(createEl('span', 'lp-popup-listen-label', label));
+  }
+
   function handleOutsideClick(e) {
     if (popupEl && !popupEl.contains(e.target)
       && !e.target.classList.contains(LP_CLASS)
@@ -178,12 +190,12 @@ const VocabPopup = (() => {
 
   function fallbackListenTitle(termLanguage) {
     return isSpanishLanguage(termLanguage)
-      ? 'No hay audio de pronunciacion disponible; se usara la voz del navegador'
+      ? 'No hay audio de pronunciación disponible; se usará la voz del navegador'
       : 'No pronunciation audio available; using browser voice';
   }
 
   function audioListenTitle(termLanguage) {
-    return isSpanishLanguage(termLanguage) ? 'Reproducir audio de pronunciacion' : 'Play pronunciation audio';
+    return isSpanishLanguage(termLanguage) ? 'Reproducir audio de pronunciación' : 'Play pronunciation audio';
   }
 
   async function syncAudioUrlForWord(wordId) {
@@ -223,13 +235,13 @@ const VocabPopup = (() => {
 
   function applyListenFallbackState(button, termLanguage) {
     button.classList.add('lp-popup-listen-fallback');
-    button.textContent = fallbackListenText(termLanguage);
+    setListenButtonContent(button, fallbackListenText(termLanguage));
     button.title = fallbackListenTitle(termLanguage);
   }
 
   function applyListenAudioState(button, termLanguage) {
     button.classList.remove('lp-popup-listen-fallback');
-    button.textContent = '\uD83D\uDD0A Listen';
+    setListenButtonContent(button, 'Listen');
     button.title = audioListenTitle(termLanguage);
   }
 
@@ -421,15 +433,15 @@ const VocabPopup = (() => {
     // Listen button
     const actions = createEl('div', 'lp-popup-actions');
     const hasAudio = !!String(audioUrl || '').trim();
-    const listenBtn = createEl('button', 'lp-popup-listen', hasAudio ? '\uD83D\uDD0A Listen' : fallbackListenText(termLanguage));
+    const listenBtn = createEl('button', 'lp-popup-listen');
     listenBtn.type = 'button';
-    listenBtn.title = hasAudio ? audioListenTitle(termLanguage) : fallbackListenTitle(termLanguage);
-    if (!hasAudio) {
+    if (hasAudio) {
+      applyListenAudioState(listenBtn, termLanguage);
+    } else {
       applyListenFallbackState(listenBtn, termLanguage);
     }
     listenBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      const previousText = listenBtn.textContent;
       listenBtn.disabled = true;
       try {
         const result = await playAudioFromSpan(span, translation, termLanguage);
@@ -440,9 +452,6 @@ const VocabPopup = (() => {
         }
       } finally {
         listenBtn.disabled = false;
-        if (hasAudio && !listenBtn.classList.contains('lp-popup-listen-fallback')) {
-          listenBtn.textContent = previousText;
-        }
       }
     });
     actions.appendChild(listenBtn);
