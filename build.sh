@@ -30,6 +30,7 @@ SHARED_FILES=(
   "popup/onboarding.html"
   "popup/onboarding.js"
   "popup/onboarding.css"
+  "icons/langsly-icon.png"
   "icons/icon16.png"
   "icons/icon48.png"
   "icons/icon128.png"

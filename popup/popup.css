@@ -71,8 +71,10 @@ body {
   place-items: center;
   width: 48px;
   height: 48px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--lp-accent) 20%, var(--lp-border));
   border-radius: 15px;
-  background: linear-gradient(135deg, var(--lp-accent), color-mix(in srgb, var(--lp-accent-hover) 62%, #8b5cf6));
+  background: var(--lp-surface);
   box-shadow: 0 13px 26px color-mix(in srgb, var(--lp-accent) 28%, transparent);
 }
 
@@ -82,14 +84,16 @@ body {
   border-radius: 13px;
 }
 
-.brand-core {
-  color: var(--lp-accent-text);
-  font-size: 22px;
-  font-weight: 900;
+.brand-logo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 6px;
+  object-fit: contain;
 }
 
-.brand-mark-small .brand-core {
-  font-size: 18px;
+.brand-mark-small .brand-logo {
+  padding: 5px;
 }
 
 .hero-strip,
@@ -500,9 +504,10 @@ input:checked + .slider::before {
 }
 
 .theme-select {
-  max-width: 132px;
-  min-height: 34px;
-  padding: 7px 9px;
+  flex: 0 0 168px;
+  max-width: 168px;
+  min-height: 40px;
+  padding: 9px 12px;
   border-radius: 10px;
   outline: none;
 }

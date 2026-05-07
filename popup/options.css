@@ -24,7 +24,13 @@ body {
   border-bottom: 1px solid #e5e7eb;
 }
 
-.options-header .logo { font-size: 28px; }
+.options-header .logo {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
 .options-header h1 { font-size: 18px; font-weight: 700; }
 
 .options-section {
