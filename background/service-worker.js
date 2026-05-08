@@ -100,6 +100,122 @@ async function _ensureRotationSalt() {
   }
 }
 
+async function completeLoginWithTokens(data) {
+  if (!data || !data.access) {
+    return { success: false, error: t('unexpectedServerResponse', 'Unexpected server response') };
+  }
+
+  await setTokens(data.access, data.refresh);
+  await _ensureRotationSalt();
+  await browser.storage.local.set({ syncStatus: 'success' });
+  await Promise.allSettled([syncVocabulary(), syncThemes()]);
+  return { success: true };
+}
+
+function _base64UrlEncodeBytes(bytes) {
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
+
+function _createRandomBase64Url(byteLength = 32) {
+  const bytes = new Uint8Array(byteLength);
+  crypto.getRandomValues(bytes);
+  return _base64UrlEncodeBytes(bytes);
+}
+
+function _getExtensionRedirectUri() {
+  if (browser.identity && typeof browser.identity.getRedirectURL === 'function') {
+    return browser.identity.getRedirectURL('langsly');
+  }
+  if (globalThis.chrome && chrome.identity && typeof chrome.identity.getRedirectURL === 'function') {
+    return chrome.identity.getRedirectURL('langsly');
+  }
+  throw new Error(t('googleLoginUnavailable', 'Google sign-in is not available in this browser.'));
+}
+
+function _buildWebsiteLoginUrl({ frontendUrl, redirectUri, state }) {
+  const params = new URLSearchParams({
+    redirect_uri: redirectUri,
+    state,
+  });
+  return `${normalizeUrl(frontendUrl)}/extension-login?${params.toString()}`;
+}
+
+function _launchWebAuthFlow(url) {
+  if (browser.identity && typeof browser.identity.launchWebAuthFlow === 'function') {
+    return browser.identity.launchWebAuthFlow({ url, interactive: true });
+  }
+
+  if (globalThis.chrome && chrome.identity && typeof chrome.identity.launchWebAuthFlow === 'function') {
+    return new Promise((resolve, reject) => {
+      chrome.identity.launchWebAuthFlow({ url, interactive: true }, (redirectUrl) => {
+        const lastError = chrome.runtime && chrome.runtime.lastError;
+        if (lastError) {
+          reject(new Error(lastError.message));
+          return;
+        }
+        resolve(redirectUrl);
+      });
+    });
+  }
+
+  return Promise.reject(new Error(t('googleLoginUnavailable', 'Google sign-in is not available in this browser.')));
+}
+
+function _extractExtensionLoginCode(redirectUrl, expectedState) {
+  if (!redirectUrl) {
+    throw new Error(t('googleLoginCancelled', 'Google sign-in was cancelled.'));
+  }
+
+  const parsedUrl = new URL(redirectUrl);
+  const error = parsedUrl.searchParams.get('error');
+  if (error) {
+    throw new Error(t('googleLoginFailed', [error], `Google sign-in failed: ${error}`));
+  }
+
+  const state = parsedUrl.searchParams.get('state');
+  if (state !== expectedState) {
+    throw new Error(t('googleLoginFailed', 'Google sign-in failed.'));
+  }
+
+  const code = parsedUrl.searchParams.get('code');
+  if (!code) {
+    throw new Error(t('googleLoginFailed', 'Google sign-in failed.'));
+  }
+
+  return code;
+}
+
+async function loginWithGoogle() {
+  try {
+    const redirectUri = _getExtensionRedirectUri();
+    const state = _createRandomBase64Url(24);
+    const { apiBase, frontendUrl } = await getConfig();
+    const authUrl = _buildWebsiteLoginUrl({ frontendUrl, redirectUri, state });
+    const redirectUrl = await _launchWebAuthFlow(authUrl);
+    const code = _extractExtensionLoginCode(redirectUrl, state);
+    const res = await fetch(`${apiBase}/auth/extension-login/redeem/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      return { success: false, error: data.detail || t('googleLoginFailed', 'Google sign-in failed.') };
+    }
+
+    return completeLoginWithTokens(data);
+  } catch (err) {
+    const message = err && err.message ? err.message : t('googleLoginFailed', 'Google sign-in failed.');
+    return { success: false, error: message };
+  }
+}
+
 async function refreshAccessToken() {
   const { refresh } = await getTokens();
   if (!refresh) return null;
@@ -394,14 +510,7 @@ browser.runtime.onMessage.addListener((message) => {
         }
 
         const data = await res.json();
-        if (data.access) {
-          await setTokens(data.access, data.refresh);
-          await _ensureRotationSalt();
-          await browser.storage.local.set({ syncStatus: 'success' });
-          await Promise.allSettled([syncVocabulary(), syncThemes()]);
-          return { success: true };
-        }
-        return { success: false, error: t('unexpectedServerResponse', 'Unexpected server response') };
+        return completeLoginWithTokens(data);
       } catch (err) {
         const isConnectionRefused = err.message && (
           err.message.includes('Failed to fetch') ||
@@ -415,6 +524,10 @@ browser.runtime.onMessage.addListener((message) => {
         return { success: false, error: t('networkError', [err.message], `Network error: ${err.message}`) };
       }
     })();
+  }
+
+  if (message.type === 'GOOGLE_LOGIN') {
+    return loginWithGoogle();
   }
 
   if (message.type === 'LOGOUT') {

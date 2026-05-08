@@ -4,6 +4,7 @@ const settingsView = document.getElementById('settings-view');
 const loginForm = document.getElementById('login-form');
 const loginError = document.getElementById('login-error');
 const loginBtn = document.getElementById('login-btn');
+const googleLoginBtn = document.getElementById('google-login-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const syncBtn = document.getElementById('sync-btn');
 const wordCountEl = document.getElementById('word-count');
@@ -107,6 +108,18 @@ function showSettings() {
   settingsView.classList.remove('hidden');
 }
 
+async function renderLoggedInState() {
+  const status = await browser.runtime.sendMessage({ type: 'GET_STATUS' });
+  showSettings();
+  updateStatus(status);
+  syncAndRenderThemes(status);
+}
+
+function setLoginControlsDisabled(disabled) {
+  loginBtn.disabled = disabled;
+  if (googleLoginBtn) googleLoginBtn.disabled = disabled;
+}
+
 // ─── Init ────────────────────────────────────
 async function init() {
   await applyStoredTheme();
@@ -191,7 +204,7 @@ function updateStatus(status) {
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   loginError.classList.add('hidden');
-  loginBtn.disabled = true;
+  setLoginControlsDisabled(true);
   loginBtn.textContent = t('loginLoading', 'Logging in...');
 
   const email = document.getElementById('email').value;
@@ -200,18 +213,35 @@ loginForm.addEventListener('submit', async (e) => {
   const response = await browser.runtime.sendMessage({ type: 'LOGIN', email, password });
 
   if (response.success) {
-    const status = await browser.runtime.sendMessage({ type: 'GET_STATUS' });
-    showSettings();
-    updateStatus(status);
-    syncAndRenderThemes(status);
+    await renderLoggedInState();
   } else {
     loginError.textContent = response.error || t('loginFailed', 'Login failed');
     loginError.classList.remove('hidden');
   }
 
-  loginBtn.disabled = false;
+  setLoginControlsDisabled(false);
   loginBtn.textContent = t('loginButton', 'Log in');
 });
+
+if (googleLoginBtn) {
+  googleLoginBtn.addEventListener('click', async () => {
+    loginError.classList.add('hidden');
+    setLoginControlsDisabled(true);
+    googleLoginBtn.textContent = t('googleLoginLoading', 'Connecting to Google...');
+
+    const response = await browser.runtime.sendMessage({ type: 'GOOGLE_LOGIN' });
+
+    if (response.success) {
+      await renderLoggedInState();
+    } else {
+      loginError.textContent = response.error || t('googleLoginFailed', 'Google sign-in failed.');
+      loginError.classList.remove('hidden');
+    }
+
+    setLoginControlsDisabled(false);
+    googleLoginBtn.textContent = t('loginWithGoogle', 'Continue with Google');
+  });
+}
 
 // ─── Logout ──────────────────────────────────
 logoutBtn.addEventListener('click', async () => {

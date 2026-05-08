@@ -37,6 +37,24 @@
   "loginLoading": {
     "message": "Logging in..."
   },
+  "orContinueWith": {
+    "message": "or"
+  },
+  "loginWithGoogle": {
+    "message": "Continue with Google"
+  },
+  "googleLoginLoading": {
+    "message": "Connecting to Google..."
+  },
+  "googleLoginFailed": {
+    "message": "Google sign-in failed."
+  },
+  "googleLoginCancelled": {
+    "message": "Google sign-in was cancelled."
+  },
+  "googleLoginUnavailable": {
+    "message": "Google sign-in is not available in this browser."
+  },
   "loginFormNote": {
     "message": "Uses your Langsly account and syncs automatically in the background."
   },

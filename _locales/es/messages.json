@@ -37,6 +37,24 @@
   "loginLoading": {
     "message": "Iniciando sesión..."
   },
+  "orContinueWith": {
+    "message": "o"
+  },
+  "loginWithGoogle": {
+    "message": "Continuar con Google"
+  },
+  "googleLoginLoading": {
+    "message": "Conectando con Google..."
+  },
+  "googleLoginFailed": {
+    "message": "No se pudo iniciar sesion con Google."
+  },
+  "googleLoginCancelled": {
+    "message": "Se cancelo el inicio de sesion con Google."
+  },
+  "googleLoginUnavailable": {
+    "message": "El inicio de sesion con Google no esta disponible en este navegador."
+  },
   "loginFormNote": {
     "message": "Usa tu cuenta de Langsly y se sincroniza automáticamente en segundo plano."
   },

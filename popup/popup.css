@@ -173,6 +173,7 @@ body {
 }
 
 #login-btn,
+.google-login-btn,
 .secondary-btn,
 .dashboard-link,
 .diff-btn,
@@ -199,8 +200,59 @@ body {
   padding: 12px 14px;
 }
 
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+  color: var(--lp-text-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--lp-border);
+}
+
+.google-login-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
+  padding: 11px 13px;
+  border: 1px solid var(--lp-border-strong);
+  border-radius: 13px;
+  background: var(--lp-surface);
+  color: var(--lp-text-primary);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.google-login-btn::before {
+  content: "G";
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--lp-border);
+  border-radius: 999px;
+  color: #2563eb;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
 #login-btn:hover,
 #login-btn:focus-visible,
+.google-login-btn:hover,
+.google-login-btn:focus-visible,
 .secondary-btn:hover,
 .secondary-btn:focus-visible,
 .dashboard-link:hover,
@@ -211,6 +263,7 @@ body {
 }
 
 #login-btn:disabled,
+.google-login-btn:disabled,
 .secondary-btn:disabled,
 .theme-select:disabled {
   opacity: 0.62;
