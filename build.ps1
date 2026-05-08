@@ -21,6 +21,7 @@ if (-not $resolvedDist.StartsWith($scriptDirWithSeparator, [System.StringCompari
 
 $sharedFiles = @(
   'vendor/browser-polyfill.min.js',
+  'shared/i18n.js',
   'background/theme-utils.js',
   'background/service-worker.js',
   'content/grammar-rules.js',
@@ -61,6 +62,20 @@ function Copy-SharedFiles {
   }
 }
 
+function Copy-Locales {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string] $Target
+  )
+
+  $source = Join-Path $ScriptDir '_locales'
+  if (-not (Test-Path -LiteralPath $source)) {
+    throw 'Missing build input: _locales'
+  }
+
+  Copy-Item -LiteralPath $source -Destination (Join-Path $Target '_locales') -Recurse -Force
+}
+
 if (Test-Path -LiteralPath $Dist) {
   Remove-Item -LiteralPath $Dist -Recurse -Force
 }
@@ -68,10 +83,12 @@ if (Test-Path -LiteralPath $Dist) {
 New-Item -ItemType Directory -Force -Path $ChromeDist, $FirefoxDist | Out-Null
 
 Copy-SharedFiles -Target $ChromeDist
+Copy-Locales -Target $ChromeDist
 Copy-Item -LiteralPath (Join-Path $ScriptDir 'manifest.json') -Destination (Join-Path $ChromeDist 'manifest.json')
 Write-Host "Chrome build: $ChromeDist"
 
 Copy-SharedFiles -Target $FirefoxDist
+Copy-Locales -Target $FirefoxDist
 
 $manifestPath = Join-Path $ScriptDir 'manifest.json'
 $firefoxManifestPath = Join-Path $FirefoxDist 'manifest.json'
@@ -80,6 +97,7 @@ $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 $manifest.background.PSObject.Properties.Remove('service_worker')
 $manifest.background | Add-Member -NotePropertyName 'scripts' -NotePropertyValue @(
   'vendor/browser-polyfill.min.js',
+  'shared/i18n.js',
   'background/theme-utils.js',
   'background/service-worker.js'
 ) -Force

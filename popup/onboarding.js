@@ -2,6 +2,12 @@
 const steps = [document.getElementById('step-1'), document.getElementById('step-2'), document.getElementById('step-3')];
 const dots = [document.getElementById('dot-1'), document.getElementById('dot-2'), document.getElementById('dot-3')];
 
+function t(key, substitutions, fallback) {
+  if (window.LangslyI18n) return window.LangslyI18n.t(key, substitutions, fallback);
+  if (fallback === undefined && typeof substitutions === 'string') return substitutions;
+  return fallback || key;
+}
+
 function applyThemeTokens(tokens) {
   if (window.LangslyTheme) {
     window.LangslyTheme.applyThemeTokensToDocument(document.documentElement, tokens);
@@ -30,7 +36,7 @@ document.getElementById('onboard-login-form').addEventListener('submit', async (
   const btn = document.getElementById('onboard-login-btn');
   errorEl.classList.add('hidden');
   btn.disabled = true;
-  btn.textContent = 'Logging in...';
+  btn.textContent = t('loginLoading', 'Logging in...');
 
   const email = document.getElementById('onboard-email').value;
   const password = document.getElementById('onboard-password').value;
@@ -48,12 +54,12 @@ document.getElementById('onboard-login-form').addEventListener('submit', async (
     }
     showStep(2);
   } else {
-    errorEl.textContent = response.error || 'Login failed';
+    errorEl.textContent = response.error || t('loginFailed', 'Login failed');
     errorEl.classList.remove('hidden');
   }
 
   btn.disabled = false;
-  btn.textContent = 'Log In';
+  btn.textContent = t('loginButton', 'Log in');
 });
 
 // Step 3: Finish

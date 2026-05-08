@@ -1,0 +1,299 @@
+{
+  "extName": {
+    "message": "Langsly - Vocab Pass",
+    "description": "Nombre de la extensión que se muestra en el navegador y en las tiendas de extensiones."
+  },
+  "extDescription": {
+    "message": "Aprende vocabulario mientras navegas. Langsly resalta tus palabras guardadas en sitios web reales. Práctica automática y en contexto todos los días.",
+    "description": "Descripción de la extensión que se muestra en el navegador y en las tiendas de extensiones."
+  },
+  "popupTitle": {
+    "message": "Extensión de Langsly"
+  },
+  "popupBrandName": {
+    "message": "Langsly Vocab Pass"
+  },
+  "popupHeroTitle": {
+    "message": "Lleva tu lista de estudio a las páginas que lees."
+  },
+  "popupHeroSubtitle": {
+    "message": "Inicia sesión para sincronizar vocabulario, ajustar el nivel de desafío y mantener la traducción activa solo donde quieras."
+  },
+  "emailLabel": {
+    "message": "Correo electrónico"
+  },
+  "emailPlaceholder": {
+    "message": "tu@langsly.com"
+  },
+  "passwordLabel": {
+    "message": "Contraseña"
+  },
+  "passwordPlaceholder": {
+    "message": "Tu contraseña"
+  },
+  "loginButton": {
+    "message": "Iniciar sesión"
+  },
+  "loginLoading": {
+    "message": "Iniciando sesión..."
+  },
+  "loginFormNote": {
+    "message": "Usa tu cuenta de Langsly y se sincroniza automáticamente en segundo plano."
+  },
+  "extensionStatus": {
+    "message": "Estado de la extensión"
+  },
+  "connectionLabel": {
+    "message": "Conexión"
+  },
+  "logoutButton": {
+    "message": "Cerrar sesión"
+  },
+  "wordsLoaded": {
+    "message": "Palabras cargadas"
+  },
+  "lastSync": {
+    "message": "Última sincronización"
+  },
+  "currentPage": {
+    "message": "Página actual"
+  },
+  "activeOnThisSite": {
+    "message": "Activo en este sitio"
+  },
+  "difficultyLabel": {
+    "message": "Dificultad"
+  },
+  "difficultyEasy": {
+    "message": "Fácil"
+  },
+  "difficultyNormal": {
+    "message": "Normal"
+  },
+  "difficultyChallenge": {
+    "message": "Desafío"
+  },
+  "actionsLabel": {
+    "message": "Acciones"
+  },
+  "syncNow": {
+    "message": "Sincronizar ahora"
+  },
+  "syncing": {
+    "message": "Sincronizando..."
+  },
+  "openDashboard": {
+    "message": "Abrir panel de Langsly"
+  },
+  "themeLabel": {
+    "message": "Tema"
+  },
+  "themeSynced": {
+    "message": "Sincronizado desde el panel"
+  },
+  "themeUsingLastSynced": {
+    "message": "Usando el último tema sincronizado"
+  },
+  "themeApplying": {
+    "message": "Aplicando..."
+  },
+  "themeCouldNotApply": {
+    "message": "No se pudo aplicar el tema"
+  },
+  "dataStaleWarning": {
+    "message": "Los datos pueden estar desactualizados: la última sincronización fue hace más de 24 h"
+  },
+  "offlineCachedVocabulary": {
+    "message": "Sin conexión: usando vocabulario en caché"
+  },
+  "statusConnected": {
+    "message": "Conectado"
+  },
+  "statusOffline": {
+    "message": "Sin conexión"
+  },
+  "statusSyncFailed": {
+    "message": "Falló la sincronización"
+  },
+  "statusUnknown": {
+    "message": "Desconocido"
+  },
+  "notAvailable": {
+    "message": "N/D"
+  },
+  "loginFailed": {
+    "message": "No se pudo iniciar sesión"
+  },
+  "optionsTitle": {
+    "message": "Configuración de Langsly"
+  },
+  "serverConfiguration": {
+    "message": "Configuración del servidor"
+  },
+  "apiBaseUrl": {
+    "message": "URL base de la API"
+  },
+  "apiBasePlaceholder": {
+    "message": "https://api.langsly.com/api"
+  },
+  "frontendUrl": {
+    "message": "URL del frontend"
+  },
+  "frontendPlaceholder": {
+    "message": "https://langsly.com"
+  },
+  "resetToDefaults": {
+    "message": "Restablecer valores predeterminados"
+  },
+  "syncInterval": {
+    "message": "Intervalo de sincronización"
+  },
+  "minuteLabel": {
+    "message": "$MINUTES$ min",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "behaviorLabel": {
+    "message": "Comportamiento"
+  },
+  "autoExcludeSensitiveSites": {
+    "message": "Excluir automáticamente sitios sensibles (bancos, gobierno, páginas de inicio de sesión)"
+  },
+  "saveSettings": {
+    "message": "Guardar configuración"
+  },
+  "settingsSaved": {
+    "message": "¡Configuración guardada!"
+  },
+  "onboardingTitle": {
+    "message": "Te damos la bienvenida a Langsly"
+  },
+  "learnWhileBrowse": {
+    "message": "Aprende mientras navegas."
+  },
+  "bringDashboardVocabulary": {
+    "message": "Lleva el vocabulario de tu panel a las páginas que ya lees."
+  },
+  "onboardingFeatureWordsInContext": {
+    "message": "Las palabras aparecen en contexto mientras lees."
+  },
+  "onboardingFeatureDetails": {
+    "message": "Haz clic en cualquier palabra para ver detalles y pronunciación."
+  },
+  "onboardingFeatureProgress": {
+    "message": "El progreso se sincroniza con tu cuenta de Langsly."
+  },
+  "getStarted": {
+    "message": "Comenzar"
+  },
+  "signInEyebrow": {
+    "message": "Iniciar sesión"
+  },
+  "connectAccount": {
+    "message": "Conecta tu cuenta."
+  },
+  "loginToSyncTheme": {
+    "message": "Usa tu inicio de sesión de Langsly para sincronizar vocabulario y el tema de tu panel."
+  },
+  "needAccount": {
+    "message": "¿Necesitas una cuenta? Regístrate en langsly.com."
+  },
+  "readyEyebrow": {
+    "message": "Listo"
+  },
+  "vocabPassSet": {
+    "message": "Vocab Pass está listo."
+  },
+  "vocabThemeSynced": {
+    "message": "Tu vocabulario y tema están sincronizados. Puedes ajustar la dificultad y el acceso por sitio desde la ventana emergente."
+  },
+  "readyFeatureHover": {
+    "message": "Pasa el cursor sobre las palabras traducidas para ver el original."
+  },
+  "readyFeaturePauseSite": {
+    "message": "Usa la ventana emergente para pausar un sitio."
+  },
+  "readyFeatureThemes": {
+    "message": "Cambia los temas desde el panel o la ventana emergente."
+  },
+  "startBrowsing": {
+    "message": "Empezar a navegar"
+  },
+  "listenButton": {
+    "message": "Escuchar"
+  },
+  "listenVoiceSpanish": {
+    "message": "Escuchar (voz)"
+  },
+  "listenVoiceDefault": {
+    "message": "Escuchar (voz)"
+  },
+  "noPronunciationTitleSpanish": {
+    "message": "No hay audio de pronunciación disponible; se usará la voz del navegador"
+  },
+  "noPronunciationTitleDefault": {
+    "message": "No hay audio de pronunciación disponible; se usará la voz del navegador"
+  },
+  "playPronunciationTitleSpanish": {
+    "message": "Reproducir audio de pronunciación"
+  },
+  "playPronunciationTitleDefault": {
+    "message": "Reproducir audio de pronunciación"
+  },
+  "uncertainBadge": {
+    "message": "incierto"
+  },
+  "alsoUsedAs": {
+    "message": "También se usa como:"
+  },
+  "wrongMeaning": {
+    "message": "¿Significado incorrecto?"
+  },
+  "corrected": {
+    "message": "Corregido"
+  },
+  "noLearnedAlternatives": {
+    "message": "Aún no hay alternativas aprendidas. Marcar esto ayuda a mejorar futuras sugerencias."
+  },
+  "markIncorrect": {
+    "message": "Marcar como incorrecto"
+  },
+  "flagged": {
+    "message": "Marcado"
+  },
+  "phraseBadge": {
+    "message": "frase"
+  },
+  "report": {
+    "message": "Reportar"
+  },
+  "reported": {
+    "message": "Reportado"
+  },
+  "invalidEmailOrPassword": {
+    "message": "Correo electrónico o contraseña no válidos"
+  },
+  "unexpectedServerResponse": {
+    "message": "Respuesta inesperada del servidor"
+  },
+  "cannotReachServer": {
+    "message": "No se puede conectar con el servidor. Revisa tu conexión o la URL del servidor en opciones."
+  },
+  "networkError": {
+    "message": "Error de red: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "translationRequestFailed": {
+    "message": "Falló la solicitud de traducción"
+  },
+  "systemThemeName": {
+    "message": "Sistema"
+  }
+}

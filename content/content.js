@@ -358,6 +358,7 @@ function buildPhraseSpan(phrase, fullText, domain) {
       const wordSpan = document.createElement('span');
       wordSpan.className = LP_CLASS;
       wordSpan.textContent = match.word.term;
+      wordSpan.setAttribute(LP_PROCESSED, 'true');
       wordSpan.dataset.wordId = match.word.id;
       wordSpan.dataset.original = match.original;
       wordSpan.dataset.translation = match.word.term;
@@ -369,6 +370,12 @@ function buildPhraseSpan(phrase, fullText, domain) {
       wordSpan.dataset.example = match.word.example_sentence || '';
       wordSpan.dataset.exampleTranslation = match.word.example_translation || '';
       wordSpan.dataset.audioUrl = match.word.pronunciation_audio || '';
+      wordSpan.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        Promise.resolve(VocabPopup.showWord(wordSpan)).catch(() => {});
+        recordEncounter(match.word.id, domain, true);
+      });
       span.appendChild(wordSpan);
       lastMatchEnd = match.end;
     }

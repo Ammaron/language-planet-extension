@@ -7,13 +7,25 @@ try {
   // Polyfill already available (Firefox background scripts load it via manifest)
 }
 
-if (typeof importScripts === 'function' && !globalThis.LangslyTheme) {
-  importScripts('theme-utils.js');
+if (typeof importScripts === 'function') {
+  if (!globalThis.LangslyI18n) {
+    importScripts('../shared/i18n.js');
+  }
+  if (!globalThis.LangslyTheme) {
+    importScripts('theme-utils.js');
+  }
+}
+
+function t(key, substitutions, fallback) {
+  if (globalThis.LangslyI18n) return globalThis.LangslyI18n.t(key, substitutions, fallback);
+  if (fallback === undefined && typeof substitutions === 'string') return substitutions;
+  return fallback || key;
 }
 
 // ─── Configurable API URLs ──────────────────────
 const LEGACY_DEFAULTS = { apiBase: 'http://localhost:8000/api', frontendUrl: 'http://localhost:3000' };
 const DEFAULTS = { apiBase: 'https://api.langsly.com/api', frontendUrl: 'https://langsly.com' };
+const MAX_EXTENSION_AUDIO_FETCH_BYTES = 8 * 1024 * 1024;
 
 function normalizeUrl(url) {
   return String(url || '').trim().replace(/\/+$/, '');
@@ -134,12 +146,79 @@ async function authFetch(url, options = {}) {
   return res;
 }
 
+function _isAllowedExtensionAudioUrl(rawUrl, apiBase) {
+  let url;
+  let apiUrl;
+  try {
+    url = new URL(String(rawUrl || ''));
+    apiUrl = new URL(apiBase);
+  } catch {
+    return false;
+  }
+
+  if (!['http:', 'https:'].includes(url.protocol)) return false;
+  if (url.origin !== apiUrl.origin) return false;
+
+  return (
+    url.pathname.startsWith('/media/') ||
+    /^\/api\/media\/assets\/[^/]+\/content\/?$/.test(url.pathname)
+  );
+}
+
+function _arrayBufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+async function fetchAudioAsDataUrl(rawUrl) {
+  const { apiBase } = await getConfig();
+  if (!_isAllowedExtensionAudioUrl(rawUrl, apiBase)) {
+    return { success: false, error: 'Audio URL is not allowed.' };
+  }
+
+  let res;
+  try {
+    res = await fetch(rawUrl, { credentials: 'omit' });
+  } catch {
+    return { success: false, error: 'Audio request failed.' };
+  }
+
+  if (!res.ok) {
+    return { success: false, error: 'Audio request failed.' };
+  }
+
+  const contentLength = Number(res.headers.get('content-length') || '0');
+  if (contentLength > MAX_EXTENSION_AUDIO_FETCH_BYTES) {
+    return { success: false, error: 'Audio file is too large.' };
+  }
+
+  const contentType = (res.headers.get('content-type') || 'audio/mpeg').split(';')[0].trim().toLowerCase();
+  if (contentType && !contentType.startsWith('audio/')) {
+    return { success: false, error: 'URL did not return audio.' };
+  }
+
+  const buffer = await res.arrayBuffer();
+  if (buffer.byteLength > MAX_EXTENSION_AUDIO_FETCH_BYTES) {
+    return { success: false, error: 'Audio file is too large.' };
+  }
+
+  return {
+    success: true,
+    dataUrl: `data:${contentType || 'audio/mpeg'};base64,${_arrayBufferToBase64(buffer)}`,
+  };
+}
+
 // ─── Vocabulary Sync ─────────────────────────────
 function getFallbackThemeState() {
   return {
     themePacks: [],
     activeThemeSlug: 'system',
-    activeThemeName: 'System',
+    activeThemeName: t('systemThemeName', 'System'),
     themeTokens: LangslyTheme.getDefaultThemeTokens(),
     themeSyncStatus: 'unknown',
   };
@@ -168,7 +247,7 @@ async function persistThemeState(themeState) {
   const normalizedState = {
     themePacks: Array.isArray(themeState.themePacks) ? themeState.themePacks : [],
     activeThemeSlug: themeState.activeThemeSlug || 'system',
-    activeThemeName: themeState.activeThemeName || 'System',
+    activeThemeName: themeState.activeThemeName || t('systemThemeName', 'System'),
     themeTokens: LangslyTheme.normalizeThemeTokens(themeState.themeTokens),
     themeSyncStatus: themeState.themeSyncStatus || 'success',
   };
@@ -306,10 +385,10 @@ browser.runtime.onMessage.addListener((message) => {
         });
 
         if (!res.ok) {
-          let errorMsg = 'Login failed';
+          let errorMsg = t('loginFailed', 'Login failed');
           try {
             const data = await res.json();
-            errorMsg = data.detail || 'Invalid email or password';
+            errorMsg = data.detail || t('invalidEmailOrPassword', 'Invalid email or password');
           } catch { /* use default */ }
           return { success: false, error: errorMsg };
         }
@@ -322,7 +401,7 @@ browser.runtime.onMessage.addListener((message) => {
           await Promise.allSettled([syncVocabulary(), syncThemes()]);
           return { success: true };
         }
-        return { success: false, error: 'Unexpected server response' };
+        return { success: false, error: t('unexpectedServerResponse', 'Unexpected server response') };
       } catch (err) {
         const isConnectionRefused = err.message && (
           err.message.includes('Failed to fetch') ||
@@ -331,9 +410,9 @@ browser.runtime.onMessage.addListener((message) => {
         );
         if (isConnectionRefused) {
           await browser.storage.local.set({ syncStatus: 'offline' });
-          return { success: false, error: 'Cannot reach server. Check your connection or server URL in options.' };
+          return { success: false, error: t('cannotReachServer', 'Cannot reach server. Check your connection or server URL in options.') };
         }
-        return { success: false, error: `Network error: ${err.message}` };
+        return { success: false, error: t('networkError', [err.message], `Network error: ${err.message}`) };
       }
     })();
   }
@@ -344,6 +423,10 @@ browser.runtime.onMessage.addListener((message) => {
 
   if (message.type === 'SYNC_NOW') {
     return Promise.allSettled([syncVocabulary(), syncThemes()]).then(() => ({ success: true }));
+  }
+
+  if (message.type === 'FETCH_AUDIO') {
+    return fetchAudioAsDataUrl(message.url);
   }
 
   if (message.type === 'SET_DIFFICULTY') {
@@ -414,7 +497,7 @@ browser.runtime.onMessage.addListener((message) => {
         syncStatus: syncStatus || 'unknown',
         themePacks: Array.isArray(themePacks) ? themePacks : [],
         activeThemeSlug: activeThemeSlug || 'system',
-        activeThemeName: activeThemeName || 'System',
+        activeThemeName: activeThemeName || t('systemThemeName', 'System'),
         themeTokens: LangslyTheme.normalizeThemeTokens(themeTokens),
         themeSyncStatus: themeSyncStatus || 'unknown',
       };
@@ -526,7 +609,7 @@ browser.runtime.onMessage.addListener((message) => {
         });
 
         if (!res || !res.ok) {
-          return { success: false, error: 'Translation request failed' };
+          return { success: false, error: t('translationRequestFailed', 'Translation request failed') };
         }
 
         const data = await res.json();

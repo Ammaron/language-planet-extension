@@ -20,6 +20,12 @@ const themeStatus = document.getElementById('theme-status');
 const LEGACY_FRONTEND_URL = 'http://localhost:3000';
 const DEFAULT_FRONTEND_URL = 'https://langsly.com';
 
+function t(key, substitutions, fallback) {
+  if (window.LangslyI18n) return window.LangslyI18n.t(key, substitutions, fallback);
+  if (fallback === undefined && typeof substitutions === 'string') return substitutions;
+  return fallback || key;
+}
+
 function normalizeUrl(url) {
   return String(url || '').trim().replace(/\/+$/, '');
 }
@@ -70,8 +76,8 @@ function updateThemeControls(status) {
   themeRow.classList.remove('hidden');
   if (themeStatus) {
     themeStatus.textContent = status.themeSyncStatus === 'failed'
-      ? 'Using last synced theme'
-      : 'Synced from dashboard';
+      ? t('themeUsingLastSynced', 'Using last synced theme')
+      : t('themeSynced', 'Synced from dashboard');
   }
 }
 
@@ -130,7 +136,7 @@ async function init() {
         siteToggle.checked = !isWhitelisted;
       }
     } catch {
-      currentDomainEl.textContent = 'N/A';
+      currentDomainEl.textContent = t('notAvailable', 'N/A');
     }
   }
 }
@@ -145,7 +151,7 @@ function updateStatus(status) {
     // Check for stale data (>24h)
     const hoursSinceSync = (Date.now() - syncDate.getTime()) / (1000 * 60 * 60);
     if (hoursSinceSync > 24 && statusBanner) {
-      statusBanner.textContent = 'Data may be stale — last synced over 24h ago';
+      statusBanner.textContent = t('dataStaleWarning', 'Data may be stale - last synced over 24h ago');
       statusBanner.className = 'status-banner warning';
       statusBanner.classList.remove('hidden');
     }
@@ -162,21 +168,21 @@ function updateStatus(status) {
   if (statusIndicator) {
     if (status.syncStatus === 'success') {
       statusIndicator.className = 'status-dot connected';
-      statusIndicator.title = 'Connected';
+      statusIndicator.title = t('statusConnected', 'Connected');
     } else if (status.syncStatus === 'offline') {
       statusIndicator.className = 'status-dot offline';
-      statusIndicator.title = 'Offline';
+      statusIndicator.title = t('statusOffline', 'Offline');
       if (statusBanner) {
-        statusBanner.textContent = 'Offline — using cached vocabulary';
+        statusBanner.textContent = t('offlineCachedVocabulary', 'Offline - using cached vocabulary');
         statusBanner.className = 'status-banner offline';
         statusBanner.classList.remove('hidden');
       }
     } else if (status.syncStatus === 'failed') {
       statusIndicator.className = 'status-dot error';
-      statusIndicator.title = 'Sync failed';
+      statusIndicator.title = t('statusSyncFailed', 'Sync failed');
     } else {
       statusIndicator.className = 'status-dot unknown';
-      statusIndicator.title = 'Unknown';
+      statusIndicator.title = t('statusUnknown', 'Unknown');
     }
   }
 }
@@ -186,7 +192,7 @@ loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   loginError.classList.add('hidden');
   loginBtn.disabled = true;
-  loginBtn.textContent = 'Logging in...';
+  loginBtn.textContent = t('loginLoading', 'Logging in...');
 
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
@@ -199,12 +205,12 @@ loginForm.addEventListener('submit', async (e) => {
     updateStatus(status);
     syncAndRenderThemes(status);
   } else {
-    loginError.textContent = response.error || 'Login failed';
+    loginError.textContent = response.error || t('loginFailed', 'Login failed');
     loginError.classList.remove('hidden');
   }
 
   loginBtn.disabled = false;
-  loginBtn.textContent = 'Log In';
+  loginBtn.textContent = t('loginButton', 'Log in');
 });
 
 // ─── Logout ──────────────────────────────────
@@ -215,7 +221,7 @@ logoutBtn.addEventListener('click', async () => {
 
 // ─── Sync ────────────────────────────────────
 syncBtn.addEventListener('click', async () => {
-  syncBtn.textContent = 'Syncing...';
+  syncBtn.textContent = t('syncing', 'Syncing...');
   syncBtn.disabled = true;
 
   await browser.runtime.sendMessage({ type: 'SYNC_NOW' });
@@ -223,7 +229,7 @@ syncBtn.addEventListener('click', async () => {
   updateStatus(status);
   syncAndRenderThemes(status);
 
-  syncBtn.textContent = 'Sync Now';
+  syncBtn.textContent = t('syncNow', 'Sync now');
   syncBtn.disabled = false;
 });
 
@@ -232,13 +238,13 @@ if (themeSelect) {
     const previousValue = themeSelect.dataset.previousValue || 'system';
     const nextValue = themeSelect.value;
     themeSelect.disabled = true;
-    if (themeStatus) themeStatus.textContent = 'Applying...';
+    if (themeStatus) themeStatus.textContent = t('themeApplying', 'Applying...');
 
     try {
       const response = await browser.runtime.sendMessage({ type: 'APPLY_THEME', themeSlug: nextValue });
       if (!response || response.success === false) {
         themeSelect.value = previousValue;
-        if (themeStatus) themeStatus.textContent = 'Could not apply theme';
+        if (themeStatus) themeStatus.textContent = t('themeCouldNotApply', 'Could not apply theme');
         return;
       }
 
@@ -247,7 +253,7 @@ if (themeSelect) {
       themeSelect.dataset.previousValue = response.activeThemeSlug || nextValue;
     } catch {
       themeSelect.value = previousValue;
-      if (themeStatus) themeStatus.textContent = 'Could not apply theme';
+      if (themeStatus) themeStatus.textContent = t('themeCouldNotApply', 'Could not apply theme');
     } finally {
       themeSelect.disabled = false;
     }
@@ -267,7 +273,7 @@ diffBtns.forEach(btn => {
 // ─── Site Toggle (whitelist) ─────────────────
 siteToggle.addEventListener('change', async () => {
   const domain = currentDomainEl.textContent;
-  if (!domain || domain === 'N/A') return;
+  if (!domain || domain === t('notAvailable', 'N/A')) return;
 
   if (!siteToggle.checked) {
     // Add to whitelist (disable on this site)

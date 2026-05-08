@@ -18,6 +18,12 @@ const VocabPopup = (() => {
 
   let popupEl = null;
 
+  function t(key, substitutions, fallback) {
+    if (globalThis.LangslyI18n) return globalThis.LangslyI18n.t(key, substitutions, fallback);
+    if (fallback === undefined && typeof substitutions === 'string') return substitutions;
+    return fallback || key;
+  }
+
   function normalizeUrl(url) {
     return String(url || '').trim().replace(/\/+$/, '');
   }
@@ -195,6 +201,16 @@ const VocabPopup = (() => {
     });
   }
 
+  async function playAudioThroughExtension(fullUrl) {
+    const response = await browser.runtime.sendMessage({
+      type: 'FETCH_AUDIO',
+      url: fullUrl,
+    });
+    const dataUrl = response && response.success ? String(response.dataUrl || '') : '';
+    if (!dataUrl) throw new Error('Extension audio fetch failed');
+    await playRealAudio(dataUrl);
+  }
+
   async function playAudio(audioUrl, translation, termLanguage) {
     if (String(audioUrl || '').trim()) {
       const { apiBase } = await getContentConfig();
@@ -204,7 +220,12 @@ const VocabPopup = (() => {
           await playRealAudio(fullUrl);
           return 'audio';
         } catch {
-          // Fall through to speech synthesis so the popup remains useful.
+          try {
+            await playAudioThroughExtension(fullUrl);
+            return 'audio';
+          } catch {
+            // Fall through to speech synthesis so the popup remains useful.
+          }
         }
       }
     }
@@ -218,17 +239,21 @@ const VocabPopup = (() => {
   }
 
   function fallbackListenText(termLanguage) {
-    return isSpanishLanguage(termLanguage) ? 'Escuchar (voz)' : 'Listen (voice)';
+    return isSpanishLanguage(termLanguage)
+      ? t('listenVoiceSpanish', 'Escuchar (voz)')
+      : t('listenVoiceDefault', 'Listen (voice)');
   }
 
   function fallbackListenTitle(termLanguage) {
     return isSpanishLanguage(termLanguage)
-      ? 'No hay audio de pronunciación disponible; se usará la voz del navegador'
-      : 'No pronunciation audio available; using browser voice';
+      ? t('noPronunciationTitleSpanish', 'No hay audio de pronunciación disponible; se usará la voz del navegador')
+      : t('noPronunciationTitleDefault', 'No pronunciation audio available; using browser voice');
   }
 
   function audioListenTitle(termLanguage) {
-    return isSpanishLanguage(termLanguage) ? 'Reproducir audio de pronunciación' : 'Play pronunciation audio';
+    return isSpanishLanguage(termLanguage)
+      ? t('playPronunciationTitleSpanish', 'Reproducir audio de pronunciación')
+      : t('playPronunciationTitleDefault', 'Play pronunciation audio');
   }
 
   async function syncAudioUrlForWord(wordId) {
@@ -274,7 +299,7 @@ const VocabPopup = (() => {
 
   function applyListenAudioState(button, termLanguage) {
     button.classList.remove('lp-popup-listen-fallback');
-    setListenButtonContent(button, 'Listen');
+    setListenButtonContent(button, t('listenButton', 'Listen'));
     button.title = audioListenTitle(termLanguage);
   }
 
@@ -385,6 +410,32 @@ const VocabPopup = (() => {
     }).catch(() => {});
   }
 
+  function applyWordDatasetFromMatch(el, match) {
+    const word = (match && match.word) || {};
+    el.dataset.wordId = word.id || '';
+    el.dataset.original = (match && match.original) || word.translation || '';
+    el.dataset.translation = word.term || '';
+    el.dataset.baseTranslation = word.translation || '';
+    el.dataset.matchedForm = (match && match.matchedForm) || (match && match.original) || '';
+    el.dataset.termLanguage = word.term_language || 'es';
+    el.dataset.pos = word.part_of_speech || '';
+    el.dataset.hint = word.context_hint || '';
+    el.dataset.example = word.example_sentence || '';
+    el.dataset.exampleTranslation = word.example_translation || '';
+    el.dataset.audioUrl = word.pronunciation_audio || '';
+    el.dataset.sourceLanguage = word.search_language || 'en';
+    el.dataset.targetLanguage = word.term_language || 'es';
+    el.dataset.meaningKey = word.meaning_key || word._localMeaningKey || '';
+    el.dataset.method = word._method || word._localMethod || 'local';
+
+    if (Array.isArray(word._alternatives) && word._alternatives.length > 0) {
+      el.dataset.disambigAlternatives = JSON.stringify(word._alternatives);
+    }
+    if (Array.isArray(word._candidateIds) && word._candidateIds.length > 0) {
+      el.dataset.disambigCandidates = JSON.stringify(word._candidateIds);
+    }
+  }
+
   function reportPhraseTranslation(span, original, translated) {
     const cacheEntryId = span.dataset.cacheEntryId || '';
     browser.runtime.sendMessage({
@@ -397,7 +448,7 @@ const VocabPopup = (() => {
   /**
    * Show popup for a single vocabulary word span.
    */
-  async function showWord(span) {
+  async function showWord(span, anchor = span) {
     hide();
 
     const {
@@ -430,7 +481,7 @@ const VocabPopup = (() => {
     }
     if (pos) header.appendChild(createEl('span', 'lp-popup-pos', pos));
     if (uncertain === 'true') {
-      header.appendChild(createEl('span', 'lp-popup-pos lp-popup-uncertain', 'uncertain'));
+      header.appendChild(createEl('span', 'lp-popup-pos lp-popup-uncertain', t('uncertainBadge', 'uncertain')));
     }
     popupEl.appendChild(header);
 
@@ -452,7 +503,7 @@ const VocabPopup = (() => {
     const alsoUsedAs = correctionOptions.filter(option => String(option.id) !== String(span.dataset.wordId));
     if (alsoUsedAs.length > 0) {
       const alts = createEl('div', 'lp-popup-example');
-      alts.appendChild(createEl('div', 'lp-popup-hint', 'Also used as:'));
+      alts.appendChild(createEl('div', 'lp-popup-hint', t('alsoUsedAs', 'Also used as:')));
       const altText = alsoUsedAs
         .map(alt => alt.term)
         .filter(Boolean)
@@ -491,7 +542,7 @@ const VocabPopup = (() => {
 
     const wrongBtn = createEl('button', 'lp-popup-listen');
     wrongBtn.type = 'button';
-    setActionButtonContent(wrongBtn, 'warning-circle', 'Wrong meaning?');
+    setActionButtonContent(wrongBtn, 'warning-circle', t('wrongMeaning', 'Wrong meaning?'));
     actions.appendChild(wrongBtn);
     popupEl.appendChild(actions);
 
@@ -512,7 +563,7 @@ const VocabPopup = (() => {
           e.stopPropagation();
           const beforeWordId = span.dataset.wordId || '';
           await applySelectedAlternative(span, option.id);
-          setActionButtonContent(wrongBtn, 'check-circle', 'Corrected');
+          setActionButtonContent(wrongBtn, 'check-circle', t('corrected', 'Corrected'));
           wrongBtn.disabled = true;
           chooser.style.display = 'none';
           if (safeCandidateIds.length >= 2) {
@@ -529,15 +580,15 @@ const VocabPopup = (() => {
       chooser.appendChild(createEl(
         'div',
         'lp-popup-example-translation',
-        'No learned alternatives yet. Marking this helps improve future guesses.',
+        t('noLearnedAlternatives', 'No learned alternatives yet. Marking this helps improve future guesses.'),
       ));
       const reportOnly = createEl('button', 'lp-popup-listen');
       reportOnly.type = 'button';
       reportOnly.disabled = safeCandidateIds.length < 2;
-      setActionButtonContent(reportOnly, 'warning-circle', 'Mark incorrect');
+      setActionButtonContent(reportOnly, 'warning-circle', t('markIncorrect', 'Mark incorrect'));
       reportOnly.addEventListener('click', (e) => {
         e.stopPropagation();
-        setActionButtonContent(wrongBtn, 'check-circle', 'Flagged');
+        setActionButtonContent(wrongBtn, 'check-circle', t('flagged', 'Flagged'));
         wrongBtn.disabled = true;
         chooser.style.display = 'none';
         if (safeCandidateIds.length >= 2) {
@@ -559,7 +610,7 @@ const VocabPopup = (() => {
     });
 
     document.body.appendChild(popupEl);
-    positionPopup(span);
+    positionPopup(anchor || span);
   }
 
   /**
@@ -583,20 +634,27 @@ const VocabPopup = (() => {
       header.appendChild(createEl('span', 'lp-popup-arrow', '\u2192'));
       header.appendChild(createEl('span', 'lp-popup-translation', composedText));
     }
-    const badge = createEl('span', 'lp-popup-pos', 'phrase');
+    const badge = createEl('span', 'lp-popup-pos', t('phraseBadge', 'phrase'));
     header.appendChild(badge);
     popupEl.appendChild(header);
 
     // Component words list
     const wordsList = createEl('div', 'lp-phrase-words');
     for (const m of matches) {
-      const wordRow = createEl('div', 'lp-phrase-word-row');
+      const wordRow = createEl('button', 'lp-phrase-word-row');
+      wordRow.type = 'button';
+      applyWordDatasetFromMatch(wordRow, m);
       wordRow.appendChild(createEl('span', 'lp-phrase-word-original', m.original));
       wordRow.appendChild(createEl('span', 'lp-popup-arrow', '\u2192'));
       wordRow.appendChild(createEl('span', 'lp-phrase-word-term', m.word.term));
       if (m.word.part_of_speech) {
         wordRow.appendChild(createEl('span', 'lp-popup-pos', m.word.part_of_speech));
       }
+      wordRow.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        Promise.resolve(showWord(wordRow, span)).catch(() => {});
+      });
       wordsList.appendChild(wordRow);
     }
     popupEl.appendChild(wordsList);
@@ -606,11 +664,11 @@ const VocabPopup = (() => {
       const actions = createEl('div', 'lp-popup-actions');
       const reportBtn = createEl('button', 'lp-popup-listen');
       reportBtn.type = 'button';
-      setActionButtonContent(reportBtn, 'warning-circle', 'Report');
+      setActionButtonContent(reportBtn, 'warning-circle', t('report', 'Report'));
       reportBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         reportPhraseTranslation(span, original, composedText);
-        setActionButtonContent(reportBtn, 'check-circle', 'Reported');
+        setActionButtonContent(reportBtn, 'check-circle', t('reported', 'Reported'));
         reportBtn.disabled = true;
       });
       actions.appendChild(reportBtn);

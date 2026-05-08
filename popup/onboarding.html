@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Welcome to Langsly</title>
+  <title data-i18n="onboardingTitle"></title>
   <link rel="stylesheet" href="onboarding.css">
 </head>
 <body>
@@ -11,52 +11,52 @@
       <div class="brand-mark" aria-hidden="true">
         <img src="../icons/langsly-icon.png" alt="" class="brand-logo">
       </div>
-      <p class="eyebrow">Langsly Vocab Pass</p>
-      <h1>Learn while you browse.</h1>
-      <p class="subtitle">Bring your dashboard vocabulary into the pages you already read.</p>
+      <p class="eyebrow" data-i18n="popupBrandName"></p>
+      <h1 data-i18n="learnWhileBrowse"></h1>
+      <p class="subtitle" data-i18n="bringDashboardVocabulary"></p>
       <div class="feature-list">
-        <div class="feature-row"><span>1</span> Words appear in context while you read.</div>
-        <div class="feature-row"><span>2</span> Click any word for details and pronunciation.</div>
-        <div class="feature-row"><span>3</span> Progress syncs with your Langsly account.</div>
+        <div class="feature-row"><span>1</span> <span data-i18n="onboardingFeatureWordsInContext"></span></div>
+        <div class="feature-row"><span>2</span> <span data-i18n="onboardingFeatureDetails"></span></div>
+        <div class="feature-row"><span>3</span> <span data-i18n="onboardingFeatureProgress"></span></div>
       </div>
-      <button id="next-1" class="primary-btn">Get started</button>
+      <button id="next-1" class="primary-btn" data-i18n="getStarted"></button>
     </div>
 
     <div id="step-2" class="step hidden">
       <div class="brand-mark" aria-hidden="true">
         <img src="../icons/langsly-icon.png" alt="" class="brand-logo">
       </div>
-      <p class="eyebrow">Sign in</p>
-      <h1>Connect your account.</h1>
-      <p class="subtitle">Use your Langsly login to sync vocabulary and your dashboard theme.</p>
+      <p class="eyebrow" data-i18n="signInEyebrow"></p>
+      <h1 data-i18n="connectAccount"></h1>
+      <p class="subtitle" data-i18n="loginToSyncTheme"></p>
       <form id="onboard-login-form">
         <label>
-          <span>Email</span>
-          <input type="email" id="onboard-email" placeholder="you@langsly.com" required>
+          <span data-i18n="emailLabel"></span>
+          <input type="email" id="onboard-email" data-i18n-placeholder="emailPlaceholder" required>
         </label>
         <label>
-          <span>Password</span>
-          <input type="password" id="onboard-password" placeholder="Your password" required>
+          <span data-i18n="passwordLabel"></span>
+          <input type="password" id="onboard-password" data-i18n-placeholder="passwordPlaceholder" required>
         </label>
-        <button type="submit" id="onboard-login-btn" class="primary-btn">Log in</button>
+        <button type="submit" id="onboard-login-btn" class="primary-btn" data-i18n="loginButton"></button>
         <div id="onboard-error" class="error hidden"></div>
       </form>
-      <p class="hint-text">Need an account? Sign up at langsly.com.</p>
+      <p class="hint-text" data-i18n="needAccount"></p>
     </div>
 
     <div id="step-3" class="step hidden">
       <div class="brand-mark success-mark" aria-hidden="true">
         <img src="../icons/langsly-icon.png" alt="" class="brand-logo">
       </div>
-      <p class="eyebrow">Ready</p>
-      <h1>Vocab Pass is set.</h1>
-      <p class="subtitle">Your vocabulary and theme are synced. You can adjust difficulty and site access from the popup.</p>
+      <p class="eyebrow" data-i18n="readyEyebrow"></p>
+      <h1 data-i18n="vocabPassSet"></h1>
+      <p class="subtitle" data-i18n="vocabThemeSynced"></p>
       <div class="feature-list">
-        <div class="feature-row"><span>A</span> Hover translated words to see the original.</div>
-        <div class="feature-row"><span>B</span> Use the popup to pause a site.</div>
-        <div class="feature-row"><span>C</span> Change themes from the dashboard or popup.</div>
+        <div class="feature-row"><span>A</span> <span data-i18n="readyFeatureHover"></span></div>
+        <div class="feature-row"><span>B</span> <span data-i18n="readyFeaturePauseSite"></span></div>
+        <div class="feature-row"><span>C</span> <span data-i18n="readyFeatureThemes"></span></div>
       </div>
-      <button id="finish-btn" class="primary-btn">Start browsing</button>
+      <button id="finish-btn" class="primary-btn" data-i18n="startBrowsing"></button>
     </div>
 
     <div class="step-dots" aria-hidden="true">
@@ -66,6 +66,7 @@
     </div>
   </div>
   <script src="../vendor/browser-polyfill.min.js"></script>
+  <script src="../shared/i18n.js"></script>
   <script src="../background/theme-utils.js"></script>
   <script src="onboarding.js"></script>
 </body>

@@ -100,6 +100,7 @@ class TestElement {
   async click() {
     const event = {
       target: this,
+      preventDefault() {},
       stopPropagation() {},
     };
     const results = (this.listeners.get('click') || []).map(handler => handler(event));
@@ -167,8 +168,12 @@ function createHarness({ storageData = {}, playResult = Promise.resolve(), onMes
 
   function Audio(src) {
     this.src = src;
-    this.play = () => playResult;
     audioInstances.push(this);
+    this.play = () => (
+      typeof playResult === 'function'
+        ? playResult(src, audioInstances.length - 1)
+        : playResult
+    );
   }
 
   function SpeechSynthesisUtterance(text) {
@@ -343,6 +348,49 @@ test('listen button falls back to speech synthesis when real audio playback fail
   assert.equal(listenButton.disabled, false);
 });
 
+test('listen button retries lesson audio through the extension when page playback is blocked', async () => {
+  const blockedPlayback = {
+    then(resolve, reject) {
+      reject(new Error('blocked by page policy'));
+    },
+  };
+  const extensionMessages = [];
+  const harness = createHarness({
+    storageData: { apiBase: 'https://api.langsly.com/api' },
+    playResult(src) {
+      return src.startsWith('data:audio/mpeg;base64,')
+        ? Promise.resolve()
+        : blockedPlayback;
+    },
+    onMessage: async (message) => {
+      extensionMessages.push(message);
+      if (message.type === 'FETCH_AUDIO') {
+        return { success: true, dataUrl: 'data:audio/mpeg;base64,YXVkaW8=' };
+      }
+      return { success: true };
+    },
+  });
+
+  await harness.VocabPopup.showWord(harness.makeSpan({
+    audioUrl: '/media/pronunciations/hola.mp3',
+  }));
+  const listenButton = harness.document.body.querySelector('.lp-popup-listen');
+
+  await listenButton.click();
+  await flushMicrotasks();
+
+  assert.equal(JSON.stringify(extensionMessages), JSON.stringify([
+    {
+      type: 'FETCH_AUDIO',
+      url: 'https://api.langsly.com/media/pronunciations/hola.mp3',
+    },
+  ]));
+  assert.equal(harness.audioInstances.length, 2);
+  assert.equal(harness.audioInstances[1].src, 'data:audio/mpeg;base64,YXVkaW8=');
+  assert.equal(harness.speechCalls.length, 0);
+  assert.equal(listenButton.disabled, false);
+});
+
 test('listen button shows fallback styling when no real audio is available', async () => {
   const harness = createHarness();
 
@@ -404,5 +452,55 @@ test('listen button syncs stale words and plays newly available audio before voi
   assert.equal(JSON.stringify(syncMessages), JSON.stringify([{ type: 'SYNC_NOW' }]));
   assert.equal(harness.audioInstances.length, 1);
   assert.equal(harness.audioInstances[0].src, 'https://api.langsly.com/api/media/assets/audio-1/content/');
+  assert.equal(harness.speechCalls.length, 0);
+});
+
+test('phrase component rows open the normal word popup so their lesson audio can play', async () => {
+  const harness = createHarness({
+    storageData: { apiBase: 'https://api.langsly.com/api' },
+  });
+  const phraseSpan = harness.makeSpan({
+    original: 'hello good morning',
+    phraseType: 'composed',
+  });
+  phraseSpan.textContent = 'hola buenos dias';
+
+  harness.VocabPopup.showPhrase(phraseSpan, [
+    {
+      original: 'hello',
+      matchedForm: 'hello',
+      word: {
+        id: 'word_hello',
+        term: 'hola',
+        translation: 'hello',
+        term_language: 'es',
+        search_language: 'en',
+        pronunciation_audio: '/media/pronunciations/hola.mp3',
+      },
+    },
+    {
+      original: 'morning',
+      matchedForm: 'morning',
+      word: {
+        id: 'word_morning',
+        term: 'manana',
+        translation: 'morning',
+        term_language: 'es',
+        search_language: 'en',
+        pronunciation_audio: '/media/pronunciations/manana.mp3',
+      },
+    },
+  ]);
+
+  const rows = harness.document.body.querySelectorAll('.lp-phrase-word-row');
+  await rows[0].click();
+  await flushMicrotasks();
+
+  const listenButton = harness.document.body.querySelector('.lp-popup-listen');
+  await listenButton.click();
+  await flushMicrotasks();
+
+  assert.equal(harness.audioInstances.length, 1);
+  assert.equal(harness.audioInstances[0].src, 'https://api.langsly.com/media/pronunciations/hola.mp3');
   assert.equal(harness.speechCalls.length, 0);
 });

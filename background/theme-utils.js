@@ -65,6 +65,11 @@
     'color-button-primary-text': '--lp-button-primary-text',
   };
 
+  function t(key, fallback) {
+    if (globalScope.LangslyI18n) return globalScope.LangslyI18n.t(key, fallback);
+    return fallback || key;
+  }
+
   function normalizeThemeTokens(tokens) {
     const source = tokens && typeof tokens === 'object' ? tokens : {};
     return THEME_TOKEN_KEYS.reduce((normalized, tokenKey) => {
@@ -107,7 +112,7 @@
     const systemTheme = findThemeBySlug(themePacks, 'system');
     return {
       slug: 'system',
-      name: systemTheme && systemTheme.name ? systemTheme.name : 'System',
+      name: systemTheme && systemTheme.name ? systemTheme.name : t('systemThemeName', 'System'),
       tokens: normalizeThemeTokens(systemTheme && systemTheme.tokens),
     };
   }

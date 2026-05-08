@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Langsly Extension</title>
+  <title data-i18n="popupTitle"></title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
@@ -14,23 +14,23 @@
           <img src="../icons/langsly-icon.png" alt="" class="brand-logo">
         </div>
         <div class="brand-copy">
-          <p class="eyebrow">Langsly Vocab Pass</p>
-          <h1>Bring your study list into the pages you read.</h1>
-          <p class="subtitle">Sign in to sync vocabulary, tune the challenge level, and keep translation active only where you want it.</p>
+          <p class="eyebrow" data-i18n="popupBrandName"></p>
+          <h1 data-i18n="popupHeroTitle"></h1>
+          <p class="subtitle" data-i18n="popupHeroSubtitle"></p>
         </div>
       </div>
 
       <form id="login-form" class="auth-form">
         <label class="field">
-          <span class="field-label">Email</span>
-          <input type="email" id="email" placeholder="you@langsly.com" required>
+          <span class="field-label" data-i18n="emailLabel"></span>
+          <input type="email" id="email" data-i18n-placeholder="emailPlaceholder" required>
         </label>
         <label class="field">
-          <span class="field-label">Password</span>
-          <input type="password" id="password" placeholder="Your password" required>
+          <span class="field-label" data-i18n="passwordLabel"></span>
+          <input type="password" id="password" data-i18n-placeholder="passwordPlaceholder" required>
         </label>
-        <button type="submit" id="login-btn">Log In</button>
-        <p class="form-note">Uses your Langsly account and syncs automatically in the background.</p>
+        <button type="submit" id="login-btn" data-i18n="loginButton"></button>
+        <p class="form-note" data-i18n="loginFormNote"></p>
         <div id="login-error" class="error hidden"></div>
       </form>
     </div>
@@ -43,17 +43,17 @@
             <img src="../icons/langsly-icon.png" alt="" class="brand-logo">
           </div>
           <div class="header-copy">
-            <span class="eyebrow">Langsly Vocab Pass</span>
+            <span class="eyebrow" data-i18n="popupBrandName"></span>
             <div class="header-title-row">
-              <span class="header-title">Extension status</span>
+              <span class="header-title" data-i18n="extensionStatus"></span>
               <span class="status-pill">
-                <span id="status-indicator" class="status-dot unknown" title="Unknown"></span>
-                <span class="status-pill-label">Connection</span>
+                <span id="status-indicator" class="status-dot unknown" data-i18n-title="statusUnknown"></span>
+                <span class="status-pill-label" data-i18n="connectionLabel"></span>
               </span>
             </div>
           </div>
         </div>
-        <button id="logout-btn" class="link-btn">Log out</button>
+        <button id="logout-btn" class="link-btn" data-i18n="logoutButton"></button>
       </div>
 
       <!-- Status banner (offline/stale) -->
@@ -61,21 +61,21 @@
 
       <div class="summary-band">
         <div class="summary-panel">
-          <span class="summary-label">Words loaded</span>
+          <span class="summary-label" data-i18n="wordsLoaded"></span>
           <span id="word-count" class="summary-value">0</span>
         </div>
         <div class="summary-panel summary-panel-alt">
-          <span class="summary-label">Last sync</span>
+          <span class="summary-label" data-i18n="lastSync"></span>
           <span id="last-sync" class="summary-meta">--</span>
         </div>
       </div>
 
       <!-- Whitelist toggle for current site -->
       <div class="section">
-        <label class="section-label">Current page</label>
+        <label class="section-label" data-i18n="currentPage"></label>
         <div class="toggle-row">
           <div class="toggle-copy">
-            <div class="toggle-label">Active on this site</div>
+            <div class="toggle-label" data-i18n="activeOnThisSite"></div>
             <div id="current-domain" class="domain-chip"></div>
           </div>
           <label class="switch">
@@ -86,34 +86,35 @@
       </div>
 
       <div class="section">
-        <label class="section-label">Difficulty</label>
+        <label class="section-label" data-i18n="difficultyLabel"></label>
         <div class="difficulty-group">
-          <button class="diff-btn" data-level="easy">Easy</button>
-          <button class="diff-btn active" data-level="normal">Normal</button>
-          <button class="diff-btn" data-level="challenge">Challenge</button>
+          <button class="diff-btn" data-level="easy" data-i18n="difficultyEasy"></button>
+          <button class="diff-btn active" data-level="normal" data-i18n="difficultyNormal"></button>
+          <button class="diff-btn" data-level="challenge" data-i18n="difficultyChallenge"></button>
         </div>
       </div>
 
       <div class="section action-section">
-        <label class="section-label">Actions</label>
-        <button id="sync-btn" class="secondary-btn">Sync now</button>
+        <label class="section-label" data-i18n="actionsLabel"></label>
+        <button id="sync-btn" class="secondary-btn" data-i18n="syncNow"></button>
         <a id="open-vocabpass" class="dashboard-link" href="#">
-          <span>Open Langsly dashboard</span>
+          <span data-i18n="openDashboard"></span>
           <svg class="dashboard-link-icon" aria-hidden="true" focusable="false" viewBox="0 0 256 256" fill="currentColor" data-icon-source="phosphor" data-icon-name="arrow-square-out">
             <path d="M224,104a8,8,0,0,1-16,0V59.31l-82.34,82.35a8,8,0,0,1-11.32-11.32L196.69,48H152a8,8,0,0,1,0-16h64a8,8,0,0,1,8,8Zm-40,24a8,8,0,0,0-8,8v72H48V80h72a8,8,0,0,0,0-16H48A16,16,0,0,0,32,80V208a16,16,0,0,0,16,16H176a16,16,0,0,0,16-16V136A8,8,0,0,0,184,128Z"></path>
           </svg>
         </a>
         <label id="theme-row" class="theme-row hidden" for="theme-select">
           <span class="theme-copy">
-            <span class="theme-label">Theme</span>
-            <span id="theme-status" class="theme-status">Synced from dashboard</span>
+            <span class="theme-label" data-i18n="themeLabel"></span>
+            <span id="theme-status" class="theme-status" data-i18n="themeSynced"></span>
           </span>
-          <select id="theme-select" class="theme-select" aria-label="Theme"></select>
+          <select id="theme-select" class="theme-select" data-i18n-aria-label="themeLabel"></select>
         </label>
       </div>
     </div>
   </div>
   <script src="../vendor/browser-polyfill.min.js"></script>
+  <script src="../shared/i18n.js"></script>
   <script src="../background/theme-utils.js"></script>
   <script src="popup.js"></script>
 </body>

@@ -2,49 +2,40 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Langsly Settings</title>
+  <title data-i18n="optionsTitle"></title>
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
   <div id="options-app">
     <div class="options-header">
       <img src="../icons/langsly-icon.png" alt="" class="logo">
-      <h1>Langsly Settings</h1>
+      <h1 data-i18n="optionsTitle"></h1>
     </div>
 
     <div class="options-section">
-      <h2>Server Configuration</h2>
-      <label for="api-base">API Base URL</label>
-      <input type="url" id="api-base" placeholder="https://api.langsly.com/api">
-
-      <label for="frontend-url">Frontend URL</label>
-      <input type="url" id="frontend-url" placeholder="https://langsly.com">
-
-      <button id="reset-urls" class="secondary-btn">Reset to Defaults</button>
-    </div>
-
-    <div class="options-section">
-      <h2>Sync Interval</h2>
+      <h2 data-i18n="syncInterval"></h2>
       <div class="slider-row">
         <input type="range" id="sync-interval" min="15" max="240" step="15" value="60">
-        <span id="sync-interval-label">60 min</span>
+        <span id="sync-interval-label"></span>
       </div>
     </div>
 
     <div class="options-section">
-      <h2>Behavior</h2>
+      <h2 data-i18n="behaviorLabel"></h2>
       <label class="toggle-option">
-        <span>Auto-exclude sensitive sites (banking, government, login pages)</span>
+        <span data-i18n="autoExcludeSensitiveSites"></span>
         <input type="checkbox" id="exclude-sensitive" checked>
       </label>
     </div>
 
     <div class="options-footer">
-      <button id="save-btn" class="primary-btn">Save Settings</button>
-      <span id="save-status" class="save-status hidden">Settings saved!</span>
+      <button id="save-btn" class="primary-btn" data-i18n="saveSettings"></button>
+      <button id="reset-preferences" class="secondary-btn" data-i18n="resetToDefaults"></button>
+      <span id="save-status" class="save-status hidden" data-i18n="settingsSaved"></span>
     </div>
   </div>
   <script src="../vendor/browser-polyfill.min.js"></script>
+  <script src="../shared/i18n.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

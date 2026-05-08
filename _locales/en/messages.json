@@ -1,0 +1,299 @@
+{
+  "extName": {
+    "message": "Langsly - Vocab Pass",
+    "description": "Extension name shown in the browser and extension stores."
+  },
+  "extDescription": {
+    "message": "Learn vocabulary while you browse. Langsly highlights your saved words on real websites. Automatic, in-context practice every day.",
+    "description": "Extension description shown in the browser and extension stores."
+  },
+  "popupTitle": {
+    "message": "Langsly Extension"
+  },
+  "popupBrandName": {
+    "message": "Langsly Vocab Pass"
+  },
+  "popupHeroTitle": {
+    "message": "Bring your study list into the pages you read."
+  },
+  "popupHeroSubtitle": {
+    "message": "Sign in to sync vocabulary, tune the challenge level, and keep translation active only where you want it."
+  },
+  "emailLabel": {
+    "message": "Email"
+  },
+  "emailPlaceholder": {
+    "message": "you@langsly.com"
+  },
+  "passwordLabel": {
+    "message": "Password"
+  },
+  "passwordPlaceholder": {
+    "message": "Your password"
+  },
+  "loginButton": {
+    "message": "Log in"
+  },
+  "loginLoading": {
+    "message": "Logging in..."
+  },
+  "loginFormNote": {
+    "message": "Uses your Langsly account and syncs automatically in the background."
+  },
+  "extensionStatus": {
+    "message": "Extension status"
+  },
+  "connectionLabel": {
+    "message": "Connection"
+  },
+  "logoutButton": {
+    "message": "Log out"
+  },
+  "wordsLoaded": {
+    "message": "Words loaded"
+  },
+  "lastSync": {
+    "message": "Last sync"
+  },
+  "currentPage": {
+    "message": "Current page"
+  },
+  "activeOnThisSite": {
+    "message": "Active on this site"
+  },
+  "difficultyLabel": {
+    "message": "Difficulty"
+  },
+  "difficultyEasy": {
+    "message": "Easy"
+  },
+  "difficultyNormal": {
+    "message": "Normal"
+  },
+  "difficultyChallenge": {
+    "message": "Challenge"
+  },
+  "actionsLabel": {
+    "message": "Actions"
+  },
+  "syncNow": {
+    "message": "Sync now"
+  },
+  "syncing": {
+    "message": "Syncing..."
+  },
+  "openDashboard": {
+    "message": "Open Langsly dashboard"
+  },
+  "themeLabel": {
+    "message": "Theme"
+  },
+  "themeSynced": {
+    "message": "Synced from dashboard"
+  },
+  "themeUsingLastSynced": {
+    "message": "Using last synced theme"
+  },
+  "themeApplying": {
+    "message": "Applying..."
+  },
+  "themeCouldNotApply": {
+    "message": "Could not apply theme"
+  },
+  "dataStaleWarning": {
+    "message": "Data may be stale - last synced over 24h ago"
+  },
+  "offlineCachedVocabulary": {
+    "message": "Offline - using cached vocabulary"
+  },
+  "statusConnected": {
+    "message": "Connected"
+  },
+  "statusOffline": {
+    "message": "Offline"
+  },
+  "statusSyncFailed": {
+    "message": "Sync failed"
+  },
+  "statusUnknown": {
+    "message": "Unknown"
+  },
+  "notAvailable": {
+    "message": "N/A"
+  },
+  "loginFailed": {
+    "message": "Login failed"
+  },
+  "optionsTitle": {
+    "message": "Langsly Settings"
+  },
+  "serverConfiguration": {
+    "message": "Server Configuration"
+  },
+  "apiBaseUrl": {
+    "message": "API Base URL"
+  },
+  "apiBasePlaceholder": {
+    "message": "https://api.langsly.com/api"
+  },
+  "frontendUrl": {
+    "message": "Frontend URL"
+  },
+  "frontendPlaceholder": {
+    "message": "https://langsly.com"
+  },
+  "resetToDefaults": {
+    "message": "Reset to Defaults"
+  },
+  "syncInterval": {
+    "message": "Sync Interval"
+  },
+  "minuteLabel": {
+    "message": "$MINUTES$ min",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "behaviorLabel": {
+    "message": "Behavior"
+  },
+  "autoExcludeSensitiveSites": {
+    "message": "Auto-exclude sensitive sites (banking, government, login pages)"
+  },
+  "saveSettings": {
+    "message": "Save Settings"
+  },
+  "settingsSaved": {
+    "message": "Settings saved!"
+  },
+  "onboardingTitle": {
+    "message": "Welcome to Langsly"
+  },
+  "learnWhileBrowse": {
+    "message": "Learn while you browse."
+  },
+  "bringDashboardVocabulary": {
+    "message": "Bring your dashboard vocabulary into the pages you already read."
+  },
+  "onboardingFeatureWordsInContext": {
+    "message": "Words appear in context while you read."
+  },
+  "onboardingFeatureDetails": {
+    "message": "Click any word for details and pronunciation."
+  },
+  "onboardingFeatureProgress": {
+    "message": "Progress syncs with your Langsly account."
+  },
+  "getStarted": {
+    "message": "Get started"
+  },
+  "signInEyebrow": {
+    "message": "Sign in"
+  },
+  "connectAccount": {
+    "message": "Connect your account."
+  },
+  "loginToSyncTheme": {
+    "message": "Use your Langsly login to sync vocabulary and your dashboard theme."
+  },
+  "needAccount": {
+    "message": "Need an account? Sign up at langsly.com."
+  },
+  "readyEyebrow": {
+    "message": "Ready"
+  },
+  "vocabPassSet": {
+    "message": "Vocab Pass is set."
+  },
+  "vocabThemeSynced": {
+    "message": "Your vocabulary and theme are synced. You can adjust difficulty and site access from the popup."
+  },
+  "readyFeatureHover": {
+    "message": "Hover translated words to see the original."
+  },
+  "readyFeaturePauseSite": {
+    "message": "Use the popup to pause a site."
+  },
+  "readyFeatureThemes": {
+    "message": "Change themes from the dashboard or popup."
+  },
+  "startBrowsing": {
+    "message": "Start browsing"
+  },
+  "listenButton": {
+    "message": "Listen"
+  },
+  "listenVoiceSpanish": {
+    "message": "Escuchar (voz)"
+  },
+  "listenVoiceDefault": {
+    "message": "Listen (voice)"
+  },
+  "noPronunciationTitleSpanish": {
+    "message": "No hay audio de pronunciaci\u00f3n disponible; se usar\u00e1 la voz del navegador"
+  },
+  "noPronunciationTitleDefault": {
+    "message": "No pronunciation audio available; using browser voice"
+  },
+  "playPronunciationTitleSpanish": {
+    "message": "Reproducir audio de pronunciaci\u00f3n"
+  },
+  "playPronunciationTitleDefault": {
+    "message": "Play pronunciation audio"
+  },
+  "uncertainBadge": {
+    "message": "uncertain"
+  },
+  "alsoUsedAs": {
+    "message": "Also used as:"
+  },
+  "wrongMeaning": {
+    "message": "Wrong meaning?"
+  },
+  "corrected": {
+    "message": "Corrected"
+  },
+  "noLearnedAlternatives": {
+    "message": "No learned alternatives yet. Marking this helps improve future guesses."
+  },
+  "markIncorrect": {
+    "message": "Mark incorrect"
+  },
+  "flagged": {
+    "message": "Flagged"
+  },
+  "phraseBadge": {
+    "message": "phrase"
+  },
+  "report": {
+    "message": "Report"
+  },
+  "reported": {
+    "message": "Reported"
+  },
+  "invalidEmailOrPassword": {
+    "message": "Invalid email or password"
+  },
+  "unexpectedServerResponse": {
+    "message": "Unexpected server response"
+  },
+  "cannotReachServer": {
+    "message": "Cannot reach server. Check your connection or server URL in options."
+  },
+  "networkError": {
+    "message": "Network error: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "translationRequestFailed": {
+    "message": "Translation request failed"
+  },
+  "systemThemeName": {
+    "message": "System"
+  }
+}

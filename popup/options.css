@@ -128,6 +128,11 @@ body {
   margin-top: 8px;
 }
 
+.options-footer .secondary-btn {
+  margin-top: 0;
+  padding: 9px 16px;
+}
+
 .primary-btn {
   padding: 10px 24px;
   background: #2563eb;
