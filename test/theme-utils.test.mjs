@@ -19,8 +19,8 @@ test('normalizes missing theme tokens with defaults', () => {
 
   assert.equal(tokens['color-page-bg'], '#101827');
   assert.equal(tokens['color-accent'], '#06b6d4');
-  assert.equal(tokens['color-surface'], '#ffffff');
-  assert.equal(tokens['color-text-primary'], '#0f172a');
+  assert.equal(tokens['color-surface'], '#FFFFFF');
+  assert.equal(tokens['color-text-primary'], '#141C1A');
 });
 
 test('resolves active theme from current user and available packs', () => {
@@ -47,7 +47,7 @@ test('falls back to system when active theme is unavailable', () => {
 
   assert.equal(result.slug, 'system');
   assert.equal(result.name, 'System');
-  assert.equal(result.tokens['color-page-bg'], '#eef4ff');
+  assert.equal(result.tokens['color-page-bg'], '#F7F6F2');
 });
 
 test('maps normalized tokens to local extension CSS variables', () => {

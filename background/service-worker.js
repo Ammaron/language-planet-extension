@@ -26,6 +26,7 @@ function t(key, substitutions, fallback) {
 const LEGACY_DEFAULTS = { apiBase: 'http://localhost:8000/api', frontendUrl: 'http://localhost:3000' };
 const DEFAULTS = { apiBase: 'https://api.langsly.com/api', frontendUrl: 'https://langsly.com' };
 const MAX_EXTENSION_AUDIO_FETCH_BYTES = 8 * 1024 * 1024;
+const DEFAULT_EXTENSION_SOURCE_LANGUAGE = 'en';
 
 function normalizeUrl(url) {
   return String(url || '').trim().replace(/\/+$/, '');
@@ -79,6 +80,7 @@ async function clearTokens() {
     'refreshToken',
     'vocabWords',
     'lastSync',
+    'matchableWordCount',
     'difficulty',
     'rotation_salt',
     'themePacks',
@@ -87,6 +89,26 @@ async function clearTokens() {
     'themeTokens',
     'themeSyncStatus',
   ]);
+}
+
+function normalizeLanguageCode(value) {
+  return String(value || '').trim().toLowerCase().replace(/_/g, '-').split('-')[0] || '';
+}
+
+async function getExtensionSourceLanguage() {
+  const { extensionSourceLanguage } = await browser.storage.local.get('extensionSourceLanguage');
+  return normalizeLanguageCode(extensionSourceLanguage) || DEFAULT_EXTENSION_SOURCE_LANGUAGE;
+}
+
+function countMatchableWords(words) {
+  if (!Array.isArray(words)) return 0;
+  return words.filter((word) => {
+    if (!word) return false;
+    if (typeof word.translation === 'string' && word.translation.trim()) return true;
+    if (Array.isArray(word.searchable_forms) && word.searchable_forms.some(form => String(form || '').trim())) return true;
+    if (Array.isArray(word.source_forms) && word.source_forms.some(form => String(form || '').trim())) return true;
+    return false;
+  }).length;
 }
 
 function _generateRotationSalt() {
@@ -424,8 +446,9 @@ async function syncVocabulary() {
   const { apiBase } = await getConfig();
   const { difficulty } = await browser.storage.local.get('difficulty');
   const level = difficulty || 'normal';
+  const sourceLanguage = await getExtensionSourceLanguage();
 
-  const res = await authFetch(`${apiBase}/lessons/vocabpass/words/?difficulty=${level}`);
+  const res = await authFetch(`${apiBase}/lessons/vocabpass/words/?difficulty=${level}&source_language=${encodeURIComponent(sourceLanguage)}`);
   if (!res) {
     await browser.storage.local.set({ syncStatus: 'failed' });
     return;
@@ -436,10 +459,13 @@ async function syncVocabulary() {
   }
 
   const data = await res.json();
+  const matchableWordCount = countMatchableWords(data.words);
   await browser.storage.local.set({
     vocabWords: data.words,
     lastSync: new Date().toISOString(),
     wordCount: data.count,
+    matchableWordCount,
+    extensionSourceLanguage: sourceLanguage,
     syncStatus: 'success',
   });
 
@@ -585,6 +611,8 @@ browser.runtime.onMessage.addListener((message) => {
         wordCount,
         difficulty,
         syncStatus,
+        extensionSourceLanguage,
+        matchableWordCount,
         themePacks,
         activeThemeSlug,
         activeThemeName,
@@ -596,6 +624,8 @@ browser.runtime.onMessage.addListener((message) => {
         'wordCount',
         'difficulty',
         'syncStatus',
+        'extensionSourceLanguage',
+        'matchableWordCount',
         'themePacks',
         'activeThemeSlug',
         'activeThemeName',
@@ -608,6 +638,8 @@ browser.runtime.onMessage.addListener((message) => {
         wordCount: wordCount || 0,
         difficulty: difficulty || 'normal',
         syncStatus: syncStatus || 'unknown',
+        extensionSourceLanguage: extensionSourceLanguage || DEFAULT_EXTENSION_SOURCE_LANGUAGE,
+        matchableWordCount: Number.isFinite(matchableWordCount) ? matchableWordCount : 0,
         themePacks: Array.isArray(themePacks) ? themePacks : [],
         activeThemeSlug: activeThemeSlug || 'system',
         activeThemeName: activeThemeName || t('systemThemeName', 'System'),

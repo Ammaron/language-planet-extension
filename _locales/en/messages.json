@@ -73,6 +73,15 @@
   "lastSync": {
     "message": "Last sync"
   },
+  "sourceLanguage": {
+    "message": "Page language"
+  },
+  "matchableWords": {
+    "message": "Matchable"
+  },
+  "noMatchableWordsWarning": {
+    "message": "Words synced, but none have page text triggers for the selected source language."
+  },
   "currentPage": {
     "message": "Current page"
   },

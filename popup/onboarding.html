@@ -6,65 +6,84 @@
   <link rel="stylesheet" href="onboarding.css">
 </head>
 <body>
-  <div id="onboarding-app">
-    <div id="step-1" class="step">
-      <div class="brand-mark" aria-hidden="true">
-        <img src="../icons/langsly-icon.png" alt="" class="brand-logo">
+  <div id="onboarding-app" class="setup-shell">
+    <div class="setup-panel">
+      <div class="setup-art" aria-hidden="true">
+        <div class="brand-mark">
+          <img src="../icons/langsly-icon.png" alt="" class="brand-logo">
+        </div>
+        <div class="orbit orbit-one"></div>
+        <div class="orbit orbit-two"></div>
       </div>
-      <p class="eyebrow" data-i18n="popupBrandName"></p>
-      <h1 data-i18n="learnWhileBrowse"></h1>
-      <p class="subtitle" data-i18n="bringDashboardVocabulary"></p>
-      <div class="feature-list">
-        <div class="feature-row"><span>1</span> <span data-i18n="onboardingFeatureWordsInContext"></span></div>
-        <div class="feature-row"><span>2</span> <span data-i18n="onboardingFeatureDetails"></span></div>
-        <div class="feature-row"><span>3</span> <span data-i18n="onboardingFeatureProgress"></span></div>
-      </div>
-      <button id="next-1" class="primary-btn" data-i18n="getStarted"></button>
-    </div>
 
-    <div id="step-2" class="step hidden">
-      <div class="brand-mark" aria-hidden="true">
-        <img src="../icons/langsly-icon.png" alt="" class="brand-logo">
+      <div id="step-1" class="step">
+        <p class="eyebrow" data-i18n="popupBrandName"></p>
+        <h1 data-i18n="learnWhileBrowse"></h1>
+        <p class="subtitle" data-i18n="bringDashboardVocabulary"></p>
+        <div class="feature-list">
+          <div class="feature-row">
+            <span class="feature-badge">1</span>
+            <span class="feature-copy" data-i18n="onboardingFeatureWordsInContext"></span>
+          </div>
+          <div class="feature-row">
+            <span class="feature-badge">2</span>
+            <span class="feature-copy" data-i18n="onboardingFeatureDetails"></span>
+          </div>
+          <div class="feature-row">
+            <span class="feature-badge">3</span>
+            <span class="feature-copy" data-i18n="onboardingFeatureProgress"></span>
+          </div>
+        </div>
+        <button id="next-1" class="primary-btn" data-i18n="getStarted"></button>
       </div>
-      <p class="eyebrow" data-i18n="signInEyebrow"></p>
-      <h1 data-i18n="connectAccount"></h1>
-      <p class="subtitle" data-i18n="loginToSyncTheme"></p>
-      <form id="onboard-login-form">
-        <label>
-          <span data-i18n="emailLabel"></span>
-          <input type="email" id="onboard-email" data-i18n-placeholder="emailPlaceholder" required>
-        </label>
-        <label>
-          <span data-i18n="passwordLabel"></span>
-          <input type="password" id="onboard-password" data-i18n-placeholder="passwordPlaceholder" required>
-        </label>
-        <button type="submit" id="onboard-login-btn" class="primary-btn" data-i18n="loginButton"></button>
-        <div class="auth-divider"><span data-i18n="orContinueWith"></span></div>
-        <button type="button" id="onboard-google-login-btn" class="google-login-btn" data-i18n="loginWithGoogle"></button>
-        <div id="onboard-error" class="error hidden"></div>
-      </form>
-      <p class="hint-text" data-i18n="needAccount"></p>
-    </div>
 
-    <div id="step-3" class="step hidden">
-      <div class="brand-mark success-mark" aria-hidden="true">
-        <img src="../icons/langsly-icon.png" alt="" class="brand-logo">
+      <div id="step-2" class="step hidden">
+        <p class="eyebrow" data-i18n="signInEyebrow"></p>
+        <h1 data-i18n="connectAccount"></h1>
+        <p class="subtitle" data-i18n="loginToSyncTheme"></p>
+        <form id="onboard-login-form">
+          <label>
+            <span data-i18n="emailLabel"></span>
+            <input type="email" id="onboard-email" data-i18n-placeholder="emailPlaceholder" required>
+          </label>
+          <label>
+            <span data-i18n="passwordLabel"></span>
+            <input type="password" id="onboard-password" data-i18n-placeholder="passwordPlaceholder" required>
+          </label>
+          <button type="submit" id="onboard-login-btn" class="primary-btn" data-i18n="loginButton"></button>
+          <div class="auth-divider"><span data-i18n="orContinueWith"></span></div>
+          <button type="button" id="onboard-google-login-btn" class="google-login-btn" data-i18n="loginWithGoogle"></button>
+          <div id="onboard-error" class="error hidden"></div>
+        </form>
+        <p class="hint-text" data-i18n="needAccount"></p>
       </div>
-      <p class="eyebrow" data-i18n="readyEyebrow"></p>
-      <h1 data-i18n="vocabPassSet"></h1>
-      <p class="subtitle" data-i18n="vocabThemeSynced"></p>
-      <div class="feature-list">
-        <div class="feature-row"><span>A</span> <span data-i18n="readyFeatureHover"></span></div>
-        <div class="feature-row"><span>B</span> <span data-i18n="readyFeaturePauseSite"></span></div>
-        <div class="feature-row"><span>C</span> <span data-i18n="readyFeatureThemes"></span></div>
-      </div>
-      <button id="finish-btn" class="primary-btn" data-i18n="startBrowsing"></button>
-    </div>
 
-    <div class="step-dots" aria-hidden="true">
-      <span id="dot-1" class="dot active"></span>
-      <span id="dot-2" class="dot"></span>
-      <span id="dot-3" class="dot"></span>
+      <div id="step-3" class="step hidden">
+        <p class="eyebrow" data-i18n="readyEyebrow"></p>
+        <h1 data-i18n="vocabPassSet"></h1>
+        <p class="subtitle" data-i18n="vocabThemeSynced"></p>
+        <div class="feature-list">
+          <div class="feature-row">
+            <span class="feature-badge success-badge">A</span>
+            <span class="feature-copy" data-i18n="readyFeatureHover"></span>
+          </div>
+          <div class="feature-row">
+            <span class="feature-badge success-badge">B</span>
+            <span class="feature-copy" data-i18n="readyFeaturePauseSite"></span>
+          </div>
+          <div class="feature-row">
+            <span class="feature-badge success-badge">C</span>
+            <span class="feature-copy" data-i18n="readyFeatureThemes"></span>
+          </div>
+        </div>
+        <button id="finish-btn" class="primary-btn" data-i18n="startBrowsing"></button>
+      </div>
+
+      <div class="step-dots" aria-hidden="true">
+        <span id="dot-1" class="dot active"></span>
+        <span id="dot-2" class="dot"></span>
+        <span id="dot-3" class="dot"></span>
+      </div>
     </div>
   </div>
   <script src="../vendor/browser-polyfill.min.js"></script>

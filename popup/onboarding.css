@@ -1,18 +1,23 @@
 :root {
-  --lp-page-bg: #eef4ff;
-  --lp-surface: #ffffff;
-  --lp-surface-elevated: #eef2ff;
-  --lp-text-primary: #0f172a;
-  --lp-text-secondary: #334155;
-  --lp-text-muted: #64748b;
-  --lp-border: #e2e8f0;
-  --lp-accent: #2563eb;
-  --lp-accent-hover: #1d4ed8;
-  --lp-accent-text: #ffffff;
-  --lp-danger: #ef4444;
-  --lp-success: #10b981;
-  --lp-button-primary-bg: #2563eb;
-  --lp-button-primary-text: #ffffff;
+  --lp-page-bg: #F7F6F2;
+  --lp-surface: #FFFFFF;
+  --lp-surface-elevated: #F0F1EC;
+  --lp-text-primary: #141C1A;
+  --lp-text-secondary: #4F5D59;
+  --lp-text-muted: #7B8782;
+  --lp-border: #DCDDD6;
+  --lp-border-strong: #C7C9C0;
+  --lp-accent: #C98B2C;
+  --lp-accent-hover: #A97220;
+  --lp-accent-text: #2B1E08;
+  --lp-danger: #C84A58;
+  --lp-success: #4E873E;
+  --lp-warning: #C98B2C;
+  --lp-button-primary-bg: #B73A48;
+  --lp-button-primary-text: #FFFFFF;
+  --lp-font-display: "Fredoka One", "Nunito", "DM Sans", sans-serif;
+  --lp-font-ui: "Nunito", "DM Sans", sans-serif;
+  --lp-font-body: "DM Sans", "Nunito", "Segoe UI", Arial, sans-serif;
 }
 
 * {
@@ -25,9 +30,10 @@ body {
   min-height: 100vh;
   color: var(--lp-text-primary);
   background:
-    linear-gradient(145deg, color-mix(in srgb, var(--lp-accent) 15%, transparent), transparent 42%),
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--lp-accent) 14%, transparent), transparent 38%),
+    linear-gradient(180deg, color-mix(in srgb, var(--lp-button-primary-bg) 4%, transparent), transparent 44%),
     var(--lp-page-bg);
-  font-family: Inter, "Avenir Next", "Segoe UI", Arial, sans-serif;
+  font-family: var(--lp-font-body);
   font-size: 13px;
 }
 
@@ -35,34 +41,64 @@ body {
   display: none !important;
 }
 
-#onboarding-app {
-  width: min(100%, 440px);
+.setup-shell {
+  display: grid;
+  place-items: center;
+  width: min(100%, 520px);
+  min-height: 100vh;
   margin: 0 auto;
-  padding: 32px 18px;
+  padding: 28px 18px;
+}
+
+.setup-panel {
+  width: 100%;
 }
 
 .step {
-  min-height: 430px;
-  padding: 20px;
+  min-height: auto;
+  overflow: visible;
+  padding: 22px;
   border: 1px solid var(--lp-border);
-  border-radius: 24px;
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--lp-accent) 10%, transparent), transparent 60%),
-    color-mix(in srgb, var(--lp-surface) 94%, transparent);
-  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.14);
+  border-top: 4px solid var(--lp-button-primary-bg);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--lp-surface) 96%, transparent);
+  box-shadow: 0 18px 42px rgba(48, 33, 39, 0.12);
+}
+
+.setup-art {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+
+.orbit {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--lp-accent);
+}
+
+.orbit-one {
+  width: 42px;
+  opacity: 0.92;
+}
+
+.orbit-two {
+  width: 18px;
+  background: var(--lp-button-primary-bg);
+  opacity: 0.78;
 }
 
 .brand-mark {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
-  margin-bottom: 16px;
+  width: 50px;
+  height: 50px;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--lp-accent) 20%, var(--lp-border));
+  border: 1px solid var(--lp-border);
   border-radius: 16px;
   background: var(--lp-surface);
-  box-shadow: 0 13px 26px color-mix(in srgb, var(--lp-accent) 28%, transparent);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--lp-button-primary-bg) 18%, transparent);
 }
 
 .brand-logo {
@@ -84,15 +120,16 @@ body {
   font-weight: 900;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--lp-text-muted);
+  color: var(--lp-button-primary-bg);
 }
 
 .step h1 {
   margin-top: 8px;
-  font-size: 28px;
-  line-height: 1.03;
+  font-family: var(--lp-font-display);
+  font-size: 27px;
+  line-height: 1.08;
   font-weight: 900;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
 }
 
 .subtitle {
@@ -109,28 +146,39 @@ body {
 
 .feature-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
-  min-height: 42px;
-  padding: 10px 11px;
+  min-height: 44px;
+  padding: 10px 12px;
   border: 1px solid var(--lp-border);
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--lp-surface);
   color: var(--lp-text-secondary);
   line-height: 1.35;
 }
 
-.feature-row span {
+.feature-badge {
   display: grid;
   place-items: center;
   width: 22px;
   height: 22px;
   flex: 0 0 auto;
   border-radius: 8px;
-  background: color-mix(in srgb, var(--lp-accent) 13%, var(--lp-surface-elevated));
-  color: var(--lp-accent-hover);
+  background: color-mix(in srgb, var(--lp-accent) 20%, var(--lp-surface-elevated));
+  color: var(--lp-accent-text);
   font-size: 11px;
   font-weight: 900;
+}
+
+.feature-copy {
+  flex: 1;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.success-badge {
+  background: color-mix(in srgb, var(--lp-success) 18%, var(--lp-surface-elevated));
+  color: var(--lp-success);
 }
 
 .primary-btn {
@@ -139,12 +187,12 @@ body {
   padding: 11px 14px;
   border: 0;
   border-radius: 14px;
-  background: linear-gradient(135deg, var(--lp-button-primary-bg), var(--lp-accent-hover));
+  background: var(--lp-button-primary-bg);
   color: var(--lp-button-primary-text);
   font: inherit;
   font-weight: 900;
   cursor: pointer;
-  box-shadow: 0 12px 22px color-mix(in srgb, var(--lp-accent) 24%, transparent);
+  box-shadow: 0 12px 22px color-mix(in srgb, var(--lp-button-primary-bg) 22%, transparent);
   transition: transform 0.16s ease, box-shadow 0.16s ease;
 }
 
@@ -193,8 +241,8 @@ body {
   height: 20px;
   border: 1px solid var(--lp-border);
   border-radius: 999px;
-  color: #2563eb;
-  background: #ffffff;
+  color: var(--lp-button-primary-bg);
+  background: var(--lp-surface);
   font-size: 13px;
   font-weight: 900;
 }
@@ -240,7 +288,7 @@ body {
   outline: none;
   background: var(--lp-surface);
   color: var(--lp-text-primary);
-  font: 13px Inter, "Avenir Next", "Segoe UI", Arial, sans-serif;
+  font: 13px var(--lp-font-body);
   letter-spacing: 0;
   text-transform: none;
 }
@@ -285,5 +333,5 @@ body {
 
 .dot.active {
   width: 22px;
-  background: var(--lp-accent);
+  background: var(--lp-button-primary-bg);
 }

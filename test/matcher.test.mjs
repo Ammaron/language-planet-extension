@@ -133,3 +133,37 @@ test('same-meaning variants stay grouped under one meaning key for a trigger', (
     ['greet_formal', 'greet_informal'],
   );
 });
+
+test('extension-synced English trigger forms match Wikipedia and Google-like text', () => {
+  const matcher = createMatcher([
+    {
+      id: 'search_word',
+      term: 'buscar',
+      translation: 'search',
+      searchable_forms: ['searches', 'searched', 'searching'],
+      source_forms: ['search engine'],
+      search_language: 'en',
+      term_language: 'es',
+    },
+    {
+      id: 'encyclopedia_word',
+      term: 'enciclopedia',
+      translation: 'encyclopedia',
+      searchable_forms: ['encyclopedias'],
+      search_language: 'en',
+      term_language: 'es',
+    },
+  ]);
+
+  const googleResult = matcher.findMatches('Google Search helps people search the web.');
+  assert.deepEqual(
+    plain(googleResult.singles.map(match => match.original)),
+    ['Search', 'search'],
+  );
+
+  const wikipediaResult = matcher.findMatches('Wikipedia is an encyclopedia.');
+  assert.deepEqual(
+    plain(wikipediaResult.singles.map(match => match.original)),
+    ['encyclopedia'],
+  );
+});

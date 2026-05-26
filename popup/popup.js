@@ -9,6 +9,8 @@ const logoutBtn = document.getElementById('logout-btn');
 const syncBtn = document.getElementById('sync-btn');
 const wordCountEl = document.getElementById('word-count');
 const lastSyncEl = document.getElementById('last-sync');
+const sourceLanguageEl = document.getElementById('source-language');
+const matchableWordCountEl = document.getElementById('matchable-word-count');
 const currentDomainEl = document.getElementById('current-domain');
 const siteToggle = document.getElementById('site-toggle');
 const openVocabpass = document.getElementById('open-vocabpass');
@@ -156,6 +158,19 @@ async function init() {
 
 function updateStatus(status) {
   wordCountEl.textContent = status.wordCount || 0;
+  const matchableWordCount = Number.isFinite(status.matchableWordCount)
+    ? status.matchableWordCount
+    : 0;
+  if (sourceLanguageEl) {
+    sourceLanguageEl.textContent = String(status.extensionSourceLanguage || 'en').toUpperCase();
+  }
+  if (matchableWordCountEl) {
+    matchableWordCountEl.textContent = matchableWordCount;
+  }
+  if (statusBanner) {
+    statusBanner.classList.add('hidden');
+    statusBanner.textContent = '';
+  }
 
   if (status.lastSync) {
     const syncDate = new Date(status.lastSync);
@@ -170,6 +185,12 @@ function updateStatus(status) {
     }
   } else {
     lastSyncEl.textContent = '\u2014';
+  }
+
+  if ((status.wordCount || 0) > 0 && matchableWordCount === 0 && statusBanner) {
+    statusBanner.textContent = t('noMatchableWordsWarning', 'Words synced, but none have page text triggers for the selected source language.');
+    statusBanner.className = 'status-banner warning';
+    statusBanner.classList.remove('hidden');
   }
 
   // Update difficulty buttons

@@ -73,6 +73,15 @@
   "lastSync": {
     "message": "Última sincronización"
   },
+  "sourceLanguage": {
+    "message": "Idioma de página"
+  },
+  "matchableWords": {
+    "message": "Detectables"
+  },
+  "noMatchableWordsWarning": {
+    "message": "Las palabras se sincronizaron, pero ninguna tiene activadores de texto para el idioma de página seleccionado."
+  },
   "currentPage": {
     "message": "Página actual"
   },
