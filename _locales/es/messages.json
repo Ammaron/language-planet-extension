@@ -4,7 +4,7 @@
     "description": "Nombre de la extensión que se muestra en el navegador y en las tiendas de extensiones."
   },
   "extDescription": {
-    "message": "Aprende vocabulario mientras navegas. Langsly resalta tus palabras guardadas en sitios web reales. Práctica automática y en contexto todos los días.",
+    "message": "Practica vocabulario de espanol e ingles al navegar. Sincroniza palabras de Langsly, repasa en contexto y pausa sitios.",
     "description": "Descripción de la extensión que se muestra en el navegador y en las tiendas de extensiones."
   },
   "popupTitle": {
@@ -14,10 +14,10 @@
     "message": "Langsly Vocab Pass"
   },
   "popupHeroTitle": {
-    "message": "Lleva tu lista de estudio a las páginas que lees."
+    "message": "Repasa palabras de espanol e ingles en las paginas que lees."
   },
   "popupHeroSubtitle": {
-    "message": "Inicia sesión para sincronizar vocabulario, ajustar el nivel de desafío y mantener la traducción activa solo donde quieras."
+    "message": "Inicia sesion para sincronizar vocabulario de Langsly, ajustar el nivel y mantener el repaso activo solo donde quieras."
   },
   "emailLabel": {
     "message": "Correo electrónico"
@@ -202,7 +202,7 @@
     "message": "Aprende mientras navegas."
   },
   "bringDashboardVocabulary": {
-    "message": "Lleva el vocabulario de tu panel a las páginas que ya lees."
+    "message": "Lleva vocabulario de espanol e ingles desde tu panel a las paginas que ya lees."
   },
   "onboardingFeatureWordsInContext": {
     "message": "Las palabras aparecen en contexto mientras lees."

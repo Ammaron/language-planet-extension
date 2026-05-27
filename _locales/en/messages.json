@@ -4,7 +4,7 @@
     "description": "Extension name shown in the browser and extension stores."
   },
   "extDescription": {
-    "message": "Learn vocabulary while you browse. Langsly highlights your saved words on real websites. Automatic, in-context practice every day.",
+    "message": "Practice Spanish and English vocabulary while you browse. Sync Langsly words, review in context, and pause sites anytime.",
     "description": "Extension description shown in the browser and extension stores."
   },
   "popupTitle": {
@@ -14,10 +14,10 @@
     "message": "Langsly Vocab Pass"
   },
   "popupHeroTitle": {
-    "message": "Bring your study list into the pages you read."
+    "message": "Review Spanish and English words on the pages you read."
   },
   "popupHeroSubtitle": {
-    "message": "Sign in to sync vocabulary, tune the challenge level, and keep translation active only where you want it."
+    "message": "Sign in to sync Langsly vocabulary, tune the challenge level, and keep review active only where you want it."
   },
   "emailLabel": {
     "message": "Email"
@@ -202,7 +202,7 @@
     "message": "Learn while you browse."
   },
   "bringDashboardVocabulary": {
-    "message": "Bring your dashboard vocabulary into the pages you already read."
+    "message": "Bring Spanish and English vocabulary from your dashboard into the pages you already read."
   },
   "onboardingFeatureWordsInContext": {
     "message": "Words appear in context while you read."
