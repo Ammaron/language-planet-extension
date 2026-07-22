@@ -38,13 +38,13 @@
     "message": "Iniciando sesión..."
   },
   "orContinueWith": {
-    "message": "o"
+    "message": "o usa una cuenta interna con contraseña"
   },
   "loginWithGoogle": {
-    "message": "Continuar con Google"
+    "message": "Inicia sesión con tu cuenta de Langsly"
   },
   "googleLoginLoading": {
-    "message": "Conectando con Google..."
+    "message": "Abriendo inicio de sesión seguro..."
   },
   "googleLoginFailed": {
     "message": "No se pudo iniciar sesion con Google."
@@ -56,7 +56,7 @@
     "message": "El inicio de sesion con Google no esta disponible en este navegador."
   },
   "loginFormNote": {
-    "message": "Usa tu cuenta de Langsly y se sincroniza automáticamente en segundo plano."
+    "message": "Una ventana segura de Langsly te devuelve a Vocab Pass automáticamente."
   },
   "extensionStatus": {
     "message": "Estado de la extensión"

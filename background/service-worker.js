@@ -111,6 +111,16 @@ function countMatchableWords(words) {
   }).length;
 }
 
+function getApiErrorMessage(data, fallback) {
+  if (!data || typeof data !== 'object') return fallback;
+  const candidates = [data.detail, data.message, data.email, data.password, data.non_field_errors];
+  for (const candidate of candidates) {
+    const value = Array.isArray(candidate) ? candidate[0] : candidate;
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return fallback;
+}
+
 function _generateRotationSalt() {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
 }
@@ -516,42 +526,6 @@ browser.alarms.onAlarm.addListener((alarm) => {
 
 // ─── Message Handling ────────────────────────────
 browser.runtime.onMessage.addListener((message) => {
-  if (message.type === 'LOGIN') {
-    return (async () => {
-      try {
-        const { apiBase } = await getConfig();
-        const res = await fetch(`${apiBase}/users/login/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: message.email, password: message.password }),
-        });
-
-        if (!res.ok) {
-          let errorMsg = t('loginFailed', 'Login failed');
-          try {
-            const data = await res.json();
-            errorMsg = data.detail || t('invalidEmailOrPassword', 'Invalid email or password');
-          } catch { /* use default */ }
-          return { success: false, error: errorMsg };
-        }
-
-        const data = await res.json();
-        return completeLoginWithTokens(data);
-      } catch (err) {
-        const isConnectionRefused = err.message && (
-          err.message.includes('Failed to fetch') ||
-          err.message.includes('NetworkError') ||
-          err.message.includes('Network request failed')
-        );
-        if (isConnectionRefused) {
-          await browser.storage.local.set({ syncStatus: 'offline' });
-          return { success: false, error: t('cannotReachServer', 'Cannot reach server. Check your connection or server URL in options.') };
-        }
-        return { success: false, error: t('networkError', [err.message], `Network error: ${err.message}`) };
-      }
-    })();
-  }
-
   if (message.type === 'GOOGLE_LOGIN') {
     return loginWithGoogle();
   }

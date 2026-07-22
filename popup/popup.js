@@ -1,9 +1,7 @@
 /* global browser */
 const loginView = document.getElementById('login-view');
 const settingsView = document.getElementById('settings-view');
-const loginForm = document.getElementById('login-form');
 const loginError = document.getElementById('login-error');
-const loginBtn = document.getElementById('login-btn');
 const googleLoginBtn = document.getElementById('google-login-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const syncBtn = document.getElementById('sync-btn');
@@ -118,7 +116,6 @@ async function renderLoggedInState() {
 }
 
 function setLoginControlsDisabled(disabled) {
-  loginBtn.disabled = disabled;
   if (googleLoginBtn) googleLoginBtn.disabled = disabled;
 }
 
@@ -222,28 +219,6 @@ function updateStatus(status) {
 }
 
 // ─── Login ───────────────────────────────────
-loginForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  loginError.classList.add('hidden');
-  setLoginControlsDisabled(true);
-  loginBtn.textContent = t('loginLoading', 'Logging in...');
-
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-
-  const response = await browser.runtime.sendMessage({ type: 'LOGIN', email, password });
-
-  if (response.success) {
-    await renderLoggedInState();
-  } else {
-    loginError.textContent = response.error || t('loginFailed', 'Login failed');
-    loginError.classList.remove('hidden');
-  }
-
-  setLoginControlsDisabled(false);
-  loginBtn.textContent = t('loginButton', 'Log in');
-});
-
 if (googleLoginBtn) {
   googleLoginBtn.addEventListener('click', async () => {
     loginError.classList.add('hidden');
