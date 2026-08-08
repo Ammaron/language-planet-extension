@@ -1,4 +1,4 @@
-/* global browser */
+/* global browser, LangslyEncounterCoordinator */
 try {
   if (typeof importScripts === 'function') {
     importScripts('../vendor/browser-polyfill.min.js');
@@ -14,6 +14,9 @@ if (typeof importScripts === 'function') {
   if (!globalThis.LangslyTheme) {
     importScripts('theme-utils.js');
   }
+  if (!globalThis.LangslyEncounterCoordinator) {
+    importScripts('encounter-coordinator.js');
+  }
 }
 
 function t(key, substitutions, fallback) {
@@ -27,6 +30,70 @@ const LEGACY_DEFAULTS = { apiBase: 'http://localhost:8000/api', frontendUrl: 'ht
 const DEFAULTS = { apiBase: 'https://api.langsly.com/api', frontendUrl: 'https://langsly.com' };
 const MAX_EXTENSION_AUDIO_FETCH_BYTES = 8 * 1024 * 1024;
 const DEFAULT_EXTENSION_SOURCE_LANGUAGE = 'en';
+const AUTO_BUDGET_WINDOW_MS = 60 * 1000;
+const automaticBudgetBuckets = new Map();
+const activeAuthControllers = new Set();
+let authGeneration = 0;
+let encounterCoordinator = null;
+let refreshPromise = null;
+let refreshPromiseGeneration = -1;
+let sessionMutationTail = Promise.resolve();
+
+function _withSessionMutation(task) {
+  const result = sessionMutationTail.then(task, task);
+  sessionMutationTail = result.catch(() => {});
+  return result;
+}
+
+function _setSessionStorage(values, expectedGeneration = authGeneration) {
+  return _withSessionMutation(async () => {
+    if (expectedGeneration !== authGeneration) return false;
+    await browser.storage.local.set(values);
+    return true;
+  });
+}
+
+function _getSessionSnapshot() {
+  return _withSessionMutation(async () => {
+    const generation = authGeneration;
+    const { authToken, refreshToken } = await browser.storage.local.get(['authToken', 'refreshToken']);
+    if (generation !== authGeneration) return { access: null, refresh: null, generation: authGeneration };
+    return { access: authToken, refresh: refreshToken, generation };
+  });
+}
+
+function _consumeAutomaticBudget(sender, type, cost, pageLimit, originLimit) {
+  const now = Date.now();
+  let origin = 'unknown';
+  try { origin = new URL(sender && sender.url ? sender.url : '').origin; } catch { /* unknown */ }
+  const documentKey = sender && sender.documentId
+    ? sender.documentId
+    : `${sender && sender.tab ? sender.tab.id : 'extension'}:${sender && Number.isInteger(sender.frameId) ? sender.frameId : 0}`;
+  const keys = [[`document:${documentKey}:${type}`, pageLimit], [`origin:${origin}:${type}`, originLimit]];
+  for (const [key, limit] of keys) {
+    const current = automaticBudgetBuckets.get(key);
+    const bucket = !current || now - current.startedAt >= AUTO_BUDGET_WINDOW_MS ? { startedAt: now, used: 0 } : current;
+    if (bucket.used + cost > limit) return false;
+  }
+  for (const [key] of keys) {
+    const current = automaticBudgetBuckets.get(key);
+    const bucket = !current || now - current.startedAt >= AUTO_BUDGET_WINDOW_MS ? { startedAt: now, used: 0 } : current;
+    bucket.used += cost;
+    automaticBudgetBuckets.set(key, bucket);
+  }
+  return true;
+}
+
+function _safeEncounter(encounter) {
+  const domain = String(encounter && encounter.domain || '').trim().toLowerCase();
+  const wordId = String(encounter && encounter.word_id || '').trim();
+  if (!wordId || wordId.length > 64 || !/^[a-z0-9.-]{1,253}$/i.test(domain)) return null;
+  return {
+    word_id: wordId,
+    domain,
+    interaction: encounter.interaction === 'trusted_tap' ? 'trusted_tap' : 'automatic_view',
+  };
+}
 
 function normalizeUrl(url) {
   return String(url || '').trim().replace(/\/+$/, '');
@@ -70,12 +137,20 @@ async function getTokens() {
   return { access: authToken, refresh: refreshToken };
 }
 
-async function setTokens(access, refresh) {
-  await browser.storage.local.set({ authToken: access, refreshToken: refresh });
+async function setTokens(access, refresh, expectedGeneration = authGeneration) {
+  return _setSessionStorage({ authToken: access, refreshToken: refresh }, expectedGeneration);
 }
 
 async function clearTokens() {
-  await browser.storage.local.remove([
+  authGeneration += 1;
+  for (const controller of activeAuthControllers) controller.abort();
+  activeAuthControllers.clear();
+  automaticBudgetBuckets.clear();
+  await _withSessionMutation(async () => {
+    if (encounterCoordinator) await encounterCoordinator.clear();
+    const all = await browser.storage.local.get(null);
+    const cacheKeys = Object.keys(all).filter(key => key.startsWith('phrase_') || key.startsWith('disambig_'));
+    await browser.storage.local.remove([
     'authToken',
     'refreshToken',
     'vocabWords',
@@ -88,7 +163,27 @@ async function clearTokens() {
     'activeThemeName',
     'themeTokens',
     'themeSyncStatus',
-  ]);
+    'wordCount',
+    'syncStatus',
+    'pendingEncounters',
+    'extensionDeviceAuthorization',
+    'extensionSourceLanguage',
+      ...cacheKeys,
+    ]);
+  });
+}
+
+async function broadcastAuthCleared() {
+  await browser.runtime.sendMessage({ type: 'AUTH_CLEARED' }).catch(() => {});
+  const tabs = await browser.tabs.query({ url: ['http://*/*', 'https://*/*'] });
+  await Promise.allSettled(tabs
+    .filter((tab) => tab.id)
+    .map((tab) => browser.tabs.sendMessage(tab.id, { type: 'AUTH_CLEARED' })));
+}
+
+async function clearSession() {
+  await clearTokens();
+  await broadcastAuthCleared();
 }
 
 function normalizeLanguageCode(value) {
@@ -125,10 +220,13 @@ function _generateRotationSalt() {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
 }
 
-async function _ensureRotationSalt() {
+async function _ensureRotationSalt(expectedGeneration = authGeneration) {
   const { rotation_salt } = await browser.storage.local.get('rotation_salt');
   if (!rotation_salt) {
-    await browser.storage.local.set({ rotation_salt: _generateRotationSalt() });
+    await _withSessionMutation(async () => {
+      if (expectedGeneration !== authGeneration) return;
+      await browser.storage.local.set({ rotation_salt: _generateRotationSalt() });
+    });
   }
 }
 
@@ -137,120 +235,45 @@ async function completeLoginWithTokens(data) {
     return { success: false, error: t('unexpectedServerResponse', 'Unexpected server response') };
   }
 
-  await setTokens(data.access, data.refresh);
-  await _ensureRotationSalt();
-  await browser.storage.local.set({ syncStatus: 'success' });
-  await Promise.allSettled([syncVocabulary(), syncThemes()]);
-  return { success: true };
-}
-
-function _base64UrlEncodeBytes(bytes) {
-  let binary = '';
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/g, '');
-}
-
-function _createRandomBase64Url(byteLength = 32) {
-  const bytes = new Uint8Array(byteLength);
-  crypto.getRandomValues(bytes);
-  return _base64UrlEncodeBytes(bytes);
-}
-
-function _getExtensionRedirectUri() {
-  if (browser.identity && typeof browser.identity.getRedirectURL === 'function') {
-    return browser.identity.getRedirectURL('langsly');
-  }
-  if (globalThis.chrome && chrome.identity && typeof chrome.identity.getRedirectURL === 'function') {
-    return chrome.identity.getRedirectURL('langsly');
-  }
-  throw new Error(t('googleLoginUnavailable', 'Google sign-in is not available in this browser.'));
-}
-
-function _buildWebsiteLoginUrl({ frontendUrl, redirectUri, state }) {
-  const params = new URLSearchParams({
-    redirect_uri: redirectUri,
-    state,
+  const generation = authGeneration;
+  if (!await setTokens(data.access, data.refresh, generation)) return { success: false, error: 'cancelled' };
+  await _ensureRotationSalt(generation);
+  await _withSessionMutation(async () => {
+    if (generation === authGeneration) await browser.storage.local.set({ syncStatus: 'success' });
   });
-  return `${normalizeUrl(frontendUrl)}/extension-login?${params.toString()}`;
+  await Promise.allSettled([syncVocabulary(), syncThemes()]);
+  return generation === authGeneration ? { success: true } : { success: false, error: 'cancelled' };
 }
 
-function _launchWebAuthFlow(url) {
-  if (browser.identity && typeof browser.identity.launchWebAuthFlow === 'function') {
-    return browser.identity.launchWebAuthFlow({ url, interactive: true });
+async function openDeviceConnectionPage() {
+  const url = browser.runtime.getURL('popup/connect.html');
+  const existing = await browser.tabs.query({ url: `${url}*` });
+  if (existing.length > 0 && existing[0].id) {
+    await browser.tabs.update(existing[0].id, { active: true });
+    return { success: true, tabId: existing[0].id };
   }
-
-  if (globalThis.chrome && chrome.identity && typeof chrome.identity.launchWebAuthFlow === 'function') {
-    return new Promise((resolve, reject) => {
-      chrome.identity.launchWebAuthFlow({ url, interactive: true }, (redirectUrl) => {
-        const lastError = chrome.runtime && chrome.runtime.lastError;
-        if (lastError) {
-          reject(new Error(lastError.message));
-          return;
-        }
-        resolve(redirectUrl);
-      });
-    });
-  }
-
-  return Promise.reject(new Error(t('googleLoginUnavailable', 'Google sign-in is not available in this browser.')));
-}
-
-function _extractExtensionLoginCode(redirectUrl, expectedState) {
-  if (!redirectUrl) {
-    throw new Error(t('googleLoginCancelled', 'Google sign-in was cancelled.'));
-  }
-
-  const parsedUrl = new URL(redirectUrl);
-  const error = parsedUrl.searchParams.get('error');
-  if (error) {
-    throw new Error(t('googleLoginFailed', [error], `Google sign-in failed: ${error}`));
-  }
-
-  const state = parsedUrl.searchParams.get('state');
-  if (state !== expectedState) {
-    throw new Error(t('googleLoginFailed', 'Google sign-in failed.'));
-  }
-
-  const code = parsedUrl.searchParams.get('code');
-  if (!code) {
-    throw new Error(t('googleLoginFailed', 'Google sign-in failed.'));
-  }
-
-  return code;
-}
-
-async function loginWithGoogle() {
-  try {
-    const redirectUri = _getExtensionRedirectUri();
-    const state = _createRandomBase64Url(24);
-    const { apiBase, frontendUrl } = await getConfig();
-    const authUrl = _buildWebsiteLoginUrl({ frontendUrl, redirectUri, state });
-    const redirectUrl = await _launchWebAuthFlow(authUrl);
-    const code = _extractExtensionLoginCode(redirectUrl, state);
-    const res = await fetch(`${apiBase}/auth/extension-login/redeem/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code }),
-    });
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      return { success: false, error: data.detail || t('googleLoginFailed', 'Google sign-in failed.') };
-    }
-
-    return completeLoginWithTokens(data);
-  } catch (err) {
-    const message = err && err.message ? err.message : t('googleLoginFailed', 'Google sign-in failed.');
-    return { success: false, error: message };
-  }
+  const tab = await browser.tabs.create({ url });
+  return { success: true, tabId: tab && tab.id };
 }
 
 async function refreshAccessToken() {
-  const { refresh } = await getTokens();
-  if (!refresh) return null;
+  const snapshot = await _getSessionSnapshot();
+  if (!snapshot.refresh) return null;
+  if (refreshPromise && refreshPromiseGeneration === snapshot.generation) return refreshPromise;
+  const currentPromise = _refreshAccessToken(snapshot).finally(() => {
+    if (refreshPromise === currentPromise) {
+      refreshPromise = null;
+      refreshPromiseGeneration = -1;
+    }
+  });
+  refreshPromise = currentPromise;
+  refreshPromiseGeneration = snapshot.generation;
+  return currentPromise;
+}
+
+async function _refreshAccessToken({ refresh, generation }) {
+  const controller = new AbortController();
+  activeAuthControllers.add(controller);
 
   try {
     const { apiBase } = await getConfig();
@@ -258,37 +281,66 @@ async function refreshAccessToken() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh }),
+      signal: controller.signal,
     });
     if (!res.ok) {
-      await clearTokens();
+      if (generation === authGeneration) await clearSession();
       return null;
     }
     const data = await res.json();
-    await setTokens(data.access, data.refresh || refresh);
+    if (generation !== authGeneration) return null;
+    if (!await setTokens(data.access, data.refresh || refresh, generation)) return null;
     return data.access;
   } catch {
     return null;
+  } finally {
+    activeAuthControllers.delete(controller);
   }
 }
 
 async function authFetch(url, options = {}) {
-  let { access } = await getTokens();
+  const snapshot = await _getSessionSnapshot();
+  let { access } = snapshot;
   if (!access) return null;
+  const { generation } = snapshot;
+  const controller = new AbortController();
+  activeAuthControllers.add(controller);
+
+  if (generation !== authGeneration) {
+    activeAuthControllers.delete(controller);
+    controller.abort();
+    return null;
+  }
 
   const headers = { ...options.headers, Authorization: `Bearer ${access}` };
   let res;
   try {
-    res = await fetch(url, { ...options, headers });
+    res = await fetch(url, { ...options, headers, signal: controller.signal });
   } catch {
-    await browser.storage.local.set({ syncStatus: 'offline' });
+    if (generation === authGeneration && !controller.signal.aborted) {
+      await _setSessionStorage({ syncStatus: 'offline' }, generation);
+    }
     return null;
+  } finally {
+    activeAuthControllers.delete(controller);
   }
+
+  if (generation !== authGeneration) return null;
 
   if (res.status === 401) {
     access = await refreshAccessToken();
     if (!access) return null;
     headers.Authorization = `Bearer ${access}`;
-    res = await fetch(url, { ...options, headers });
+    const retryController = new AbortController();
+    activeAuthControllers.add(retryController);
+    try {
+      res = await fetch(url, { ...options, headers, signal: retryController.signal });
+    } catch {
+      return null;
+    } finally {
+      activeAuthControllers.delete(retryController);
+    }
+    if (generation !== authGeneration) return null;
   }
 
   return res;
@@ -391,7 +443,7 @@ async function getStoredThemeState() {
   };
 }
 
-async function persistThemeState(themeState) {
+async function persistThemeState(themeState, expectedGeneration = authGeneration) {
   const normalizedState = {
     themePacks: Array.isArray(themeState.themePacks) ? themeState.themePacks : [],
     activeThemeSlug: themeState.activeThemeSlug || 'system',
@@ -399,11 +451,13 @@ async function persistThemeState(themeState) {
     themeTokens: LangslyTheme.normalizeThemeTokens(themeState.themeTokens),
     themeSyncStatus: themeState.themeSyncStatus || 'success',
   };
-  await browser.storage.local.set(normalizedState);
-  return normalizedState;
+  return await _setSessionStorage(normalizedState, expectedGeneration) ? normalizedState : null;
 }
 
 async function syncThemes() {
+  const generation = authGeneration;
+  const { access } = await getTokens();
+  if (!access) return getStoredThemeState();
   const { apiBase } = await getConfig();
   const [userRes, themesRes] = await Promise.all([
     authFetch(`${apiBase}/users/current/`),
@@ -412,28 +466,33 @@ async function syncThemes() {
 
   if (!userRes || !themesRes || !userRes.ok || !themesRes.ok) {
     const currentState = await getStoredThemeState();
-    await browser.storage.local.set({ themeSyncStatus: 'failed' });
-    return { ...currentState, themeSyncStatus: 'failed' };
+    const stored = await _setSessionStorage({ themeSyncStatus: 'failed' }, generation);
+    return stored ? { ...currentState, themeSyncStatus: 'failed' } : currentState;
   }
 
   const currentUser = await userRes.json();
   const themePacks = await themesRes.json();
+  if (generation !== authGeneration) return getStoredThemeState();
   const activeTheme = LangslyTheme.resolveActiveTheme({
     currentUser,
     themePacks,
     fallbackSlug: 'system',
   });
 
-  return persistThemeState({
+  const persisted = await persistThemeState({
     themePacks,
     activeThemeSlug: activeTheme.slug,
     activeThemeName: activeTheme.name,
     themeTokens: activeTheme.tokens,
     themeSyncStatus: 'success',
-  });
+  }, generation);
+  return persisted || getStoredThemeState();
 }
 
 async function applyTheme(themeSlug) {
+  const generation = authGeneration;
+  const { access } = await getTokens();
+  if (!access) return { success: false, ...(await getStoredThemeState()) };
   const { apiBase } = await getConfig();
   const requestedSlug = themeSlug && themeSlug !== 'system' ? themeSlug : null;
   const res = await authFetch(`${apiBase}/users/themes/apply/`, {
@@ -444,8 +503,8 @@ async function applyTheme(themeSlug) {
 
   if (!res || !res.ok) {
     const currentState = await getStoredThemeState();
-    await browser.storage.local.set({ themeSyncStatus: 'failed' });
-    return { success: false, ...currentState, themeSyncStatus: 'failed' };
+    const stored = await _setSessionStorage({ themeSyncStatus: 'failed' }, generation);
+    return { success: false, ...currentState, ...(stored ? { themeSyncStatus: 'failed' } : {}) };
   }
 
   const themeState = await syncThemes();
@@ -453,6 +512,9 @@ async function applyTheme(themeSlug) {
 }
 
 async function syncVocabulary() {
+  const generation = authGeneration;
+  const { access } = await getTokens();
+  if (!access) return;
   const { apiBase } = await getConfig();
   const { difficulty } = await browser.storage.local.get('difficulty');
   const level = difficulty || 'normal';
@@ -460,24 +522,26 @@ async function syncVocabulary() {
 
   const res = await authFetch(`${apiBase}/lessons/vocabpass/words/?difficulty=${level}&source_language=${encodeURIComponent(sourceLanguage)}`);
   if (!res) {
-    await browser.storage.local.set({ syncStatus: 'failed' });
+    await _setSessionStorage({ syncStatus: 'failed' }, generation);
     return;
   }
   if (!res.ok) {
-    await browser.storage.local.set({ syncStatus: 'failed' });
+    await _setSessionStorage({ syncStatus: 'failed' }, generation);
     return;
   }
 
   const data = await res.json();
+  if (generation !== authGeneration) return;
   const matchableWordCount = countMatchableWords(data.words);
-  await browser.storage.local.set({
+  const stored = await _setSessionStorage({
     vocabWords: data.words,
     lastSync: new Date().toISOString(),
     wordCount: data.count,
     matchableWordCount,
     extensionSourceLanguage: sourceLanguage,
     syncStatus: 'success',
-  });
+  }, generation);
+  if (!stored) return;
 
   // Notify all content scripts to refresh (only web pages, not internal tabs)
   const tabs = await browser.tabs.query({ url: ['http://*/*', 'https://*/*'] });
@@ -489,20 +553,36 @@ async function syncVocabulary() {
 }
 
 // ─── Encounter Flush ─────────────────────────────
-async function flushEncounters() {
-  const { pendingEncounters } = await browser.storage.local.get('pendingEncounters');
-  if (!pendingEncounters || pendingEncounters.length === 0) return;
+encounterCoordinator = LangslyEncounterCoordinator.create({
+  batchSize: 50,
+  maxStored: 1000,
+  load: async () => {
+    const { pendingEncounters = [] } = await browser.storage.local.get('pendingEncounters');
+    return pendingEncounters;
+  },
+  save: (pendingEncounters) => browser.storage.local.set({ pendingEncounters }),
+  send: async (encounters) => {
+    const { apiBase } = await getConfig();
+    const res = await authFetch(`${apiBase}/lessons/vocabpass/encounters/batch/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ encounters }),
+    });
+    return !!(res && res.ok);
+  },
+});
 
-  const { apiBase } = await getConfig();
-  const res = await authFetch(`${apiBase}/lessons/vocabpass/encounters/batch/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ encounters: pendingEncounters }),
+function flushEncounters() {
+  return encounterCoordinator.flush();
+}
+
+function appendEncountersForSession(encounters, expectedGeneration = authGeneration) {
+  return _withSessionMutation(async () => {
+    if (expectedGeneration !== authGeneration) return null;
+    const { access } = await getTokens();
+    if (!access || expectedGeneration !== authGeneration) return null;
+    return encounterCoordinator.append(encounters);
   });
-
-  if (res && res.ok) {
-    await browser.storage.local.set({ pendingEncounters: [] });
-  }
 }
 
 // ─── Alarms ──────────────────────────────────────
@@ -525,13 +605,20 @@ browser.alarms.onAlarm.addListener((alarm) => {
 });
 
 // ─── Message Handling ────────────────────────────
-browser.runtime.onMessage.addListener((message) => {
-  if (message.type === 'GOOGLE_LOGIN') {
-    return loginWithGoogle();
+browser.runtime.onMessage.addListener((message, sender) => {
+  if (message.type === 'START_DEVICE_LOGIN') {
+    return openDeviceConnectionPage();
+  }
+
+  if (message.type === 'COMPLETE_DEVICE_LOGIN') {
+    return completeLoginWithTokens(message.tokens).then(async (result) => {
+      if (result.success) await browser.storage.local.remove('extensionDeviceAuthorization');
+      return result;
+    });
   }
 
   if (message.type === 'LOGOUT') {
-    return clearTokens().then(() => ({ success: true }));
+    return clearSession().then(() => ({ success: true }));
   }
 
   if (message.type === 'SYNC_NOW') {
@@ -543,21 +630,33 @@ browser.runtime.onMessage.addListener((message) => {
   }
 
   if (message.type === 'SET_DIFFICULTY') {
-    return browser.storage.local.set({ difficulty: message.difficulty })
-      .then(() => syncVocabulary())
-      .then(() => ({ success: true }));
+    return (async () => {
+      const generation = authGeneration;
+      const { access } = await getTokens();
+      if (!access) return { success: false, error: 'unauthenticated' };
+      if (!await _setSessionStorage({ difficulty: message.difficulty }, generation)) {
+        return { success: false, error: 'cancelled' };
+      }
+      await syncVocabulary();
+      return generation === authGeneration ? { success: true } : { success: false, error: 'cancelled' };
+    })();
   }
 
   // Single encounter (legacy support)
   if (message.type === 'RECORD_ENCOUNTER') {
     return (async () => {
-      const { pendingEncounters = [] } = await browser.storage.local.get('pendingEncounters');
-      pendingEncounters.push({
+      const generation = authGeneration;
+      const encounter = _safeEncounter({
         word_id: message.word_id,
         domain: message.domain,
-        was_clicked: message.was_clicked || false,
+        interaction: message.interaction,
       });
-      await browser.storage.local.set({ pendingEncounters });
+      if (!encounter) return { success: false, error: 'invalid_encounter' };
+      if (encounter.interaction === 'automatic_view' && !_consumeAutomaticBudget(sender, 'encounter', 1, 500, 2000)) {
+        return { success: false, error: 'quota_exceeded' };
+      }
+      const pendingCount = await appendEncountersForSession([encounter], generation);
+      if (pendingCount === null) return { success: false, error: 'unauthenticated' };
       return { success: true };
     })();
   }
@@ -565,13 +664,19 @@ browser.runtime.onMessage.addListener((message) => {
   // Batched encounters from content script
   if (message.type === 'RECORD_ENCOUNTERS_BATCH') {
     return (async () => {
-      const { pendingEncounters = [] } = await browser.storage.local.get('pendingEncounters');
-      pendingEncounters.push(...(message.encounters || []));
-      await browser.storage.local.set({ pendingEncounters });
+      const generation = authGeneration;
+      const raw = Array.isArray(message.encounters) ? message.encounters.slice(0, 50) : [];
+      const safe = raw.map(_safeEncounter).filter(Boolean);
+      const automaticCount = safe.filter((encounter) => encounter.interaction === 'automatic_view').length;
+      if (automaticCount > 0 && !_consumeAutomaticBudget(sender, 'encounter', automaticCount, 500, 2000)) {
+        return { success: false, error: 'quota_exceeded' };
+      }
+      const pendingCount = await appendEncountersForSession(safe, generation);
+      if (pendingCount === null) return { success: false, error: 'unauthenticated' };
 
       // Auto-flush if buffer is large
-      if (pendingEncounters.length >= 100) {
-        flushEncounters();
+      if (pendingCount >= 100) {
+        void flushEncounters();
       }
       return { success: true };
     })();
@@ -710,6 +815,8 @@ browser.runtime.onMessage.addListener((message) => {
   if (message.type === 'PHRASE_TRANSLATE') {
     return (async () => {
       try {
+        const generation = authGeneration;
+        if (!_consumeAutomaticBudget(sender, 'phrase', 1, 20, 100)) return { success: false, error: 'quota_exceeded' };
         const { source_phrase, source_language, target_language, word_ids } = message;
         const cacheKey = `phrase_${source_phrase}_${source_language}_${target_language}`;
 
@@ -732,6 +839,7 @@ browser.runtime.onMessage.addListener((message) => {
         }
 
         const data = await res.json();
+        if (generation !== authGeneration) return { success: false, error: 'cancelled' };
 
         // 3. Store in local cache (LRU eviction handled by periodic cleanup)
         if (data.translated_phrase) {
@@ -742,10 +850,12 @@ browser.runtime.onMessage.addListener((message) => {
             cache_entry_id: data.cache_entry_id || '',
             cached_at: Date.now(),
           };
-          await browser.storage.local.set({ [cacheKey]: entry });
+          if (!await _setSessionStorage({ [cacheKey]: entry }, generation)) {
+            return { success: false, error: 'cancelled' };
+          }
 
           // LRU eviction: cap at ~1000 phrase cache entries
-          _evictPhraseCacheIfNeeded();
+          void _evictPhraseCacheIfNeeded(generation);
         }
 
         return { success: true, ...data };
@@ -778,8 +888,10 @@ browser.runtime.onMessage.addListener((message) => {
   if (message.type === 'DISAMBIGUATE') {
     return (async () => {
       try {
+        const generation = authGeneration;
         const { items } = message;
         if (!items || items.length === 0) return { results: [] };
+        if (!_consumeAutomaticBudget(sender, 'disambiguate', Math.min(items.length, 50), 60, 300)) return { results: [], error: 'quota_exceeded' };
 
         // 1. Check browser cache for each item
         const results = new Array(items.length).fill(null);
@@ -815,9 +927,11 @@ browser.runtime.onMessage.addListener((message) => {
         }
 
         const data = await res.json();
+        if (generation !== authGeneration) return { results: [], error: 'cancelled' };
         const backendResults = data.results || [];
 
         // 3. Merge backend results and cache them
+        const cacheUpdates = {};
         for (let j = 0; j < uncached.length; j++) {
           const originalIdx = uncached[j];
           const result = backendResults[j];
@@ -826,12 +940,15 @@ browser.runtime.onMessage.addListener((message) => {
             // Cache in browser storage
             const cacheKey = _disambigCacheKey(items[originalIdx]);
             const entry = { ...result, cached_at: Date.now() };
-            await browser.storage.local.set({ [cacheKey]: entry });
+            cacheUpdates[cacheKey] = entry;
           }
+        }
+        if (Object.keys(cacheUpdates).length > 0 && !await _setSessionStorage(cacheUpdates, generation)) {
+          return { results: [], error: 'cancelled' };
         }
 
         // 4. Evict old disambiguation cache entries
-        _evictDisambigCacheIfNeeded();
+        void _evictDisambigCacheIfNeeded(generation);
 
         return { results };
       } catch (err) {
@@ -870,13 +987,15 @@ browser.runtime.onMessage.addListener((message) => {
 });
 
 // ─── Phrase Cache Eviction ───────────────────────
-async function _evictPhraseCacheIfNeeded() {
+async function _evictPhraseCacheIfNeeded(expectedGeneration = authGeneration) {
   const PHRASE_CACHE_MAX = 1000;
   const PHRASE_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
   try {
-    const all = await browser.storage.local.get(null);
-    const phraseKeys = Object.keys(all).filter(k => k.startsWith('phrase_'));
+    await _withSessionMutation(async () => {
+      if (expectedGeneration !== authGeneration) return;
+      const all = await browser.storage.local.get(null);
+      const phraseKeys = Object.keys(all).filter(k => k.startsWith('phrase_'));
 
     // Remove expired entries
     const now = Date.now();
@@ -884,19 +1003,18 @@ async function _evictPhraseCacheIfNeeded() {
       const entry = all[k];
       return entry && entry.cached_at && (now - entry.cached_at) > PHRASE_CACHE_TTL_MS;
     });
-    if (expired.length > 0) {
-      await browser.storage.local.remove(expired);
-    }
+      if (expired.length > 0) await browser.storage.local.remove(expired);
 
     // LRU eviction if still over limit
     const remaining = phraseKeys.filter(k => !expired.includes(k));
-    if (remaining.length > PHRASE_CACHE_MAX) {
-      const sorted = remaining
-        .map(k => ({ key: k, time: all[k]?.cached_at || 0 }))
-        .sort((a, b) => a.time - b.time);
-      const toRemove = sorted.slice(0, remaining.length - PHRASE_CACHE_MAX).map(e => e.key);
-      await browser.storage.local.remove(toRemove);
-    }
+      if (remaining.length > PHRASE_CACHE_MAX) {
+        const sorted = remaining
+          .map(k => ({ key: k, time: all[k]?.cached_at || 0 }))
+          .sort((a, b) => a.time - b.time);
+        const toRemove = sorted.slice(0, remaining.length - PHRASE_CACHE_MAX).map(e => e.key);
+        await browser.storage.local.remove(toRemove);
+      }
+    });
   } catch {
     // Non-critical — eviction failure doesn't break functionality
   }
@@ -914,13 +1032,15 @@ function _disambigCacheKey(item) {
   }
 }
 
-async function _evictDisambigCacheIfNeeded() {
+async function _evictDisambigCacheIfNeeded(expectedGeneration = authGeneration) {
   const DISAMBIG_CACHE_MAX = 2000;
   const DISAMBIG_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
   try {
-    const all = await browser.storage.local.get(null);
-    const disambigKeys = Object.keys(all).filter(k => k.startsWith('disambig_'));
+    await _withSessionMutation(async () => {
+      if (expectedGeneration !== authGeneration) return;
+      const all = await browser.storage.local.get(null);
+      const disambigKeys = Object.keys(all).filter(k => k.startsWith('disambig_'));
 
     // Remove expired entries
     const now = Date.now();
@@ -928,19 +1048,18 @@ async function _evictDisambigCacheIfNeeded() {
       const entry = all[k];
       return entry && entry.cached_at && (now - entry.cached_at) > DISAMBIG_CACHE_TTL_MS;
     });
-    if (expired.length > 0) {
-      await browser.storage.local.remove(expired);
-    }
+      if (expired.length > 0) await browser.storage.local.remove(expired);
 
     // LRU eviction if still over limit
     const remaining = disambigKeys.filter(k => !expired.includes(k));
-    if (remaining.length > DISAMBIG_CACHE_MAX) {
-      const sorted = remaining
-        .map(k => ({ key: k, time: all[k]?.cached_at || 0 }))
-        .sort((a, b) => a.time - b.time);
-      const toRemove = sorted.slice(0, remaining.length - DISAMBIG_CACHE_MAX).map(e => e.key);
-      await browser.storage.local.remove(toRemove);
-    }
+      if (remaining.length > DISAMBIG_CACHE_MAX) {
+        const sorted = remaining
+          .map(k => ({ key: k, time: all[k]?.cached_at || 0 }))
+          .sort((a, b) => a.time - b.time);
+        const toRemove = sorted.slice(0, remaining.length - DISAMBIG_CACHE_MAX).map(e => e.key);
+        await browser.storage.local.remove(toRemove);
+      }
+    });
   } catch {
     // Non-critical — eviction failure doesn't break functionality
   }
@@ -960,4 +1079,9 @@ browser.runtime.onStartup.addListener(() => {
   _ensureRotationSalt();
   syncVocabulary();
   syncThemes();
+  browser.storage.local.get('extensionDeviceAuthorization').then(({ extensionDeviceAuthorization }) => {
+    if (extensionDeviceAuthorization && extensionDeviceAuthorization.expiresAt > Date.now()) {
+      openDeviceConnectionPage().catch(() => {});
+    }
+  });
 });

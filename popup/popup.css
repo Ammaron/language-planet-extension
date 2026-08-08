@@ -25,9 +25,20 @@
   box-sizing: border-box;
 }
 
+html {
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+  background: var(--lp-page-bg);
+}
+
 body {
-  width: 372px;
+  width: min(372px, 100%);
+  max-width: 100%;
   min-height: 496px;
+  margin: 0 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   font-family: Inter, "Avenir Next", "Segoe UI", Arial, sans-serif;
   color: var(--lp-text-primary);
   background:
@@ -42,7 +53,7 @@ body {
 
 #app {
   min-height: 496px;
-  padding: 16px;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
 }
 
 .view {
@@ -224,7 +235,7 @@ body {
   justify-content: center;
   gap: 10px;
   width: 100%;
-  min-height: 42px;
+  min-height: 44px;
   padding: 11px 13px;
   border: 1px solid var(--lp-border-strong);
   border-radius: 13px;
@@ -336,7 +347,9 @@ body {
 
 .link-btn {
   flex-shrink: 0;
-  padding: 6px 0;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px 4px;
   border: 0;
   background: none;
   color: var(--lp-text-muted);
@@ -461,7 +474,7 @@ body {
 }
 
 .diff-btn {
-  min-height: 38px;
+  min-height: 44px;
   padding: 10px 7px;
   border-radius: 12px;
   font-size: 12px;
@@ -476,7 +489,7 @@ body {
 .switch {
   position: relative;
   width: 50px;
-  height: 28px;
+  height: 44px;
   flex-shrink: 0;
 }
 
@@ -488,7 +501,7 @@ body {
 
 .slider {
   position: absolute;
-  inset: 0;
+  inset: 8px 0;
   cursor: pointer;
   border-radius: 999px;
   background: color-mix(in srgb, var(--lp-text-muted) 28%, transparent);
@@ -518,6 +531,7 @@ input:checked + .slider::before {
 
 .secondary-btn {
   width: 100%;
+  min-height: 44px;
   padding: 11px 13px;
   border-radius: 13px;
   color: var(--lp-text-primary);
@@ -529,6 +543,7 @@ input:checked + .slider::before {
   justify-content: space-between;
   gap: 10px;
   margin-top: 9px;
+  min-height: 44px;
   padding: 12px 13px;
   text-decoration: none;
 }
@@ -559,7 +574,7 @@ input:checked + .slider::before {
 .theme-select {
   flex: 0 0 168px;
   max-width: 168px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 9px 12px;
   border-radius: 10px;
   outline: none;
@@ -590,4 +605,40 @@ input:checked + .slider::before {
 .status-dot.unknown {
   background: var(--lp-text-muted);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--lp-text-muted) 12%, transparent);
+}
+
+@media (max-width: 480px), (pointer: coarse) {
+  body {
+    width: 100%;
+    min-height: 100dvh;
+  }
+
+  #app {
+    width: min(100%, 520px);
+    min-height: 100dvh;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 340px) {
+  #app {
+    padding-inline-start: max(10px, env(safe-area-inset-left));
+    padding-inline-end: max(10px, env(safe-area-inset-right));
+  }
+
+  .header-bar,
+  .toggle-row,
+  .theme-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .switch,
+  .theme-select {
+    align-self: flex-end;
+  }
+
+  .difficulty-group {
+    grid-template-columns: 1fr;
+  }
 }

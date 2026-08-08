@@ -1,0 +1,16 @@
+{
+  "name": "langsly-vocab-pass-extension",
+  "version": "0.2.0",
+  "private": true,
+  "engines": { "node": "24.13.1" },
+  "scripts": {
+    "test": "node --test test/*.test.mjs *.test.mjs",
+    "build": "node build.mjs",
+    "lint:firefox": "web-ext lint --source-dir dist/firefox --warnings-as-errors",
+    "release": "npm run build && npm test && npm run lint:firefox && node test/artifact-content.test.mjs"
+  },
+  "devDependencies": {
+    "web-ext": "10.5.0",
+    "webextension-polyfill": "0.12.0"
+  }
+}

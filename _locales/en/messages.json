@@ -320,6 +320,27 @@
   "translationRequestFailed": {
     "message": "Translation request failed"
   },
+  "connectLangslyAccount": { "message": "Connect Langsly account" },
+  "deviceLoginOpening": { "message": "Opening secure connection..." },
+  "deviceLoginContinueInTab": { "message": "Continue in the connection tab, then return here." },
+  "advancedSettings": { "message": "Advanced settings" },
+  "sensitiveProtectionLocked": { "message": "Sensitive-page protection is always on for authentication, banking, payment, government, health, legal, password-field, browser-internal, and Langsly pages." },
+  "connectPageTitle": { "message": "Connect Vocab Pass" },
+  "connectBrowserTitle": { "message": "Connect your browser" },
+  "connectBrowserIntro": { "message": "Approve this browser from your signed-in Langsly account. Authorization never happens automatically." },
+  "connectPreparing": { "message": "Preparing a secure connection..." },
+  "connectCodeLabel": { "message": "Your connection code" },
+  "connectWaiting": { "message": "Waiting for your approval on Langsly..." },
+  "connectOpenApproval": { "message": "Open approval page" },
+  "connectCancel": { "message": "Cancel" },
+  "connectSuccessTitle": { "message": "Vocab Pass is connected" },
+  "connectSuccessBody": { "message": "Your vocabulary and settings are syncing. You can close this tab." },
+  "connectClose": { "message": "Close" },
+  "connectProblemTitle": { "message": "Connection needs attention" },
+  "connectRetry": { "message": "Try again" },
+  "connectPrivacyTitle": { "message": "Before you approve" },
+  "connectPrivacyBody": { "message": "Vocab Pass automatically checks visible text on non-sensitive sites, syncs vocabulary, records domains and trusted interactions, and may send matched phrases or bounded visible sentence context to Langsly and OpenRouter. It does not send complete pages, form values, hidden text, or full URLs." },
+  "connectPrivacyLink": { "message": "Read Langsly's privacy policy" },
   "systemThemeName": {
     "message": "System"
   }

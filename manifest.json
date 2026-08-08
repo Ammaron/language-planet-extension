@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extName__",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "__MSG_extDescription__",
   "default_locale": "en",
-  "permissions": ["storage", "alarms", "activeTab", "identity"],
+  "permissions": ["storage", "alarms"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background/service-worker.js"
@@ -15,6 +15,7 @@
       "js": [
         "vendor/browser-polyfill.min.js",
         "shared/i18n.js",
+        "content/request-coordinator.js",
         "content/grammar-rules.js",
         "content/matcher.js",
         "content/popup.js",
@@ -22,6 +23,12 @@
       ],
       "css": ["content/content.css"],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["content/content.css"],
+      "matches": ["<all_urls>"]
     }
   ],
   "action": {
@@ -37,5 +44,8 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "options_page": "popup/options.html"
+  "options_ui": {
+    "page": "popup/options.html",
+    "open_in_tab": true
+  }
 }

@@ -138,6 +138,11 @@
   font-size: 14px;
   line-height: 1.5;
   animation: lp-popup-in 0.15s ease-out;
+  box-sizing: border-box;
+  max-width: calc(100vw - 20px);
+  max-height: calc(100dvh - 20px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 @keyframes lp-popup-in {
@@ -266,6 +271,13 @@
 .lp-popup-listen:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+@media (pointer: coarse) {
+  .lp-popup-listen,
+  button.lp-phrase-word-row {
+    min-height: 44px;
+  }
 }
 
 /* ─── Phrase Span Styling ──────────────────── */

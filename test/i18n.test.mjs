@@ -57,12 +57,12 @@ test('extension UI entrypoints load the shared i18n helper', async () => {
 });
 
 test('build scripts package i18n assets for Chrome and Firefox builds', async () => {
+  const nodeBuild = await readText('build.mjs');
   const powershellBuild = await readText('build.ps1');
   const bashBuild = await readText('build.sh');
 
-  assert.match(powershellBuild, /shared\/i18n\.js/);
-  assert.match(powershellBuild, /_locales/);
-  assert.match(powershellBuild, /shared\/i18n\.js/);
-  assert.match(bashBuild, /shared\/i18n\.js/);
-  assert.match(bashBuild, /_locales/);
+  assert.match(nodeBuild, /shared\/i18n\.js/);
+  assert.match(nodeBuild, /_locales/);
+  assert.match(powershellBuild, /build\.mjs/);
+  assert.match(bashBuild, /build\.mjs/);
 });

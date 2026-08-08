@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title data-i18n="connectPageTitle">Connect Vocab Pass</title>
+  <link rel="stylesheet" href="connect.css">
+</head>
+<body>
+  <main class="connect-shell">
+    <section class="connect-card" aria-labelledby="connect-title">
+      <img src="../icons/langsly-icon.png" alt="" class="connect-logo">
+      <p class="eyebrow" data-i18n="popupBrandName">Langsly Vocab Pass</p>
+      <h1 id="connect-title" data-i18n="connectBrowserTitle">Connect your browser</h1>
+      <p class="intro" data-i18n="connectBrowserIntro">Approve this browser from your signed-in Langsly account. Authorization never happens automatically.</p>
+
+      <div id="loading-view" class="state-view" role="status">
+        <div class="spinner" aria-hidden="true"></div>
+        <p data-i18n="connectPreparing">Preparing a secure connection…</p>
+      </div>
+
+      <div id="pending-view" class="state-view hidden">
+        <p class="code-label" data-i18n="connectCodeLabel">Your connection code</p>
+        <output id="user-code" class="user-code" aria-live="polite"></output>
+        <p id="pending-message" class="status-copy" role="status" data-i18n="connectWaiting">Waiting for your approval on Langsly…</p>
+        <div class="actions">
+          <button id="open-approval" type="button" class="primary" data-i18n="connectOpenApproval">Open approval page</button>
+          <button id="cancel-connect" type="button" class="secondary" data-i18n="connectCancel">Cancel</button>
+        </div>
+      </div>
+
+      <div id="success-view" class="state-view hidden" role="status">
+        <h2 data-i18n="connectSuccessTitle">Vocab Pass is connected</h2>
+        <p data-i18n="connectSuccessBody">Your vocabulary and settings are syncing. You can close this tab.</p>
+        <button id="close-connect" type="button" class="primary" data-i18n="connectClose">Close</button>
+      </div>
+
+      <div id="error-view" class="state-view hidden" role="alert">
+        <h2 data-i18n="connectProblemTitle">Connection needs attention</h2>
+        <p id="error-message"></p>
+        <button id="retry-connect" type="button" class="primary" data-i18n="connectRetry">Try again</button>
+      </div>
+
+      <aside class="privacy-note">
+        <h2 data-i18n="connectPrivacyTitle">Before you approve</h2>
+        <p data-i18n="connectPrivacyBody">Vocab Pass automatically checks visible text on non-sensitive sites, syncs vocabulary, records domains and trusted interactions, and may send matched phrases or bounded visible sentence context to Langsly and OpenRouter. It does not send complete pages, form values, hidden text, or full URLs.</p>
+        <a id="privacy-link" href="#" data-i18n="connectPrivacyLink">Read Langsly’s privacy policy</a>
+      </aside>
+    </section>
+  </main>
+  <script src="../vendor/browser-polyfill.min.js"></script>
+  <script src="../shared/i18n.js"></script>
+  <script src="connect.js"></script>
+</body>
+</html>

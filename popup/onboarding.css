@@ -47,7 +47,7 @@ body {
   width: min(100%, 520px);
   min-height: 100vh;
   margin: 0 auto;
-  padding: 28px 18px;
+  padding: max(28px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
 }
 
 .setup-panel {
@@ -183,7 +183,7 @@ body {
 
 .primary-btn {
   width: 100%;
-  min-height: 42px;
+  min-height: 44px;
   padding: 11px 14px;
   border: 0;
   border-radius: 14px;
@@ -221,7 +221,7 @@ body {
   justify-content: center;
   gap: 10px;
   width: 100%;
-  min-height: 42px;
+  min-height: 44px;
   padding: 11px 14px;
   border: 1px solid var(--lp-border);
   border-radius: 14px;

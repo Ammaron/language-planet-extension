@@ -17,6 +17,17 @@ const VocabPopup = (() => {
   };
 
   let popupEl = null;
+  let popupHost = null;
+  let popupAnchor = null;
+  let popupGeneration = 0;
+  let privateState = globalThis.LangslyPrivateState || new WeakMap();
+  globalThis.LangslyPrivateState = privateState;
+  const privateData = (element) => privateState.get(element) || {};
+  const setPrivateData = (element, values) => {
+    const next = { ...privateData(element), ...values };
+    privateState.set(element, next);
+    return next;
+  };
 
   function t(key, substitutions, fallback) {
     if (globalThis.LangslyI18n) return globalThis.LangslyI18n.t(key, substitutions, fallback);
@@ -82,7 +93,7 @@ const VocabPopup = (() => {
   }
 
   function handleOutsideClick(e) {
-    if (popupEl && !popupEl.contains(e.target)
+    if (popupHost && !popupHost.contains(e.target)
       && !e.target.classList.contains(LP_CLASS)
       && !e.target.classList.contains('lp-vocab-phrase')) {
       hide();
@@ -91,35 +102,68 @@ const VocabPopup = (() => {
 
   function hide() {
     if (popupEl) {
-      popupEl.remove();
+      popupHost.remove();
       popupEl = null;
+      popupHost = null;
     }
+    popupAnchor = null;
     document.removeEventListener('click', handleOutsideClick);
   }
 
+  function reset() {
+    popupGeneration += 1;
+    hide();
+    privateState = new WeakMap();
+    globalThis.LangslyPrivateState = privateState;
+  }
+
   function positionPopup(anchor) {
+    const expectedGeneration = popupGeneration;
+    popupAnchor = anchor;
     const rect = anchor.getBoundingClientRect();
     const popupRect = popupEl.getBoundingClientRect();
 
-    let top = rect.bottom + window.scrollY + 6;
-    let left = rect.left + window.scrollX;
-
-    if (left + popupRect.width > window.innerWidth) {
-      left = window.innerWidth - popupRect.width - 10;
-    }
-    if (left < 10) left = 10;
+    const margin = 10;
+    const gap = 6;
+    const below = rect.bottom + gap;
+    const above = rect.top - popupRect.height - gap;
+    const viewportTop = below + popupRect.height <= window.innerHeight - margin
+      ? below
+      : Math.max(margin, above);
+    const viewportLeft = Math.min(
+      Math.max(margin, rect.left),
+      Math.max(margin, window.innerWidth - popupRect.width - margin)
+    );
+    const top = viewportTop + window.scrollY;
+    const left = viewportLeft + window.scrollX;
 
     popupEl.style.top = `${top}px`;
     popupEl.style.left = `${left}px`;
 
     setTimeout(() => {
-      document.addEventListener('click', handleOutsideClick);
+      if (expectedGeneration === popupGeneration && popupHost) {
+        document.addEventListener('click', handleOutsideClick);
+      }
     }, 10);
   }
 
   async function getContentConfig() {
     const { apiBase } = await browser.storage.local.get('apiBase');
     return { apiBase: resolveApiBase(apiBase) };
+  }
+
+  function mountPopup() {
+    popupHost = document.createElement('span');
+    popupHost.setAttribute(LP_PROCESSED, 'true');
+    const shadow = popupHost.attachShadow({ mode: 'closed' });
+    const stylesheet = document.createElement('link');
+    stylesheet.rel = 'stylesheet';
+    stylesheet.href = browser.runtime.getURL('content/content.css');
+    stylesheet.addEventListener('load', () => {
+      if (popupAnchor && popupEl && popupAnchor.isConnected) positionPopup(popupAnchor);
+    }, { once: true });
+    shadow.append(stylesheet, popupEl);
+    document.body.appendChild(popupHost);
   }
 
   function resolveAudioUrl(audioUrl, apiBase) {
@@ -277,14 +321,15 @@ const VocabPopup = (() => {
   }
 
   async function playAudioFromSpan(span, translation, termLanguage) {
-    const currentAudioUrl = String(span.dataset.audioUrl || '').trim();
+    const state = privateData(span);
+    const currentAudioUrl = String(state.audioUrl || '').trim();
     if (currentAudioUrl) {
       return playAudio(currentAudioUrl, translation, termLanguage);
     }
 
-    const syncedAudioUrl = await syncAudioUrlForWord(span.dataset.wordId);
+    const syncedAudioUrl = await syncAudioUrlForWord(state.wordId);
     if (syncedAudioUrl) {
-      span.dataset.audioUrl = syncedAudioUrl;
+      setPrivateData(span, { audioUrl: syncedAudioUrl });
       return playAudio(syncedAudioUrl, translation, termLanguage);
     }
 
@@ -310,17 +355,20 @@ const VocabPopup = (() => {
     if (!selected || !span.isConnected) return null;
 
     span.textContent = selected.term;
-    span.dataset.wordId = selected.id;
-    span.dataset.translation = selected.term;
-    span.dataset.baseTranslation = selected.translation || '';
-    span.dataset.termLanguage = selected.term_language || span.dataset.termLanguage || 'es';
-    span.dataset.pos = selected.part_of_speech || '';
-    span.dataset.hint = selected.context_hint || '';
-    span.dataset.example = selected.example_sentence || '';
-    span.dataset.exampleTranslation = selected.example_translation || '';
-    span.dataset.audioUrl = selected.pronunciation_audio || '';
-    span.dataset.meaningKey = selected.meaning_key || span.dataset.meaningKey || '';
-    span.dataset.uncertain = 'false';
+    const previous = privateData(span);
+    setPrivateData(span, {
+      wordId: selected.id,
+      translation: selected.term,
+      baseTranslation: selected.translation || '',
+      termLanguage: selected.term_language || previous.termLanguage || 'es',
+      pos: selected.part_of_speech || '',
+      hint: selected.context_hint || '',
+      example: selected.example_sentence || '',
+      exampleTranslation: selected.example_translation || '',
+      audioUrl: selected.pronunciation_audio || '',
+      meaningKey: selected.meaning_key || previous.meaningKey || '',
+      uncertain: 'false',
+    });
     span.classList.remove('lp-uncertain');
     return selected;
   }
@@ -336,7 +384,8 @@ const VocabPopup = (() => {
 
   async function buildCorrectionOptions(span, alternatives) {
     const map = new Map();
-    const currentWordId = String(span.dataset.wordId || '');
+    const state = privateData(span);
+    const currentWordId = String(state.wordId || '');
 
     for (const alt of alternatives) {
       if (!alt || !alt.id) continue;
@@ -349,7 +398,7 @@ const VocabPopup = (() => {
       });
     }
 
-    const candidateIds = parseJsonArray(span.dataset.disambigCandidates).map(String).filter(Boolean);
+    const candidateIds = (Array.isArray(state.disambigCandidates) ? state.disambigCandidates : []).map(String).filter(Boolean);
     if (candidateIds.length > 0) {
       try {
         const { vocabWords } = await browser.storage.local.get('vocabWords');
@@ -369,7 +418,7 @@ const VocabPopup = (() => {
     if (currentWordId && !map.has(currentWordId)) {
       map.set(currentWordId, {
         id: currentWordId,
-        term: span.dataset.translation || '',
+        term: state.translation || '',
         confidence: null,
       });
     }
@@ -378,7 +427,8 @@ const VocabPopup = (() => {
   }
 
   function buildSafeCandidateIds(span, alternatives, options) {
-    const fromSpan = parseJsonArray(span.dataset.disambigCandidates).map(String).filter(Boolean);
+    const state = privateData(span);
+    const fromSpan = (Array.isArray(state.disambigCandidates) ? state.disambigCandidates : []).map(String).filter(Boolean);
     if (fromSpan.length >= 2) return fromSpan;
 
     const fromAlternatives = alternatives
@@ -395,49 +445,47 @@ const VocabPopup = (() => {
   }
 
   function sendDisambigFeedback(span, payload) {
+    const state = privateData(span);
     return browser.runtime.sendMessage({
       type: 'DISAMBIG_FEEDBACK',
-      sentence: span.dataset.disambigSentence || '',
-      matched_text: span.dataset.matchedForm || span.dataset.original || '',
-      match_offset: parseInt(span.dataset.disambigOffset || '0', 10) || 0,
+      sentence: String(state.disambigSentence || '').slice(0, 320),
+      matched_text: state.matchedForm || state.original || '',
+      match_offset: Number(state.disambigOffset) || 0,
       candidate_ids: payload.candidateIds || [],
-      source_language: span.dataset.sourceLanguage || span.dataset.disambigSourceLang || 'en',
-      target_language: span.dataset.targetLanguage || 'es',
+      source_language: state.sourceLanguage || state.disambigSourceLang || 'en',
+      target_language: state.targetLanguage || 'es',
       shown_word_id: payload.shownWordId || '',
       chosen_word_id: payload.chosenWordId || '',
-      was_uncertain: span.dataset.uncertain === 'true',
-      method_used: span.dataset.method || 'spacy',
+      was_uncertain: state.uncertain === 'true',
+      method_used: state.method || 'spacy',
     }).catch(() => {});
   }
 
   function applyWordDatasetFromMatch(el, match) {
     const word = (match && match.word) || {};
-    el.dataset.wordId = word.id || '';
-    el.dataset.original = (match && match.original) || word.translation || '';
-    el.dataset.translation = word.term || '';
-    el.dataset.baseTranslation = word.translation || '';
-    el.dataset.matchedForm = (match && match.matchedForm) || (match && match.original) || '';
-    el.dataset.termLanguage = word.term_language || 'es';
-    el.dataset.pos = word.part_of_speech || '';
-    el.dataset.hint = word.context_hint || '';
-    el.dataset.example = word.example_sentence || '';
-    el.dataset.exampleTranslation = word.example_translation || '';
-    el.dataset.audioUrl = word.pronunciation_audio || '';
-    el.dataset.sourceLanguage = word.search_language || 'en';
-    el.dataset.targetLanguage = word.term_language || 'es';
-    el.dataset.meaningKey = word.meaning_key || word._localMeaningKey || '';
-    el.dataset.method = word._method || word._localMethod || 'local';
-
-    if (Array.isArray(word._alternatives) && word._alternatives.length > 0) {
-      el.dataset.disambigAlternatives = JSON.stringify(word._alternatives);
-    }
-    if (Array.isArray(word._candidateIds) && word._candidateIds.length > 0) {
-      el.dataset.disambigCandidates = JSON.stringify(word._candidateIds);
-    }
+    setPrivateData(el, {
+      wordId: word.id || '',
+      original: (match && match.original) || word.translation || '',
+      translation: word.term || '',
+      baseTranslation: word.translation || '',
+      matchedForm: (match && match.matchedForm) || (match && match.original) || '',
+      termLanguage: word.term_language || 'es',
+      pos: word.part_of_speech || '',
+      hint: word.context_hint || '',
+      example: word.example_sentence || '',
+      exampleTranslation: word.example_translation || '',
+      audioUrl: word.pronunciation_audio || '',
+      sourceLanguage: word.search_language || 'en',
+      targetLanguage: word.term_language || 'es',
+      meaningKey: word.meaning_key || word._localMeaningKey || '',
+      method: word._method || word._localMethod || 'local',
+      disambigAlternatives: Array.isArray(word._alternatives) ? word._alternatives : [],
+      disambigCandidates: Array.isArray(word._candidateIds) ? word._candidateIds : [],
+    });
   }
 
   function reportPhraseTranslation(span, original, translated) {
-    const cacheEntryId = span.dataset.cacheEntryId || '';
+    const cacheEntryId = privateData(span).cacheEntryId || '';
     browser.runtime.sendMessage({
       type: 'PHRASE_FLAG',
       cache_entry_id: cacheEntryId,
@@ -450,6 +498,7 @@ const VocabPopup = (() => {
    */
   async function showWord(span, anchor = span) {
     hide();
+    const expectedGeneration = popupGeneration;
 
     const {
       original,
@@ -462,9 +511,10 @@ const VocabPopup = (() => {
       exampleTranslation,
       audioUrl,
       uncertain,
-    } = span.dataset;
-    const alternatives = parseJsonArray(span.dataset.disambigAlternatives);
+    } = privateData(span);
+    const alternatives = Array.isArray(privateData(span).disambigAlternatives) ? privateData(span).disambigAlternatives : [];
     const correctionOptions = await buildCorrectionOptions(span, alternatives);
+    if (expectedGeneration !== popupGeneration || !span.isConnected) return;
     const safeCandidateIds = buildSafeCandidateIds(span, alternatives, correctionOptions);
 
     popupEl = document.createElement('div');
@@ -500,7 +550,7 @@ const VocabPopup = (() => {
       popupEl.appendChild(exDiv);
     }
 
-    const alsoUsedAs = correctionOptions.filter(option => String(option.id) !== String(span.dataset.wordId));
+    const alsoUsedAs = correctionOptions.filter(option => String(option.id) !== String(privateData(span).wordId));
     if (alsoUsedAs.length > 0) {
       const alts = createEl('div', 'lp-popup-example');
       alts.appendChild(createEl('div', 'lp-popup-hint', t('alsoUsedAs', 'Also used as:')));
@@ -549,7 +599,7 @@ const VocabPopup = (() => {
     const chooser = createEl('div', 'lp-phrase-words');
     chooser.style.display = 'none';
 
-    const selectableOptions = correctionOptions.filter(option => String(option.id) !== String(span.dataset.wordId));
+    const selectableOptions = correctionOptions.filter(option => String(option.id) !== String(privateData(span).wordId));
     if (selectableOptions.length > 0) {
       for (const option of selectableOptions) {
         const row = createEl('button', 'lp-phrase-word-row');
@@ -560,8 +610,9 @@ const VocabPopup = (() => {
           row.appendChild(createEl('span', 'lp-popup-pos', `${Math.round(option.confidence * 100)}%`));
         }
         row.addEventListener('click', async (e) => {
+          if (!e.isTrusted) return;
           e.stopPropagation();
-          const beforeWordId = span.dataset.wordId || '';
+          const beforeWordId = privateData(span).wordId || '';
           await applySelectedAlternative(span, option.id);
           setActionButtonContent(wrongBtn, 'check-circle', t('corrected', 'Corrected'));
           wrongBtn.disabled = true;
@@ -587,12 +638,13 @@ const VocabPopup = (() => {
       reportOnly.disabled = safeCandidateIds.length < 2;
       setActionButtonContent(reportOnly, 'warning-circle', t('markIncorrect', 'Mark incorrect'));
       reportOnly.addEventListener('click', (e) => {
+        if (!e.isTrusted) return;
         e.stopPropagation();
         setActionButtonContent(wrongBtn, 'check-circle', t('flagged', 'Flagged'));
         wrongBtn.disabled = true;
         chooser.style.display = 'none';
         if (safeCandidateIds.length >= 2) {
-          const shownWordId = span.dataset.wordId || '';
+          const shownWordId = privateData(span).wordId || '';
           sendDisambigFeedback(span, {
             candidateIds: safeCandidateIds,
             shownWordId,
@@ -605,11 +657,12 @@ const VocabPopup = (() => {
     popupEl.appendChild(chooser);
 
     wrongBtn.addEventListener('click', (e) => {
+      if (!e.isTrusted) return;
       e.stopPropagation();
       chooser.style.display = chooser.style.display === 'none' ? 'block' : 'none';
     });
 
-    document.body.appendChild(popupEl);
+    mountPopup();
     positionPopup(anchor || span);
   }
 
@@ -618,9 +671,11 @@ const VocabPopup = (() => {
    */
   function showPhrase(span, matches) {
     hide();
+    if (!span.isConnected) return;
 
-    const original = span.dataset.original || '';
-    const phraseType = span.dataset.phraseType || 'word-by-word';
+    const state = privateData(span);
+    const original = state.original || '';
+    const phraseType = state.phraseType || 'word-by-word';
     const composedText = phraseType === 'composed' ? span.textContent : null;
 
     popupEl = document.createElement('div');
@@ -666,6 +721,7 @@ const VocabPopup = (() => {
       reportBtn.type = 'button';
       setActionButtonContent(reportBtn, 'warning-circle', t('report', 'Report'));
       reportBtn.addEventListener('click', (e) => {
+        if (!e.isTrusted) return;
         e.stopPropagation();
         reportPhraseTranslation(span, original, composedText);
         setActionButtonContent(reportBtn, 'check-circle', t('reported', 'Reported'));
@@ -675,9 +731,9 @@ const VocabPopup = (() => {
       popupEl.appendChild(actions);
     }
 
-    document.body.appendChild(popupEl);
+    mountPopup();
     positionPopup(span);
   }
 
-  return { showWord, showPhrase, hide };
+  return { showWord, showPhrase, hide, reset };
 })();

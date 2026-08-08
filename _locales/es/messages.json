@@ -320,6 +320,27 @@
   "translationRequestFailed": {
     "message": "Falló la solicitud de traducción"
   },
+  "connectLangslyAccount": { "message": "Conectar cuenta de Langsly" },
+  "deviceLoginOpening": { "message": "Abriendo conexión segura..." },
+  "deviceLoginContinueInTab": { "message": "Continúa en la pestaña de conexión y luego regresa aquí." },
+  "advancedSettings": { "message": "Configuración avanzada" },
+  "sensitiveProtectionLocked": { "message": "La protección de páginas sensibles siempre está activa para autenticación, banca, pagos, gobierno, salud, asuntos legales, campos de contraseña, páginas internas y páginas de Langsly." },
+  "connectPageTitle": { "message": "Conectar Vocab Pass" },
+  "connectBrowserTitle": { "message": "Conecta tu navegador" },
+  "connectBrowserIntro": { "message": "Aprueba este navegador desde tu cuenta de Langsly. La autorización nunca es automática." },
+  "connectPreparing": { "message": "Preparando una conexión segura..." },
+  "connectCodeLabel": { "message": "Tu código de conexión" },
+  "connectWaiting": { "message": "Esperando tu aprobación en Langsly..." },
+  "connectOpenApproval": { "message": "Abrir página de aprobación" },
+  "connectCancel": { "message": "Cancelar" },
+  "connectSuccessTitle": { "message": "Vocab Pass está conectado" },
+  "connectSuccessBody": { "message": "Tu vocabulario y configuración se están sincronizando. Puedes cerrar esta pestaña." },
+  "connectClose": { "message": "Cerrar" },
+  "connectProblemTitle": { "message": "La conexión necesita atención" },
+  "connectRetry": { "message": "Intentar de nuevo" },
+  "connectPrivacyTitle": { "message": "Antes de aprobar" },
+  "connectPrivacyBody": { "message": "Vocab Pass revisa automáticamente el texto visible en sitios no sensibles, sincroniza vocabulario, registra dominios e interacciones confiables y puede enviar frases coincidentes o contexto visible limitado a Langsly y OpenRouter. No envía páginas completas, valores de formularios, texto oculto ni URL completas." },
+  "connectPrivacyLink": { "message": "Leer la política de privacidad de Langsly" },
   "systemThemeName": {
     "message": "Sistema"
   }

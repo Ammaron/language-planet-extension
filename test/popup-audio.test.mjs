@@ -85,6 +85,15 @@ class TestElement {
     return child;
   }
 
+  append(...children) {
+    children.forEach(child => this.appendChild(child));
+  }
+
+  attachShadow({ mode }) {
+    this.shadowMode = mode;
+    return this;
+  }
+
   remove() {
     if (!this.parentNode) return;
     this.parentNode.children = this.parentNode.children.filter(child => child !== this);
@@ -100,6 +109,7 @@ class TestElement {
   async click() {
     const event = {
       target: this,
+      isTrusted: true,
       preventDefault() {},
       stopPropagation() {},
     };
@@ -163,6 +173,7 @@ function createHarness({ storageData = {}, playResult = Promise.resolve(), onMes
     },
     runtime: {
       sendMessage: onMessage,
+      getURL: path => `moz-extension://test/${path}`,
     },
   };
 
@@ -219,12 +230,12 @@ function createHarness({ storageData = {}, playResult = Promise.resolve(), onMes
 
   function makeSpan(dataset = {}) {
     const span = new TestElement('span');
-    span.dataset = {
+    sandbox.LangslyPrivateState.set(span, {
       original: 'hello',
       translation: 'hola',
       termLanguage: 'es',
       ...dataset,
-    };
+    });
     return span;
   }
 
@@ -241,6 +252,25 @@ async function flushMicrotasks() {
   await Promise.resolve();
   await Promise.resolve();
 }
+
+test('live popup reset removes the closed-shadow host immediately', async () => {
+  const harness = createHarness();
+  await harness.VocabPopup.showWord(harness.makeSpan());
+  assert.ok(harness.document.body.querySelector('.lp-vocab-popup'));
+  harness.VocabPopup.reset();
+  assert.equal(harness.document.body.querySelector('.lp-vocab-popup'), null);
+});
+
+test('popup mounts its runtime stylesheet inside the closed shadow root', async () => {
+  const harness = createHarness();
+  await harness.VocabPopup.showWord(harness.makeSpan());
+  const host = harness.document.body.children.find((child) => child.shadowMode === 'closed');
+  assert.ok(host);
+  assert.equal(host.shadowMode, 'closed');
+  assert.equal(host.children[0].tagName, 'LINK');
+  assert.equal(host.children[0].rel, 'stylesheet');
+  assert.equal(host.children[0].href, 'moz-extension://test/content/content.css');
+});
 
 test('listen button plays relative synced audio from the API origin', async () => {
   const harness = createHarness({

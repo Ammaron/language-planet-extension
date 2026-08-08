@@ -18,13 +18,16 @@ test('options page does not expose editable server configuration', async () => {
 
 test('options save only persists user preferences', async () => {
   const optionsJs = await readText('popup/options.js');
+  const optionsHtml = await readText('popup/options.html');
 
   assert.doesNotMatch(optionsJs, /\bapiBaseInput\b/);
   assert.doesNotMatch(optionsJs, /\bfrontendUrlInput\b/);
   assert.doesNotMatch(optionsJs, /\bapiBase\s*:/);
   assert.doesNotMatch(optionsJs, /\bfrontendUrl\s*:/);
   assert.match(optionsJs, /\bsyncInterval\s*:/);
-  assert.match(optionsJs, /\bexcludeSensitive\s*:/);
+  assert.doesNotMatch(optionsJs, /\bexcludeSensitive\s*:/);
+  assert.doesNotMatch(optionsHtml, /id="exclude-sensitive"/);
+  assert.match(optionsHtml, /data-i18n="sensitiveProtectionLocked"/);
 });
 
 test('options footer keeps secondary reset action aligned with save action', async () => {

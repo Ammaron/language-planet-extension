@@ -1,5 +1,5 @@
 /* global browser */
-const DEFAULTS = { syncInterval: 60, excludeSensitive: true };
+const DEFAULTS = { syncInterval: 60 };
 
 function t(key, substitutions, fallback) {
   if (window.LangslyI18n) return window.LangslyI18n.t(key, substitutions, fallback);
@@ -13,29 +13,24 @@ function formatMinutes(value) {
 
 const syncIntervalSlider = document.getElementById('sync-interval');
 const syncIntervalLabel = document.getElementById('sync-interval-label');
-const excludeSensitiveToggle = document.getElementById('exclude-sensitive');
 const resetPreferencesBtn = document.getElementById('reset-preferences');
 const saveBtn = document.getElementById('save-btn');
 const saveStatus = document.getElementById('save-status');
 
 function applyPreferenceValues({
   syncInterval = DEFAULTS.syncInterval,
-  excludeSensitive = DEFAULTS.excludeSensitive,
 }) {
   syncIntervalSlider.value = syncInterval;
   syncIntervalLabel.textContent = formatMinutes(syncInterval);
-  excludeSensitiveToggle.checked = excludeSensitive;
 }
 
 async function loadSettings() {
-  const { syncInterval, excludeSensitive } = await browser.storage.local.get([
+  const { syncInterval } = await browser.storage.local.get([
     'syncInterval',
-    'excludeSensitive',
   ]);
 
   applyPreferenceValues({
     syncInterval: syncInterval || DEFAULTS.syncInterval,
-    excludeSensitive: excludeSensitive !== undefined ? excludeSensitive : DEFAULTS.excludeSensitive,
   });
 }
 
@@ -50,7 +45,6 @@ resetPreferencesBtn.addEventListener('click', () => {
 saveBtn.addEventListener('click', async () => {
   const settings = {
     syncInterval: parseInt(syncIntervalSlider.value, 10),
-    excludeSensitive: excludeSensitiveToggle.checked,
   };
 
   await browser.storage.local.set(settings);

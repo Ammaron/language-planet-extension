@@ -5,7 +5,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 
 const matcherSource = fs.readFileSync(
-  path.join(process.cwd(), 'language-planet-extension/content/matcher.js'),
+  path.join(process.cwd(), 'content/matcher.js'),
   'utf8',
 );
 

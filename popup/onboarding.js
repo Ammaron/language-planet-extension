@@ -52,19 +52,20 @@ if (onboardGoogleLoginBtn) {
   onboardGoogleLoginBtn.addEventListener('click', async () => {
     onboardError.classList.add('hidden');
     setOnboardLoginControlsDisabled(true);
-    onboardGoogleLoginBtn.textContent = t('googleLoginLoading', 'Connecting to Google...');
+    onboardGoogleLoginBtn.textContent = t('deviceLoginOpening', 'Opening secure connection...');
 
-    const response = await browser.runtime.sendMessage({ type: 'GOOGLE_LOGIN' });
+    const response = await browser.runtime.sendMessage({ type: 'START_DEVICE_LOGIN' });
 
     if (response.success) {
-      await finishOnboardLogin();
+      onboardError.textContent = t('deviceLoginContinueInTab', 'Continue in the connection tab, then return here.');
+      onboardError.classList.remove('hidden');
     } else {
       onboardError.textContent = response.error || t('googleLoginFailed', 'Google sign-in failed.');
       onboardError.classList.remove('hidden');
     }
 
     setOnboardLoginControlsDisabled(false);
-    onboardGoogleLoginBtn.textContent = t('loginWithGoogle', 'Continue with Google');
+    onboardGoogleLoginBtn.textContent = t('connectLangslyAccount', 'Connect Langsly account');
   });
 }
 
@@ -72,4 +73,10 @@ if (onboardGoogleLoginBtn) {
 document.getElementById('finish-btn').addEventListener('click', async () => {
   await browser.storage.local.set({ onboardingComplete: true });
   window.close();
+});
+
+browser.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.authToken && changes.authToken.newValue) {
+    finishOnboardLogin();
+  }
 });

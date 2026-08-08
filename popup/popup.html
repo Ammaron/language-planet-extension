@@ -2,6 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title data-i18n="popupTitle"></title>
   <link rel="stylesheet" href="popup.css">
 </head>
@@ -21,7 +22,7 @@
       </div>
 
       <div id="login-form" class="auth-form">
-        <button type="button" id="google-login-btn" class="google-login-btn" data-i18n="loginWithGoogle"></button>
+        <button type="button" id="google-login-btn" class="google-login-btn" data-i18n="connectLangslyAccount"></button>
         <p class="form-note" data-i18n="loginFormNote"></p>
         <div id="login-error" class="error hidden"></div>
       </div>
@@ -79,7 +80,7 @@
             <div id="current-domain" class="domain-chip"></div>
           </div>
           <label class="switch">
-            <input type="checkbox" id="site-toggle" checked>
+            <input type="checkbox" id="site-toggle" checked data-i18n-aria-label="activeOnThisSite">
             <span class="slider"></span>
           </label>
         </div>
@@ -97,6 +98,7 @@
       <div class="section action-section">
         <label class="section-label" data-i18n="actionsLabel"></label>
         <button id="sync-btn" class="secondary-btn" data-i18n="syncNow"></button>
+        <button id="open-settings" class="secondary-btn" data-i18n="advancedSettings"></button>
         <a id="open-vocabpass" class="dashboard-link" href="#">
           <span data-i18n="openDashboard"></span>
           <svg class="dashboard-link-icon" aria-hidden="true" focusable="false" viewBox="0 0 256 256" fill="currentColor" data-icon-source="phosphor" data-icon-name="arrow-square-out">

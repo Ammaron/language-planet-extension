@@ -12,6 +12,7 @@ const matchableWordCountEl = document.getElementById('matchable-word-count');
 const currentDomainEl = document.getElementById('current-domain');
 const siteToggle = document.getElementById('site-toggle');
 const openVocabpass = document.getElementById('open-vocabpass');
+const openSettings = document.getElementById('open-settings');
 const diffBtns = document.querySelectorAll('.diff-btn');
 const statusIndicator = document.getElementById('status-indicator');
 const statusBanner = document.getElementById('status-banner');
@@ -223,19 +224,19 @@ if (googleLoginBtn) {
   googleLoginBtn.addEventListener('click', async () => {
     loginError.classList.add('hidden');
     setLoginControlsDisabled(true);
-    googleLoginBtn.textContent = t('googleLoginLoading', 'Connecting to Google...');
+    googleLoginBtn.textContent = t('deviceLoginOpening', 'Opening secure connection...');
 
-    const response = await browser.runtime.sendMessage({ type: 'GOOGLE_LOGIN' });
+    const response = await browser.runtime.sendMessage({ type: 'START_DEVICE_LOGIN' });
 
     if (response.success) {
-      await renderLoggedInState();
+      window.close();
     } else {
       loginError.textContent = response.error || t('googleLoginFailed', 'Google sign-in failed.');
       loginError.classList.remove('hidden');
     }
 
     setLoginControlsDisabled(false);
-    googleLoginBtn.textContent = t('loginWithGoogle', 'Continue with Google');
+    googleLoginBtn.textContent = t('connectLangslyAccount', 'Connect Langsly account');
   });
 }
 
@@ -300,23 +301,20 @@ diffBtns.forEach(btn => {
 siteToggle.addEventListener('change', async () => {
   const domain = currentDomainEl.textContent;
   if (!domain || domain === t('notAvailable', 'N/A')) return;
+  siteToggle.disabled = true;
 
-  if (!siteToggle.checked) {
-    // Add to whitelist (disable on this site)
-    await browser.runtime.sendMessage({ type: 'TOGGLE_WHITELIST', domain, add: true });
-  } else {
-    // Remove from whitelist (re-enable on this site)
-    await browser.runtime.sendMessage({ type: 'TOGGLE_WHITELIST', domain, add: false });
-  }
-
-  // Force immediate refresh of word list and page processing state.
-  await browser.runtime.sendMessage({ type: 'SYNC_NOW' });
-  const status = await browser.runtime.sendMessage({ type: 'GET_STATUS' });
-  updateStatus(status);
-
-  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-  if (tab && tab.id) {
-    await browser.tabs.reload(tab.id);
+  try {
+    await browser.runtime.sendMessage({ type: 'TOGGLE_WHITELIST', domain, add: !siteToggle.checked });
+    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+    if (tab && tab.id) {
+      try {
+        await browser.tabs.sendMessage(tab.id, { type: 'SITE_ACCESS_CHANGED', enabled: siteToggle.checked });
+      } catch {
+        await browser.tabs.reload(tab.id);
+      }
+    }
+  } finally {
+    siteToggle.disabled = false;
   }
 });
 
@@ -327,6 +325,10 @@ openVocabpass.addEventListener('click', async (e) => {
   const url = resolveFrontendUrl(frontendUrl);
   browser.tabs.create({ url: `${url}/vocab-pass` });
 });
+
+if (openSettings) {
+  openSettings.addEventListener('click', () => browser.runtime.openOptionsPage());
+}
 
 // ─── Start ───────────────────────────────────
 init();
