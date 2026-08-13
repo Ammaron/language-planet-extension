@@ -1,4 +1,4 @@
-# Building Langsly Vocab Pass 0.2.0
+# Building Langsly Vocab Pass 0.2.1
 
 Use Node.js 24.13.1 and the exact dependencies in `package-lock.json`.
 

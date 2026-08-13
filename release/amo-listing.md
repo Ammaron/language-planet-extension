@@ -1,4 +1,4 @@
-# AMO listing copy — Langsly Vocab Pass 0.2.0
+# AMO listing copy — Langsly Vocab Pass 0.2.1
 
 ## Summary
 

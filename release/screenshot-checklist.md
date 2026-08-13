@@ -1,4 +1,4 @@
-# AMO screenshot checklist — 0.2.0
+# AMO screenshot checklist — 0.2.1
 
 Capture from the exact signed artifact submitted to AMO. Do not use desktop-responsive mockups as Android evidence.
 

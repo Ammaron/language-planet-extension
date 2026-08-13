@@ -1,4 +1,4 @@
-# Release QA matrix — 0.2.0
+# Release QA matrix — 0.2.1
 
 Use this as an evidence log. Do not mark a row passed without device- or browser-observed proof.
 
@@ -11,7 +11,7 @@ Use this as an evidence log. Do not mark a row passed without device- or browser
 | Firefox Android phone | 142 minimum and current stable | full acceptance flow, screenshots, performance | Pending emulator/device |
 | Firefox Android tablet | Current stable | portrait/landscape, scrolling, touch targets, full acceptance flow | Pending emulator/device |
 | Physical Android device | Current stable | install, complete account flow, audio, site controls, battery/scroll behavior | Pending device |
-| Chrome private build | Single owner | install 0.2.0, new login, full parity features | Pending owner test |
+| Chrome private build | Single owner | install 0.2.1, new login, full parity features | Pending owner test |
 | Production API | Production | start/pending/approve/deny/token/replay/rate limits with Android public switch off | Pending deployment |
 | AMO submission | Signed public listing | private reviewer credentials, phone/tablet screenshots, declarations, reviewer notes | Pending account/device access |
 | Legacy login removal | Source inventory | no legacy routes, page, setting, callback code, or redirect permission remains | Ready locally |
