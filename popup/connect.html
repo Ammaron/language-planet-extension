@@ -22,6 +22,12 @@
       <div id="pending-view" class="state-view hidden">
         <p class="code-label" data-i18n="connectCodeLabel">Your connection code</p>
         <output id="user-code" class="user-code" aria-live="polite"></output>
+        <div class="computer-instructions">
+          <p data-i18n="connectComputerInstructions">On your computer, open:</p>
+          <a id="approval-url" class="approval-url" href="#">langsly.com/extension-connect</a>
+          <button id="copy-approval-url" type="button" class="copy-link" data-i18n="connectCopyUrl">Copy computer link</button>
+          <p id="copy-status" class="copy-status" role="status" aria-live="polite"></p>
+        </div>
         <p id="pending-message" class="status-copy" role="status" data-i18n="connectWaiting">Waiting for your approval on Langsly…</p>
         <div class="actions">
           <button id="open-approval" type="button" class="primary" data-i18n="connectOpenApproval">Open approval page</button>

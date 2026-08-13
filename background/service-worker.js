@@ -271,20 +271,43 @@ async function refreshAccessToken() {
   return currentPromise;
 }
 
+function isExtensionRefreshToken(token) {
+  try {
+    const encodedPayload = String(token || '').split('.')[1];
+    if (!encodedPayload) return false;
+    const base64 = encodedPayload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+    return JSON.parse(atob(padded)).extension_session === true;
+  } catch {
+    return false;
+  }
+}
+
 async function _refreshAccessToken({ refresh, generation }) {
   const controller = new AbortController();
   activeAuthControllers.add(controller);
 
   try {
     const { apiBase } = await getConfig();
-    const res = await fetch(`${apiBase}/users/token/refresh/`, {
+    // Sessions created before the longer extension policy do not carry the
+    // extension claim. Let them keep rotating on the original route so an
+    // extension update never forces an otherwise-valid user to sign in again.
+    const refreshPath = isExtensionRefreshToken(refresh)
+      ? '/auth/extension-token/refresh/'
+      : '/auth/token/refresh/';
+    const res = await fetch(`${apiBase}${refreshPath}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh }),
       signal: controller.signal,
     });
     if (!res.ok) {
-      if (generation === authGeneration) await clearSession();
+      // Only an authentication rejection proves this session is no longer valid.
+      // Keep the rotating refresh token through rate limits and server outages so
+      // a temporary backend problem never turns into an unnecessary sign-in.
+      if ([400, 401, 403].includes(res.status) && generation === authGeneration) {
+        await clearSession();
+      }
       return null;
     }
     const data = await res.json();

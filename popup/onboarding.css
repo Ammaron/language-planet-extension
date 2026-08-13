@@ -215,11 +215,10 @@ body {
   background: var(--lp-border);
 }
 
-.google-login-btn {
+.account-connect-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
   width: 100%;
   min-height: 44px;
   padding: 11px 14px;
@@ -233,22 +232,8 @@ body {
   transition: transform 0.16s ease, box-shadow 0.16s ease;
 }
 
-.google-login-btn::before {
-  content: "G";
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  border: 1px solid var(--lp-border);
-  border-radius: 999px;
-  color: var(--lp-button-primary-bg);
-  background: var(--lp-surface);
-  font-size: 13px;
-  font-weight: 900;
-}
-
-.google-login-btn:hover,
-.google-login-btn:focus-visible {
+.account-connect-btn:hover,
+.account-connect-btn:focus-visible {
   transform: translateY(-1px);
 }
 
@@ -258,7 +243,7 @@ body {
 }
 
 .primary-btn:disabled,
-.google-login-btn:disabled {
+.account-connect-btn:disabled {
   opacity: 0.62;
   cursor: not-allowed;
   transform: none;

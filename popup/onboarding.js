@@ -1,7 +1,7 @@
 /* global browser */
 const steps = [document.getElementById('step-1'), document.getElementById('step-2'), document.getElementById('step-3')];
 const dots = [document.getElementById('dot-1'), document.getElementById('dot-2'), document.getElementById('dot-3')];
-const onboardGoogleLoginBtn = document.getElementById('onboard-google-login-btn');
+const onboardAccountConnectBtn = document.getElementById('onboard-account-connect-btn');
 const onboardError = document.getElementById('onboard-error');
 
 function t(key, substitutions, fallback) {
@@ -27,7 +27,7 @@ function showStep(n) {
 }
 
 function setOnboardLoginControlsDisabled(disabled) {
-  if (onboardGoogleLoginBtn) onboardGoogleLoginBtn.disabled = disabled;
+  if (onboardAccountConnectBtn) onboardAccountConnectBtn.disabled = disabled;
 }
 
 async function finishOnboardLogin() {
@@ -48,11 +48,11 @@ applyStoredTheme();
 document.getElementById('next-1').addEventListener('click', () => showStep(1));
 
 // Step 2: Login
-if (onboardGoogleLoginBtn) {
-  onboardGoogleLoginBtn.addEventListener('click', async () => {
+if (onboardAccountConnectBtn) {
+  onboardAccountConnectBtn.addEventListener('click', async () => {
     onboardError.classList.add('hidden');
     setOnboardLoginControlsDisabled(true);
-    onboardGoogleLoginBtn.textContent = t('deviceLoginOpening', 'Opening secure connection...');
+    onboardAccountConnectBtn.textContent = t('deviceLoginOpening', 'Opening secure connection...');
 
     const response = await browser.runtime.sendMessage({ type: 'START_DEVICE_LOGIN' });
 
@@ -60,12 +60,12 @@ if (onboardGoogleLoginBtn) {
       onboardError.textContent = t('deviceLoginContinueInTab', 'Continue in the connection tab, then return here.');
       onboardError.classList.remove('hidden');
     } else {
-      onboardError.textContent = response.error || t('googleLoginFailed', 'Google sign-in failed.');
+      onboardError.textContent = response.error || t('accountConnectionFailed', 'Could not connect your Langsly account.');
       onboardError.classList.remove('hidden');
     }
 
     setOnboardLoginControlsDisabled(false);
-    onboardGoogleLoginBtn.textContent = t('connectLangslyAccount', 'Connect Langsly account');
+    onboardAccountConnectBtn.textContent = t('connectLangslyAccount', 'Connect Langsly account');
   });
 }
 

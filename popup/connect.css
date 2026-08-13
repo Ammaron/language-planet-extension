@@ -16,6 +16,11 @@ h2 { font-size: 1.25rem; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .code-label { margin: 0; font-size: .85rem; color: #f4dfe2; }
 .user-code { display: block; margin: 12px 0; font: 800 clamp(2rem, 10vw, 3.8rem)/1.1 ui-monospace, SFMono-Regular, monospace; letter-spacing: .12em; overflow-wrap: anywhere; }
+.computer-instructions { margin: 18px 0; padding: 14px; border: 1px solid #ffffff2b; border-radius: 12px; background: #ffffff0b; text-align: left; }
+.computer-instructions p { margin: 0 0 8px; }
+.approval-url { display: block; min-height: 0; overflow-wrap: anywhere; color: #f6c96b; font-weight: 800; line-height: 1.5; }
+.copy-link { min-height: 44px; margin-top: 10px; padding: 8px 12px; border: 1px solid #ffffff4d; border-radius: 8px; background: transparent; color: #fff; font-weight: 700; }
+.copy-status { min-height: 20px; margin: 6px 0 0 !important; color: #f4dfe2; font-size: .8rem; }
 .actions { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 20px; }
 .primary, .secondary { border-radius: 12px; padding: 11px 18px; font-weight: 800; }
 .primary { border: 0; background: #f6c96b; color: #17120a; }

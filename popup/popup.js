@@ -2,7 +2,7 @@
 const loginView = document.getElementById('login-view');
 const settingsView = document.getElementById('settings-view');
 const loginError = document.getElementById('login-error');
-const googleLoginBtn = document.getElementById('google-login-btn');
+const accountConnectBtn = document.getElementById('account-connect-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const syncBtn = document.getElementById('sync-btn');
 const wordCountEl = document.getElementById('word-count');
@@ -117,7 +117,7 @@ async function renderLoggedInState() {
 }
 
 function setLoginControlsDisabled(disabled) {
-  if (googleLoginBtn) googleLoginBtn.disabled = disabled;
+  if (accountConnectBtn) accountConnectBtn.disabled = disabled;
 }
 
 // ─── Init ────────────────────────────────────
@@ -220,23 +220,23 @@ function updateStatus(status) {
 }
 
 // ─── Login ───────────────────────────────────
-if (googleLoginBtn) {
-  googleLoginBtn.addEventListener('click', async () => {
+if (accountConnectBtn) {
+  accountConnectBtn.addEventListener('click', async () => {
     loginError.classList.add('hidden');
     setLoginControlsDisabled(true);
-    googleLoginBtn.textContent = t('deviceLoginOpening', 'Opening secure connection...');
+    accountConnectBtn.textContent = t('deviceLoginOpening', 'Opening secure connection...');
 
     const response = await browser.runtime.sendMessage({ type: 'START_DEVICE_LOGIN' });
 
     if (response.success) {
       window.close();
     } else {
-      loginError.textContent = response.error || t('googleLoginFailed', 'Google sign-in failed.');
+      loginError.textContent = response.error || t('accountConnectionFailed', 'Could not connect your Langsly account.');
       loginError.classList.remove('hidden');
     }
 
     setLoginControlsDisabled(false);
-    googleLoginBtn.textContent = t('connectLangslyAccount', 'Connect Langsly account');
+    accountConnectBtn.textContent = t('connectLangslyAccount', 'Connect Langsly account');
   });
 }
 

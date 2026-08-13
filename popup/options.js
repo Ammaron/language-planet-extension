@@ -16,6 +16,19 @@ const syncIntervalLabel = document.getElementById('sync-interval-label');
 const resetPreferencesBtn = document.getElementById('reset-preferences');
 const saveBtn = document.getElementById('save-btn');
 const saveStatus = document.getElementById('save-status');
+const accountStatus = document.getElementById('account-status');
+const accountConnect = document.getElementById('account-connect');
+const accountLogout = document.getElementById('account-logout');
+
+async function renderAccountState() {
+  const status = await browser.runtime.sendMessage({ type: 'GET_STATUS' });
+  const isLoggedIn = Boolean(status && status.isLoggedIn);
+  accountStatus.textContent = isLoggedIn
+    ? t('accountConnected', 'Connected to Langsly.')
+    : t('accountNotConnected', 'Not connected to Langsly.');
+  accountConnect.classList.toggle('hidden', isLoggedIn);
+  accountLogout.classList.toggle('hidden', !isLoggedIn);
+}
 
 function applyPreferenceValues({
   syncInterval = DEFAULTS.syncInterval,
@@ -32,7 +45,27 @@ async function loadSettings() {
   applyPreferenceValues({
     syncInterval: syncInterval || DEFAULTS.syncInterval,
   });
+  await renderAccountState();
 }
+
+accountConnect.addEventListener('click', async () => {
+  accountConnect.disabled = true;
+  try {
+    await browser.runtime.sendMessage({ type: 'START_DEVICE_LOGIN' });
+  } finally {
+    accountConnect.disabled = false;
+  }
+});
+
+accountLogout.addEventListener('click', async () => {
+  accountLogout.disabled = true;
+  try {
+    await browser.runtime.sendMessage({ type: 'LOGOUT' });
+    await renderAccountState();
+  } finally {
+    accountLogout.disabled = false;
+  }
+});
 
 syncIntervalSlider.addEventListener('input', () => {
   syncIntervalLabel.textContent = formatMinutes(syncIntervalSlider.value);
@@ -59,3 +92,7 @@ saveBtn.addEventListener('click', async () => {
 });
 
 loadSettings();
+
+browser.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.authToken) void renderAccountState();
+});

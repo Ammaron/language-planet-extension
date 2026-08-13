@@ -88,6 +88,10 @@ body {
   touch-action: pan-x;
 }
 
+.account-status { margin-bottom: 12px; line-height: 1.5; color: #374151; }
+.options-section .primary-btn { width: 100%; }
+.options-section .secondary-btn { min-height: 44px; }
+
 .slider-row span {
   font-size: 13px;
   font-weight: 600;

@@ -6,12 +6,20 @@ const views = {
   error: document.getElementById('error-view'),
 };
 const codeOutput = document.getElementById('user-code');
+const approvalUrl = document.getElementById('approval-url');
+const copyApprovalUrl = document.getElementById('copy-approval-url');
+const copyStatus = document.getElementById('copy-status');
 const pendingMessage = document.getElementById('pending-message');
 const errorMessage = document.getElementById('error-message');
 let pending = null;
 let pollTimer = null;
 let pollInFlight = false;
 let connectionGeneration = 0;
+
+function t(key, fallback) {
+  if (window.LangslyI18n) return window.LangslyI18n.t(key, fallback);
+  return fallback || key;
+}
 
 function cancelConnection() {
   connectionGeneration += 1;
@@ -52,8 +60,35 @@ async function openApproval() {
   await browser.storage.local.set({ extensionDeviceAuthorization: pending });
 }
 
+function getApprovalUrl() {
+  if (pending && pending.verificationUri) return pending.verificationUri;
+  if (pending && pending.verificationUriComplete) {
+    try {
+      const url = new URL(pending.verificationUriComplete);
+      url.search = '';
+      url.hash = '';
+      return url.toString();
+    } catch {
+      return pending.verificationUriComplete;
+    }
+  }
+  return '';
+}
+
+async function copyComputerLink() {
+  const url = getApprovalUrl();
+  if (!url) return;
+  try {
+    await navigator.clipboard.writeText(url);
+    copyStatus.textContent = t('connectUrlCopied', 'Computer link copied.');
+  } catch {
+    copyStatus.textContent = t('connectUrlCopyFallback', 'Press and hold the link to copy it.');
+  }
+}
+
 async function start() {
   cancelConnection();
+  copyStatus.textContent = '';
   const generation = connectionGeneration;
   show('loading');
   const stored = await browser.storage.local.get('extensionDeviceAuthorization');
@@ -80,6 +115,7 @@ async function start() {
     pending = {
       deviceCode: data.device_code,
       userCode: data.user_code,
+      verificationUri: data.verification_uri,
       verificationUriComplete: data.verification_uri_complete,
       expiresAt: Date.now() + Number(data.expires_in || 600) * 1000,
       intervalMs: Number(data.interval || 5) * 1000,
@@ -96,6 +132,9 @@ async function start() {
 
 function renderPending() {
   codeOutput.textContent = pending.userCode;
+  const computerUrl = getApprovalUrl();
+  approvalUrl.href = computerUrl;
+  approvalUrl.textContent = computerUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
   pendingMessage.textContent = navigator.onLine === false
     ? 'Offline. Vocab Pass will retry when the connection returns.'
     : 'Waiting for your explicit approval on Langsly…';
@@ -163,6 +202,7 @@ async function poll() {
 }
 
 document.getElementById('open-approval').addEventListener('click', () => void openApproval());
+copyApprovalUrl.addEventListener('click', () => void copyComputerLink());
 document.getElementById('cancel-connect').addEventListener('click', async () => {
   cancelConnection();
   await browser.storage.local.remove('extensionDeviceAuthorization');
