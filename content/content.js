@@ -77,6 +77,7 @@ const scanIdleHandles = new Set();
 const scanTimeoutHandles = new Set();
 const automaticEncounterWordIds = new Set();
 let disambiguationState = new WeakMap();
+let contextualRewriteState = new WeakMap();
 const phraseCoordinator = LangslyRequestCoordinator.createRequestCoordinator({
   maxConcurrent: 2,
   maxUnique: 20,
@@ -89,6 +90,19 @@ const disambiguationCoordinator = LangslyRequestCoordinator.createBatchCoordinat
   windowMs: 60_000,
   send: (items) => browser.runtime.sendMessage({ type: 'DISAMBIGUATE', items })
     .then((response) => (response && Array.isArray(response.results) ? response.results : [])),
+});
+const contextualRewriteCoordinator = LangslyRequestCoordinator.createRequestCoordinator({
+  maxConcurrent: 2,
+  maxUnique: 30,
+  keyOf: (payload) => JSON.stringify([
+    payload.sentence,
+    payload.matched_text,
+    payload.match_offset,
+    payload.source_language,
+    payload.target_language,
+    payload.candidate_ids,
+  ]),
+  send: (payload) => browser.runtime.sendMessage({ type: 'CONTEXTUAL_REWRITE', ...payload }),
 });
 const LEGACY_FRONTEND_URL = 'http://localhost:3000';
 const DEFAULT_FRONTEND_URL = 'https://langsly.com';
@@ -333,6 +347,7 @@ function runProcessNode(root, complete) {
     } else {
       // All text nodes processed — request async disambiguation for ambiguous words
       requestDisambiguation();
+      requestContextualRewrites();
       complete();
     }
   }
@@ -342,7 +357,7 @@ function runProcessNode(root, complete) {
     const end = Math.min(index + 20, textNodes.length);
     while (index < end) replaceInTextNode(textNodes[index++]);
     if (index < textNodes.length) scheduleScanTimeout(fallbackProcessBatch);
-    else { requestDisambiguation(); complete(); }
+    else { requestDisambiguation(); requestContextualRewrites(); complete(); }
   };
 
   if ('requestIdleCallback' in window) {
@@ -412,13 +427,35 @@ function replaceInTextNode(textNode) {
   textNode.parentNode.replaceChild(fragment, textNode);
 }
 
+function displaySingleTerm(term, original) {
+  const target = String(term || '');
+  const source = String(original || '');
+  return target.toLocaleLowerCase() === source.toLocaleLowerCase() ? source : target;
+}
+
+function displayPhraseTerm(match, index) {
+  const term = displaySingleTerm(match.word.term, match.original);
+  const pos = String(match.word.part_of_speech || '').toLowerCase();
+  if (index > 0
+    && ['verb', 'article', 'pronoun', 'preposition', 'conjunction'].includes(pos)
+    && /^[A-Z][a-z]+$/.test(term)) {
+    return `${term.charAt(0).toLowerCase()}${term.slice(1)}`;
+  }
+  return term;
+}
+
 /**
  * Build a span for a single matched word (preserves current behavior exactly).
  */
 function buildSingleWordSpan(match, domain) {
   const span = document.createElement('span');
   span.className = LP_CLASS;
-  span.textContent = match.word.term;
+  const needsContextualRewrite = Boolean(match.word._needsContextualRewrite);
+  // Contextual rewrites are opt-in upgrades. Keep the page's Spanish visible
+  // until the backend returns a confident, learner-vocabulary-backed result.
+  span.textContent = needsContextualRewrite
+    ? match.original
+    : displaySingleTerm(match.word.term, match.original);
   span.setAttribute(LP_PROCESSED, 'true');
   setPrivate(span, {
     wordId: match.word.id,
@@ -441,11 +478,18 @@ function buildSingleWordSpan(match, domain) {
     disambigSentence: String(match.word._sentenceContext || '').slice(0, 320),
     disambigOffset: Number(match.word._matchOffset) || 0,
     disambigSourceLang: match.word.search_language || 'en',
+    contextualCandidates: Array.isArray(match.word._contextualCandidateIds)
+      ? match.word._contextualCandidateIds
+      : [match.word.id],
+    contextualRewrite: needsContextualRewrite,
   });
 
   // Mark ambiguous words for async backend disambiguation
-  if (match.word._isAmbiguous) {
+  if (match.word._isAmbiguous && !needsContextualRewrite) {
     span.classList.add('lp-disambig-pending');
+  }
+  if (needsContextualRewrite) {
+    span.classList.add('lp-contextual-pending');
   }
 
   const localConfidence = parseFloat(match.word._localConfidence || '0');
@@ -478,10 +522,10 @@ function buildPhraseSpan(phrase, fullText, domain) {
   const GR = window.GrammarRules;
 
   // Prepare word data for composition rules
-  const wordData = matches.map(m => ({
+  const wordData = matches.map((m, index) => ({
     word: m.word,
     pos: m.word.part_of_speech || '',
-    term: m.word.term,
+    term: displayPhraseTerm(m, index),
     original: m.original,
     matchedForm: m.matchedForm,
   }));
@@ -520,7 +564,7 @@ function buildPhraseSpan(phrase, fullText, domain) {
       }
       const wordSpan = document.createElement('span');
       wordSpan.className = LP_CLASS;
-      wordSpan.textContent = match.word.term;
+      wordSpan.textContent = displaySingleTerm(match.word.term, match.original);
       wordSpan.setAttribute(LP_PROCESSED, 'true');
       setPrivate(wordSpan, {
         wordId: match.word.id,
@@ -641,6 +685,70 @@ function requestDisambiguation() {
     }).catch(() => null).finally(() => {
       disambiguationState.set(span, 'resolved');
       if (span.isConnected) span.classList.remove('lp-disambig-pending');
+    });
+  });
+}
+
+/**
+ * Upgrade Spanish finite verbs only after a confident contextual response.
+ * Ambiguous responses intentionally leave the original source text visible.
+ */
+function requestContextualRewrites() {
+  const pending = document.querySelectorAll('.lp-contextual-pending');
+  pending.forEach((span) => {
+    if (contextualRewriteState.has(span)) return;
+    const state = getPrivate(span);
+    const candidates = Array.isArray(state.contextualCandidates)
+      ? state.contextualCandidates.filter(Boolean)
+      : [];
+    if (candidates.length === 0) {
+      contextualRewriteState.set(span, 'resolved');
+      span.classList.remove('lp-contextual-pending');
+      return;
+    }
+
+    const item = {
+      sentence: String(state.disambigSentence || '').slice(0, 500),
+      matched_text: state.matchedForm || state.original || '',
+      match_offset: Number(state.disambigOffset) || 0,
+      candidate_ids: candidates,
+      source_language: state.disambigSourceLang || 'es',
+      target_language: state.targetLanguage || 'en',
+    };
+    const generation = lifecycleGeneration;
+    contextualRewriteState.set(span, 'queued');
+    contextualRewriteCoordinator.request(item).then((response) => {
+      if (generation !== lifecycleGeneration || !span.isConnected || !response) return;
+      if (response.replacement_text && !response.uncertain) {
+        span.textContent = response.replacement_text;
+        const selected = Array.isArray(response.selected_vocabulary_ids)
+          ? response.selected_vocabulary_ids
+          : [];
+        setPrivate(span, {
+          translation: response.replacement_text,
+          wordId: selected[selected.length - 1] || state.wordId,
+          selectedVocabularyIds: selected,
+          method: response.method || 'contextual',
+          uncertain: 'false',
+          contextualConfidence: Number(response.confidence) || 0,
+        });
+        span.classList.remove('lp-uncertain');
+      } else {
+        // Preserve the original source-language token on uncertainty/failure.
+        span.textContent = state.original || span.textContent;
+        setPrivate(span, {
+          method: response.method || 'contextual_uncertain',
+          uncertain: 'true',
+          contextualConfidence: Number(response.confidence) || 0,
+        });
+      }
+    }).catch(() => {
+      if (generation === lifecycleGeneration && span.isConnected) {
+        span.textContent = state.original || span.textContent;
+      }
+    }).finally(() => {
+      contextualRewriteState.set(span, 'resolved');
+      if (span.isConnected) span.classList.remove('lp-contextual-pending');
     });
   });
 }
@@ -848,12 +956,14 @@ function stopDocumentWork({ loggedOut = false } = {}) {
   VocabPopup.reset();
   privateState = globalThis.LangslyPrivateState;
   disambiguationState = new WeakMap();
+  contextualRewriteState = new WeakMap();
   document.documentElement.removeAttribute('data-lp-theme');
   window.removeEventListener('beforeunload', flushEncounterBuffer);
   if (loggedOut) {
     automaticEncounterWordIds.clear();
     phraseCoordinator.cancel();
     disambiguationCoordinator.cancel();
+    contextualRewriteCoordinator.cancel();
     stopSafetyController();
   }
 }

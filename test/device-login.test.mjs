@@ -7,7 +7,7 @@ const readJson = async (path) => JSON.parse(await readText(path));
 
 test('base manifest removes identity and activeTab and uses full-tab options', async () => {
   const manifest = await readJson('manifest.json');
-  assert.equal(manifest.version, '0.2.1');
+  assert.equal(manifest.version, '0.2.2');
   assert.deepEqual(manifest.permissions.sort(), ['alarms', 'storage']);
   assert.equal(manifest.options_ui.page, 'popup/options.html');
   assert.equal(manifest.options_ui.open_in_tab, true);

@@ -149,7 +149,11 @@ async function clearTokens() {
   await _withSessionMutation(async () => {
     if (encounterCoordinator) await encounterCoordinator.clear();
     const all = await browser.storage.local.get(null);
-    const cacheKeys = Object.keys(all).filter(key => key.startsWith('phrase_') || key.startsWith('disambig_'));
+    const cacheKeys = Object.keys(all).filter(key => (
+      key.startsWith('phrase_')
+      || key.startsWith('disambig_')
+      || key.startsWith('contextual_')
+    ));
     await browser.storage.local.remove([
     'authToken',
     'refreshToken',
@@ -907,6 +911,53 @@ browser.runtime.onMessage.addListener((message, sender) => {
     })();
   }
 
+  // ─── Spanish contextual subject recovery ──────
+  if (message.type === 'CONTEXTUAL_REWRITE') {
+    return (async () => {
+      try {
+        const generation = authGeneration;
+        if (!_consumeAutomaticBudget(sender, 'contextual', 1, 30, 150)) {
+          return { replacement_text: '', uncertain: true, error: 'quota_exceeded' };
+        }
+
+        const payload = {
+          sentence: String(message.sentence || '').slice(0, 500),
+          matched_text: String(message.matched_text || '').slice(0, 255),
+          match_offset: Number(message.match_offset) || 0,
+          candidate_ids: Array.isArray(message.candidate_ids) ? message.candidate_ids.slice(0, 20) : [],
+          source_language: message.source_language || 'es',
+          target_language: message.target_language || 'en',
+        };
+        const cacheKey = await _contextualCacheKey(payload);
+        const cached = await browser.storage.local.get(cacheKey);
+        if (cached[cacheKey]) return cached[cacheKey];
+
+        const { apiBase } = await getConfig();
+        const res = await authFetch(`${apiBase}/lessons/vocabpass/contextual-rewrite/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res || !res.ok) {
+          return { replacement_text: '', uncertain: true, error: 'request_failed' };
+        }
+
+        const data = await res.json();
+        if (generation !== authGeneration) {
+          return { replacement_text: '', uncertain: true, error: 'cancelled' };
+        }
+        const entry = { ...data, cached_at: Date.now() };
+        if (!await _setSessionStorage({ [cacheKey]: entry }, generation)) {
+          return { replacement_text: '', uncertain: true, error: 'cancelled' };
+        }
+        void _evictContextualCacheIfNeeded(generation);
+        return entry;
+      } catch (err) {
+        return { replacement_text: '', uncertain: true, error: err.message };
+      }
+    })();
+  }
+
   // ─── Word Sense Disambiguation ───────────────
   if (message.type === 'DISAMBIGUATE') {
     return (async () => {
@@ -1055,6 +1106,19 @@ function _disambigCacheKey(item) {
   }
 }
 
+async function _contextualCacheKey(item) {
+  const candidatesSorted = [...(item.candidate_ids || [])].sort().join(',');
+  const raw = `${item.sentence || ''}|${item.matched_text || ''}|${item.match_offset || 0}|${item.source_language || 'es'}|${item.target_language || 'en'}|${candidatesSorted}`;
+  try {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
+    const hash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+    return `contextual_${hash}`;
+  } catch {
+    // Preserve the complete bounded request key material if WebCrypto is unavailable.
+    return `contextual_${btoa(unescape(encodeURIComponent(raw)))}`;
+  }
+}
+
 async function _evictDisambigCacheIfNeeded(expectedGeneration = authGeneration) {
   const DISAMBIG_CACHE_MAX = 2000;
   const DISAMBIG_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -1085,6 +1149,34 @@ async function _evictDisambigCacheIfNeeded(expectedGeneration = authGeneration) 
     });
   } catch {
     // Non-critical — eviction failure doesn't break functionality
+  }
+}
+
+async function _evictContextualCacheIfNeeded(expectedGeneration = authGeneration) {
+  const CACHE_MAX = 1000;
+  const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+  try {
+    await _withSessionMutation(async () => {
+      if (expectedGeneration !== authGeneration) return;
+      const all = await browser.storage.local.get(null);
+      const keys = Object.keys(all).filter(key => key.startsWith('contextual_'));
+      const now = Date.now();
+      const expired = keys.filter(key => (
+        all[key] && all[key].cached_at && (now - all[key].cached_at) > CACHE_TTL_MS
+      ));
+      if (expired.length > 0) await browser.storage.local.remove(expired);
+      const remaining = keys.filter(key => !expired.includes(key));
+      if (remaining.length > CACHE_MAX) {
+        const toRemove = remaining
+          .map(key => ({ key, time: all[key]?.cached_at || 0 }))
+          .sort((a, b) => a.time - b.time)
+          .slice(0, remaining.length - CACHE_MAX)
+          .map(entry => entry.key);
+        await browser.storage.local.remove(toRemove);
+      }
+    });
+  } catch {
+    // Cache cleanup is non-critical.
   }
 }
 

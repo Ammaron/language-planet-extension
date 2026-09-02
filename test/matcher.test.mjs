@@ -13,13 +13,14 @@ function plain(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-function createMatcher(words) {
+function createMatcher(words, grammarOverrides = {}) {
   const sandbox = {
     window: {
       GrammarRules: {
         isGlueGap: () => false,
         MAX_GAP_CHARS: 30,
         MIN_PHRASE_WORDS: 2,
+        ...grammarOverrides,
       },
     },
     console,
@@ -134,6 +135,20 @@ test('same-meaning variants stay grouped under one meaning key for a trigger', (
   );
 });
 
+test('slash-separated learner glosses are not literal runtime triggers', () => {
+  const matcher = createMatcher([{
+    id: 'is-concept',
+    term: 'Is',
+    translation: 'Es / Está',
+    source_forms: [],
+    search_language: 'es',
+    term_language: 'en',
+    part_of_speech: 'verb',
+  }]);
+
+  assert.equal(matcher.findMatches('Es / Está').singles.length, 0);
+});
+
 test('extension-synced English trigger forms match Wikipedia and Google-like text', () => {
   const matcher = createMatcher([
     {
@@ -141,7 +156,7 @@ test('extension-synced English trigger forms match Wikipedia and Google-like tex
       term: 'buscar',
       translation: 'search',
       searchable_forms: ['searches', 'searched', 'searching'],
-      source_forms: ['search engine'],
+      source_forms: ['search', 'searches', 'searched', 'searching', 'search engine'],
       search_language: 'en',
       term_language: 'es',
     },
@@ -166,4 +181,81 @@ test('extension-synced English trigger forms match Wikipedia and Google-like tex
     plain(wikipediaResult.singles.map(match => match.original)),
     ['encyclopedia'],
   );
+});
+
+test('single Spanish verb matches carry bounded context even with one candidate', () => {
+  const matcher = createMatcher([{
+    id: 'is-concept',
+    term: 'Is',
+    translation: 'Es / Está',
+    source_forms: ['es', 'está'],
+    search_language: 'es',
+    term_language: 'en',
+    part_of_speech: 'verb',
+  }]);
+
+  const result = matcher.findMatches('Es un doctor.');
+  const match = result.singles[0];
+  assert.equal(match.word._needsContextualRewrite, true);
+  assert.deepEqual(plain(match.word._contextualCandidateIds), ['is-concept']);
+  assert.equal(match.word._sentenceContext, 'Es un doctor.');
+  assert.equal(match.word._matchOffset, 0);
+});
+
+test('Spanish verb-first matches stay out of generic VERB plus NOUN phrases', () => {
+  const matcher = createMatcher([
+    {
+      id: 'is-concept', term: 'Is', translation: 'es', source_forms: ['es'],
+      search_language: 'es', term_language: 'en', part_of_speech: 'verb',
+    },
+    {
+      id: 'doctor-concept', term: 'doctor', translation: 'doctor', source_forms: ['doctor'],
+      search_language: 'es', term_language: 'en', part_of_speech: 'noun',
+    },
+  ], { isGlueGap: () => true });
+
+  const result = matcher.findMatches('Es un doctor.');
+  assert.equal(result.phrases.length, 0);
+  assert.deepEqual(plain(result.singles.map(match => match.original)), ['Es', 'doctor']);
+});
+
+test('explicit Spanish pronoun and verb group stops before later context', () => {
+  const matcher = createMatcher([
+    {
+      id: 'he-concept', term: 'He', translation: 'él', source_forms: ['él'],
+      search_language: 'es', term_language: 'en', part_of_speech: 'pronoun',
+    },
+    {
+      id: 'is-concept', term: 'is', translation: 'es', source_forms: ['es'],
+      search_language: 'es', term_language: 'en', part_of_speech: 'verb',
+    },
+    {
+      id: 'doctor-concept', term: 'doctor', translation: 'doctor', source_forms: ['doctor'],
+      search_language: 'es', term_language: 'en', part_of_speech: 'noun',
+    },
+  ], { isGlueGap: () => true });
+
+  const result = matcher.findMatches('Él es un doctor.');
+  assert.equal(result.phrases.length, 1);
+  assert.deepEqual(plain(result.phrases[0].matches.map(match => match.original)), ['Él', 'es']);
+  assert.deepEqual(plain(result.singles.map(match => match.original)), ['doctor']);
+});
+
+test('authored whole-sentence source forms retain longest-match authority', () => {
+  const matcher = createMatcher([
+    {
+      id: 'authored-phrase', term: 'I am a doctor', translation: 'soy un doctor',
+      source_forms: ['soy un doctor'], search_language: 'es', term_language: 'en',
+      part_of_speech: 'verb',
+    },
+    {
+      id: 'am-concept', term: 'Am', translation: 'soy', source_forms: ['soy'],
+      search_language: 'es', term_language: 'en', part_of_speech: 'verb',
+    },
+  ], { isGlueGap: () => true });
+
+  const result = matcher.findMatches('Soy un doctor.');
+  assert.equal(result.singles.length, 1);
+  assert.equal(result.singles[0].word.id, 'authored-phrase');
+  assert.equal(result.singles[0].word._needsContextualRewrite, undefined);
 });

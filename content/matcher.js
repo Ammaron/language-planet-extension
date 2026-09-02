@@ -29,20 +29,23 @@ class VocabMatcher {
 
     for (const word of words) {
       const keys = new Set();
-      keys.add(this.normalizeKey(word.translation));
-
-      if (Array.isArray(word.searchable_forms)) {
-        for (const form of word.searchable_forms) {
-          keys.add(this.normalizeKey(form));
+      const explicit = Array.isArray(word.source_forms) ? word.source_forms : [];
+      if (explicit.some(form => this.isSlashSeparatedGloss(form))) continue;
+      const authored = explicit.map(form => this.normalizeKey(form)).filter(Boolean);
+      const effective = Array.isArray(word.effective_runtime_triggers)
+        ? word.effective_runtime_triggers : null;
+      if (effective || authored.length > 0) {
+        const triggers = effective || authored;
+        if (triggers.some(form => this.isSlashSeparatedGloss(form))) continue;
+        for (const form of triggers) keys.add(this.normalizeKey(form));
+      } else {
+        // A display gloss such as "Es / Está" is never a page trigger.
+        if (this.isSlashSeparatedGloss(word.translation)) continue;
+        keys.add(this.normalizeKey(word.translation));
+        for (const form of (Array.isArray(word.searchable_forms) ? word.searchable_forms : [])) {
+          if (!this.isSlashSeparatedGloss(form)) keys.add(this.normalizeKey(form));
         }
       }
-
-      if (Array.isArray(word.source_forms)) {
-        for (const form of word.source_forms) {
-          keys.add(this.normalizeKey(form));
-        }
-      }
-
       for (const key of keys) {
         if (key) this.insertWord(key, word);
       }
@@ -75,7 +78,7 @@ class VocabMatcher {
 
   normalizeKey(value) {
     if (typeof value !== 'string') return '';
-    return value.trim().toLowerCase();
+    return value.trim().replace(/\s+/g, ' ').toLowerCase();
   }
 
   buildFailureLinks() {
@@ -198,8 +201,13 @@ class VocabMatcher {
       const gapText = text.substring(prev.end, curr.start);
 
       const isAdjacent = gapText.length <= MAX_GAP_CHARS && isGlueGap(gapText, sourceLang);
+      const containsContextualVerb = sourceLang === 'es'
+        && currentGroup.some(match => this.isContextualVerbMatch(match));
 
-      if (isAdjacent) {
+      // A Spanish finite verb may need to grow an omitted English subject.
+      // Keep it out of the generic VERB + NOUN phrase rule, and stop an
+      // explicit PRONOUN + VERB group before later unmatched context.
+      if (isAdjacent && !containsContextualVerb) {
         currentGroup.push(curr);
       } else {
         groups.push(currentGroup);
@@ -234,6 +242,19 @@ class VocabMatcher {
     return 'en';
   }
 
+  isSlashSeparatedGloss(value) {
+    return String(value || '').split(/\s*\/\s*/).filter(Boolean).length > 1;
+  }
+
+  isContextualVerbMatch(match) {
+    const word = match && match.word;
+    if (!word) return false;
+    return String(word.search_language || '').toLowerCase().startsWith('es')
+      && String(word.part_of_speech || '').toLowerCase() === 'verb'
+      && !/\s/.test(String(match.original || match.matchedForm || '').trim())
+      && !/\s/.test(String(word.term || '').trim());
+  }
+
   isWordBoundary(text, start, length, key = '') {
     if (this.isBoundarylessScript(key)) {
       return true;
@@ -255,11 +276,14 @@ class VocabMatcher {
   disambiguate(candidates, text, matchIdx) {
     if (!candidates || candidates.length === 0) return null;
 
+    const { sentence, offset } = this._extractSentence(text, matchIdx);
+
     if (candidates.length === 1) {
-      return this.cloneCandidate(candidates[0]);
+      const chosen = this.cloneCandidate(candidates[0]);
+      this._attachContextualRewrite(chosen, [candidates[0]], sentence, offset);
+      return chosen;
     }
 
-    const { sentence, offset } = this._extractSentence(text, matchIdx);
     const sentenceHash = String(this._stableHash(sentence));
     const surrounding = text.substring(Math.max(0, matchIdx - 60), Math.min(text.length, matchIdx + 60)).toLowerCase();
 
@@ -348,8 +372,23 @@ class VocabMatcher {
     chosen._alternatives = alternatives;
     chosen._localConfidence = topScore > 0 ? Number((Math.min(1, topScore / 8)).toFixed(3)) : 0;
     chosen._localMethod = 'local';
+    this._attachContextualRewrite(chosen, candidates, sentence, offset);
 
     return chosen;
+  }
+
+  _attachContextualRewrite(chosen, candidates, sentence, offset) {
+    const sourceLanguage = String(chosen.search_language || '').toLowerCase();
+    const targetTerm = String(chosen.term || '').trim();
+    if (!sourceLanguage.startsWith('es')
+      || String(chosen.part_of_speech || '').toLowerCase() !== 'verb'
+      || /\s/.test(targetTerm)) {
+      return;
+    }
+    chosen._needsContextualRewrite = true;
+    chosen._contextualCandidateIds = candidates.map(candidate => candidate.id);
+    chosen._sentenceContext = sentence;
+    chosen._matchOffset = offset;
   }
 
   _selectWeightedVariant(rows, meaningKey, sentenceHash) {
