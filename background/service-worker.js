@@ -287,6 +287,31 @@ function isExtensionRefreshToken(token) {
   }
 }
 
+function getJwtExpirationMs(token) {
+  try {
+    const encodedPayload = String(token || '').split('.')[1];
+    if (!encodedPayload) return 0;
+    const base64 = encodedPayload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+    const expirationSeconds = Number(JSON.parse(atob(padded)).exp);
+    return Number.isFinite(expirationSeconds) ? expirationSeconds * 1000 : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function isAccessTokenFresh(token, now = Date.now()) {
+  const expiresAt = getJwtExpirationMs(token);
+  return Boolean(expiresAt && expiresAt > now + 60_000);
+}
+
+async function ensureAccessToken() {
+  const { access, refresh } = await getTokens();
+  if (access && isAccessTokenFresh(access)) return access;
+  if (!refresh) return access || null;
+  return refreshAccessToken();
+}
+
 async function _refreshAccessToken({ refresh, generation }) {
   const controller = new AbortController();
   activeAuthControllers.add(controller);
@@ -309,7 +334,7 @@ async function _refreshAccessToken({ refresh, generation }) {
       // Only an authentication rejection proves this session is no longer valid.
       // Keep the rotating refresh token through rate limits and server outages so
       // a temporary backend problem never turns into an unnecessary sign-in.
-      if ([400, 401, 403].includes(res.status) && generation === authGeneration) {
+      if ([401, 403].includes(res.status) && generation === authGeneration) {
         await clearSession();
       }
       return null;
@@ -328,6 +353,9 @@ async function _refreshAccessToken({ refresh, generation }) {
 async function authFetch(url, options = {}) {
   const snapshot = await _getSessionSnapshot();
   let { access } = snapshot;
+  if (!access || !isAccessTokenFresh(access)) {
+    access = await ensureAccessToken();
+  }
   if (!access) return null;
   const { generation } = snapshot;
   const controller = new AbortController();
@@ -711,21 +739,9 @@ browser.runtime.onMessage.addListener((message, sender) => {
 
   if (message.type === 'GET_STATUS') {
     return (async () => {
-      const {
-        authToken,
-        lastSync,
-        wordCount,
-        difficulty,
-        syncStatus,
-        extensionSourceLanguage,
-        matchableWordCount,
-        themePacks,
-        activeThemeSlug,
-        activeThemeName,
-        themeTokens,
-        themeSyncStatus,
-      } = await browser.storage.local.get([
+      let stored = await browser.storage.local.get([
         'authToken',
+        'refreshToken',
         'lastSync',
         'wordCount',
         'difficulty',
@@ -738,8 +754,30 @@ browser.runtime.onMessage.addListener((message, sender) => {
         'themeTokens',
         'themeSyncStatus',
       ]);
+      if (stored.refreshToken && (!stored.authToken || !isAccessTokenFresh(stored.authToken))) {
+        await ensureAccessToken();
+        stored = { ...stored, ...await browser.storage.local.get(['authToken', 'refreshToken', 'syncStatus']) };
+      }
+      const {
+        authToken,
+        refreshToken,
+        lastSync,
+        wordCount,
+        difficulty,
+        syncStatus,
+        extensionSourceLanguage,
+        matchableWordCount,
+        themePacks,
+        activeThemeSlug,
+        activeThemeName,
+        themeTokens,
+        themeSyncStatus,
+      } = stored;
       return {
-        isLoggedIn: !!authToken,
+        // Keep the account connected through offline/server failures when a
+        // durable refresh credential still exists. Only explicit logout or a
+        // confirmed 401/403 refresh rejection clears the session.
+        isLoggedIn: !!(authToken || refreshToken),
         lastSync: lastSync || null,
         wordCount: wordCount || 0,
         difficulty: difficulty || 'normal',
@@ -1192,6 +1230,7 @@ browser.runtime.onInstalled.addListener((details) => {
 
 browser.runtime.onStartup.addListener(() => {
   _ensureRotationSalt();
+  ensureAccessToken().catch(() => {});
   syncVocabulary();
   syncThemes();
   browser.storage.local.get('extensionDeviceAuthorization').then(({ extensionDeviceAuthorization }) => {
