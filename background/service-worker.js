@@ -17,6 +17,7 @@ if (typeof importScripts === 'function') {
   if (!globalThis.LangslyEncounterCoordinator) {
     importScripts('encounter-coordinator.js');
   }
+  if (!globalThis.createDeviceConnection) importScripts('device-connection.js');
 }
 
 function t(key, substitutions, fallback) {
@@ -186,6 +187,7 @@ async function broadcastAuthCleared() {
 }
 
 async function clearSession() {
+  await deviceConnection.cancel();
   await clearTokens();
   await broadcastAuthCleared();
 }
@@ -234,20 +236,27 @@ async function _ensureRotationSalt(expectedGeneration = authGeneration) {
   }
 }
 
-async function completeLoginWithTokens(data) {
+async function completeLoginWithTokens(data, isCurrent = () => true) {
   if (!data || !data.access) {
     return { success: false, error: t('unexpectedServerResponse', 'Unexpected server response') };
   }
 
   const generation = authGeneration;
-  if (!await setTokens(data.access, data.refresh, generation)) return { success: false, error: 'cancelled' };
+  const saved = await _withSessionMutation(async () => {
+    if (generation !== authGeneration || !isCurrent()) return false;
+    await browser.storage.local.set({ authToken: data.access, refreshToken: data.refresh });
+    return true;
+  });
+  if (!saved) return { success: false, error: 'cancelled' };
   await _ensureRotationSalt(generation);
   await _withSessionMutation(async () => {
     if (generation === authGeneration) await browser.storage.local.set({ syncStatus: 'success' });
   });
-  await Promise.allSettled([syncVocabulary(), syncThemes()]);
+  void Promise.allSettled([syncVocabulary(), syncThemes()]);
   return generation === authGeneration ? { success: true } : { success: false, error: 'cancelled' };
 }
+
+const deviceConnection = globalThis.createDeviceConnection({ browser, fetch: (...args) => fetch(...args), getConfig, complete: completeLoginWithTokens });
 
 async function openDeviceConnectionPage() {
   const url = browser.runtime.getURL('popup/connect.html');
@@ -652,6 +661,7 @@ setupAlarms();
 migrateLegacyConfig().catch(() => {});
 
 browser.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'device-connection') void deviceConnection.resume();
   if (alarm.name === 'vocab-sync') {
     syncVocabulary();
     syncThemes();
@@ -661,8 +671,20 @@ browser.alarms.onAlarm.addListener((alarm) => {
 
 // ─── Message Handling ────────────────────────────
 browser.runtime.onMessage.addListener((message, sender) => {
+  if (message.type === 'DEVICE_CONNECTION_BRIDGE') return deviceConnection.bridge(message, sender);
+  const connectionMessage = ['START_DEVICE_LOGIN', 'DEVICE_CONNECTION_BEGIN', 'DEVICE_CONNECTION_STATUS', 'DEVICE_CONNECTION_OPEN', 'DEVICE_CONNECTION_CANCEL', 'COMPLETE_DEVICE_LOGIN'].includes(message.type);
+  if (connectionMessage && !(sender.url || '').startsWith(browser.runtime.getURL('popup/'))) return Promise.resolve({ success: false, error: 'untrusted_sender' });
+  if (message.type === 'DEVICE_CONNECTION_BEGIN') return deviceConnection.begin(message.platform, message.locale, Boolean(message.restart));
+  if (message.type === 'DEVICE_CONNECTION_STATUS') return deviceConnection.status();
+  if (message.type === 'DEVICE_CONNECTION_OPEN') return deviceConnection.openApproval();
+  if (message.type === 'DEVICE_CONNECTION_CANCEL') return deviceConnection.cancel().then(() => ({ status: 'idle' }));
   if (message.type === 'START_DEVICE_LOGIN') {
-    return openDeviceConnectionPage();
+    return (async () => {
+      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+      const returnTab = tabs.find(tab => /^https?:/.test(tab.url || '') && !tab.url.startsWith(DEFAULTS.frontendUrl));
+      await browser.storage.local.set({ connectionReturnTabId: returnTab?.id ?? null });
+      return openDeviceConnectionPage();
+    })();
   }
 
   if (message.type === 'COMPLETE_DEVICE_LOGIN') {
@@ -1233,9 +1255,8 @@ browser.runtime.onStartup.addListener(() => {
   ensureAccessToken().catch(() => {});
   syncVocabulary();
   syncThemes();
-  browser.storage.local.get('extensionDeviceAuthorization').then(({ extensionDeviceAuthorization }) => {
-    if (extensionDeviceAuthorization && extensionDeviceAuthorization.expiresAt > Date.now()) {
-      openDeviceConnectionPage().catch(() => {});
-    }
-  });
+  void deviceConnection.resume();
 });
+
+// Runs whenever the background event page/service worker is recreated.
+void deviceConnection.resume();

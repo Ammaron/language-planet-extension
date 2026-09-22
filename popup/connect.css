@@ -30,3 +30,7 @@ h2 { font-size: 1.25rem; }
 @media (min-width: 560px) { .actions { grid-template-columns: 1fr 1fr; } }
 @media (orientation: landscape) and (max-height: 600px) { .connect-shell { place-items: start center; } .connect-card { padding-block: 22px; } h1 { font-size: 2rem; } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+
+summary { min-height: 44px; cursor: pointer; padding: 12px; font-weight: 700; }
+button:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid #f6c96b; outline-offset: 4px; }
+button:disabled { opacity: .6; cursor: wait; }

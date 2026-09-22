@@ -7,7 +7,7 @@ const readJson = async (path) => JSON.parse(await readText(path));
 
 test('base manifest removes identity and activeTab and uses full-tab options', async () => {
   const manifest = await readJson('manifest.json');
-  assert.equal(manifest.version, '0.2.3');
+  assert.equal(manifest.version, '0.2.4');
   assert.deepEqual(manifest.permissions.sort(), ['alarms', 'storage']);
   assert.equal(manifest.options_ui.page, 'popup/options.html');
   assert.equal(manifest.options_ui.open_in_tab, true);
@@ -39,22 +39,14 @@ test('mobile-accessible options expose explicit connect and logout controls', as
   assert.match(js, /type:\s*'GET_STATUS'/);
 });
 
-test('device page persists pending state, polls only while visible, and retries on focus', async () => {
+test('device page delegates connection lifetime to the background', async () => {
   const html = await readText('popup/connect.html');
   const js = await readText('popup/connect.js');
-  assert.match(html, /id="user-code"/);
-  assert.match(html, /id="approval-url"/);
-  assert.match(html, /id="copy-approval-url"/);
-  assert.match(html, /id="open-approval"/);
-  assert.match(js, /extensionDeviceAuthorization/);
-  assert.match(js, /document\.visibilityState\s*!==\s*'visible'/);
-  assert.match(js, /addEventListener\('focus'/);
-  assert.match(js, /authorization_pending/);
-  assert.match(js, /slow_down/);
-  assert.match(js, /access_denied/);
-  assert.match(js, /expired_token/);
-  assert.match(js, /verificationUri:\s*data\.verification_uri/);
-  assert.match(js, /navigator\.clipboard\.writeText/);
+  assert.match(html, /<details class="other-device">/);
+  assert.match(js, /DEVICE_CONNECTION_BEGIN/);
+  assert.match(js, /DEVICE_CONNECTION_OPEN/);
+  assert.match(js, /storage.onChanged/);
+  assert.doesNotMatch(js, /fetch\(|visibilityState/);
 });
 
 test('service worker renews extension sessions and preserves them through transient failures', async () => {

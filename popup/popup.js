@@ -102,6 +102,12 @@ async function syncAndRenderThemes(status) {
 function showLogin() {
   loginView.classList.remove('hidden');
   settingsView.classList.add('hidden');
+  void browser.storage.local.get('extensionDeviceAuthorization').then(({ extensionDeviceAuthorization: pending }) => {
+    const unfinished = pending && !['connected', 'cancelled'].includes(pending.status);
+    accountConnectBtn.textContent = unfinished
+      ? (pending.expiresAt <= Date.now() || pending.status === 'denied' ? t('connectRestart', 'Restart connection') : t('connectContinue', 'Continue connection'))
+      : t('connectLangslyAccount', 'Connect Langsly account');
+  });
 }
 
 function showSettings() {
@@ -226,7 +232,7 @@ if (accountConnectBtn) {
     setLoginControlsDisabled(true);
     accountConnectBtn.textContent = t('deviceLoginOpening', 'Opening secure connection...');
 
-    const response = await browser.runtime.sendMessage({ type: 'START_DEVICE_LOGIN' });
+    const response = await browser.runtime.sendMessage({ type: 'START_DEVICE_LOGIN' }).catch(() => ({ success: false }));
 
     if (response.success) {
       window.close();
@@ -329,6 +335,13 @@ openVocabpass.addEventListener('click', async (e) => {
 if (openSettings) {
   openSettings.addEventListener('click', () => browser.runtime.openOptionsPage());
 }
+
+document.getElementById('login-open-settings').addEventListener('click', () => browser.runtime.openOptionsPage());
+browser.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'local') return;
+  if (changes.authToken?.newValue) void renderLoggedInState();
+  else if (changes.authToken || changes.extensionDeviceAuthorization) void browser.runtime.sendMessage({ type: 'GET_STATUS' }).then(status => { if (!status.isLoggedIn) showLogin(); });
+});
 
 // ─── Start ───────────────────────────────────
 init();

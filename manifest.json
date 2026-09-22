@@ -1,17 +1,24 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extName__",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "__MSG_extDescription__",
   "default_locale": "en",
-  "permissions": ["storage", "alarms"],
-  "host_permissions": ["<all_urls>"],
+  "permissions": [
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "background": {
     "service_worker": "background/service-worker.js"
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": [
+        "<all_urls>"
+      ],
       "js": [
         "vendor/browser-polyfill.min.js",
         "shared/i18n.js",
@@ -21,14 +28,31 @@
         "content/popup.js",
         "content/content.js"
       ],
-      "css": ["content/content.css"],
+      "css": [
+        "content/content.css"
+      ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://langsly.com/*",
+        "https://www.langsly.com/*"
+      ],
+      "js": [
+        "vendor/browser-polyfill.min.js",
+        "content/connection-bridge.js"
+      ],
+      "run_at": "document_start"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["content/content.css"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "content/content.css"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ],
   "action": {

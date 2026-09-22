@@ -23,9 +23,14 @@ const accountLogout = document.getElementById('account-logout');
 async function renderAccountState() {
   const status = await browser.runtime.sendMessage({ type: 'GET_STATUS' });
   const isLoggedIn = Boolean(status && status.isLoggedIn);
+  const { extensionDeviceAuthorization: pending } = await browser.storage.local.get('extensionDeviceAuthorization');
+  const unfinished = pending && !['connected', 'cancelled'].includes(pending.status);
+  const expired = unfinished && (pending.expiresAt <= Date.now() || pending.status === 'denied');
   accountStatus.textContent = isLoggedIn
     ? t('accountConnected', 'Connected to Langsly.')
     : t('accountNotConnected', 'Not connected to Langsly.');
+  if (!isLoggedIn && unfinished) accountStatus.textContent = t('accountPending', 'Setup unfinished. Continue to sign in and approve.');
+  accountConnect.textContent = expired ? t('connectRestart', 'Restart connection') : unfinished ? t('connectContinue', 'Continue connection') : t('connectLangslyAccount', 'Connect Langsly account');
   accountConnect.classList.toggle('hidden', isLoggedIn);
   accountLogout.classList.toggle('hidden', !isLoggedIn);
 }
@@ -51,7 +56,10 @@ async function loadSettings() {
 accountConnect.addEventListener('click', async () => {
   accountConnect.disabled = true;
   try {
-    await browser.runtime.sendMessage({ type: 'START_DEVICE_LOGIN' });
+    const result = await browser.runtime.sendMessage({ type: 'START_DEVICE_LOGIN' });
+    if (!result?.success) throw new Error('connection_failed');
+  } catch {
+    accountStatus.textContent = t('accountConnectionFailed', 'Could not connect your Langsly account. Please try again.');
   } finally {
     accountConnect.disabled = false;
   }
@@ -94,5 +102,7 @@ saveBtn.addEventListener('click', async () => {
 loadSettings();
 
 browser.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && changes.authToken) void renderAccountState();
+  if (area === 'local' && (changes.authToken || changes.extensionDeviceAuthorization)) void renderAccountState();
 });
+
+window.addEventListener('focus', () => void renderAccountState());

@@ -1,226 +1,68 @@
 /* global browser */
-const views = {
-  loading: document.getElementById('loading-view'),
-  pending: document.getElementById('pending-view'),
-  success: document.getElementById('success-view'),
-  error: document.getElementById('error-view'),
-};
-const codeOutput = document.getElementById('user-code');
-const approvalUrl = document.getElementById('approval-url');
-const copyApprovalUrl = document.getElementById('copy-approval-url');
-const copyStatus = document.getElementById('copy-status');
-const pendingMessage = document.getElementById('pending-message');
-const errorMessage = document.getElementById('error-message');
-let pending = null;
-let pollTimer = null;
-let pollInFlight = false;
-let connectionGeneration = 0;
-
-function t(key, fallback) {
-  if (window.LangslyI18n) return window.LangslyI18n.t(key, fallback);
-  return fallback || key;
-}
-
-function cancelConnection() {
-  connectionGeneration += 1;
-  clearTimeout(pollTimer);
-  pollTimer = null;
-  pending = null;
-  pollInFlight = false;
-}
-
+const views = Object.fromEntries(['loading', 'pending', 'success', 'error'].map(name => [name, document.getElementById(`${name}-view`)]));
+const t = (key, fallback) => window.LangslyI18n?.t(key, fallback) || fallback;
+const send = (type, extra = {}) => browser.runtime.sendMessage({ type, ...extra });
+let state;
+let busy = false;
 function show(name) {
-  Object.entries(views).forEach(([key, element]) => element.classList.toggle('hidden', key !== name));
+  Object.entries(views).forEach(([key, node]) => node.classList.toggle('hidden', key !== name));
 }
-
-function detectPlatform() {
-  const ua = navigator.userAgent || '';
-  if (/Firefox/i.test(ua) && /Android/i.test(ua)) return 'firefox_android';
-  if (/Firefox/i.test(ua)) return 'firefox_desktop';
-  return 'chrome_desktop';
-}
-
-async function config() {
-  const stored = await browser.storage.local.get(['apiBase', 'frontendUrl']);
-  const apiBase = String(stored.apiBase || 'https://api.langsly.com/api').replace(/\/+$/, '');
-  const frontendUrl = String(stored.frontendUrl || 'https://langsly.com').replace(/\/+$/, '');
-  return { apiBase, frontendUrl };
-}
-
-function schedulePoll(delayMs) {
-  clearTimeout(pollTimer);
-  if (document.visibilityState !== 'visible' || !pending) return;
-  pollTimer = setTimeout(() => void poll(), Math.max(0, delayMs));
-}
-
-async function openApproval() {
-  if (!pending || !pending.verificationUriComplete) return;
-  await browser.tabs.create({ url: pending.verificationUriComplete });
-  pending.approvalOpened = true;
-  await browser.storage.local.set({ extensionDeviceAuthorization: pending });
-}
-
-function getApprovalUrl() {
-  if (pending && pending.verificationUri) return pending.verificationUri;
-  if (pending && pending.verificationUriComplete) {
-    try {
-      const url = new URL(pending.verificationUriComplete);
-      url.search = '';
-      url.hash = '';
-      return url.toString();
-    } catch {
-      return pending.verificationUriComplete;
-    }
+function render(next) {
+  state = next;
+  if (state.status === 'connected') { show('success'); return; }
+  if (['expired', 'denied', 'idle', 'cancelled'].includes(state.status)) {
+    document.getElementById('error-message').textContent = state.status === 'denied'
+      ? t('connectDenied', 'Connection declined. You can start again when you are ready.')
+      : t('connectExpired', 'This connection expired. Restart to continue with your signed-in account.');
+    show('error'); return;
   }
-  return '';
-}
-
-async function copyComputerLink() {
-  const url = getApprovalUrl();
-  if (!url) return;
-  try {
-    await navigator.clipboard.writeText(url);
-    copyStatus.textContent = t('connectUrlCopied', 'Computer link copied.');
-  } catch {
-    copyStatus.textContent = t('connectUrlCopyFallback', 'Press and hold the link to copy it.');
-  }
-}
-
-async function start() {
-  cancelConnection();
-  copyStatus.textContent = '';
-  const generation = connectionGeneration;
-  show('loading');
-  const stored = await browser.storage.local.get('extensionDeviceAuthorization');
-  if (generation !== connectionGeneration) return;
-  const existing = stored.extensionDeviceAuthorization;
-  if (existing && existing.expiresAt > Date.now() && existing.deviceCode) {
-    pending = existing;
-    renderPending();
-    schedulePoll(0);
-    return;
-  }
-  await browser.storage.local.remove('extensionDeviceAuthorization');
-
-  try {
-    const { apiBase } = await config();
-    const response = await fetch(`${apiBase}/auth/extension-device/start/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ platform: detectPlatform(), locale: navigator.language || 'en' }),
-    });
-    const data = await response.json().catch(() => ({}));
-    if (generation !== connectionGeneration) return;
-    if (!response.ok) throw new Error(data.error_description || data.error || 'Could not start a secure connection.');
-    pending = {
-      deviceCode: data.device_code,
-      userCode: data.user_code,
-      verificationUri: data.verification_uri,
-      verificationUriComplete: data.verification_uri_complete,
-      expiresAt: Date.now() + Number(data.expires_in || 600) * 1000,
-      intervalMs: Number(data.interval || 5) * 1000,
-      approvalOpened: false,
-    };
-    await browser.storage.local.set({ extensionDeviceAuthorization: pending });
-    renderPending();
-    await openApproval();
-    schedulePoll(pending.intervalMs);
-  } catch (error) {
-    fail(error instanceof Error ? error.message : 'Could not start a secure connection.');
-  }
-}
-
-function renderPending() {
-  codeOutput.textContent = pending.userCode;
-  const computerUrl = getApprovalUrl();
-  approvalUrl.href = computerUrl;
-  approvalUrl.textContent = computerUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
-  pendingMessage.textContent = navigator.onLine === false
-    ? 'Offline. Vocab Pass will retry when the connection returns.'
-    : 'Waiting for your explicit approval on Langsly…';
+  document.getElementById('user-code').textContent = state.userCode || '';
+  const link = document.getElementById('approval-url');
+  link.href = state.verificationUri;
+  link.textContent = (state.verificationUri || '').replace(/^https?:\/\//, '');
+  document.getElementById('pending-message').textContent = state.status === 'offline'
+    ? t('connectOffline', 'Connection interrupted. We will retry automatically.')
+    : t('connectWaiting', 'Continue on Langsly to sign in and approve. Connection finishes automatically.');
   show('pending');
 }
-
-function fail(message) {
-  clearTimeout(pollTimer);
-  errorMessage.textContent = message;
-  show('error');
+async function run(action) {
+  if (busy) return;
+  busy = true;
+  try { await action(); }
+  catch {
+    document.getElementById('error-message').textContent = t('accountConnectionFailed', 'Could not connect your Langsly account. Please try again.');
+    show('error');
+  } finally { busy = false; }
 }
-
-async function poll() {
-  if (!pending || pollInFlight || document.visibilityState !== 'visible') return;
-  if (pending.expiresAt <= Date.now()) {
-    await browser.storage.local.remove('extensionDeviceAuthorization');
-    pending = null;
-    fail('This connection code expired. Start again to receive a new code.');
-    return;
-  }
-  pollInFlight = true;
-  const generation = connectionGeneration;
+async function start(restart = false) {
+  show('loading');
+  const account = await send('GET_STATUS');
+  if (account?.isLoggedIn && !restart) { render({ status: 'connected' }); return; }
+  const ua = navigator.userAgent;
+  const platform = /Firefox/i.test(ua) ? (/Android/i.test(ua) ? 'firefox_android' : 'firefox_desktop') : 'chrome_desktop';
+  render(await send('DEVICE_CONNECTION_BEGIN', { platform, locale: navigator.language || 'en', restart }));
+  await send('DEVICE_CONNECTION_OPEN');
+}
+document.getElementById('open-approval').addEventListener('click', () => void run(() => send('DEVICE_CONNECTION_OPEN')));
+document.getElementById('copy-approval-url').addEventListener('click', async () => {
   try {
-    const { apiBase } = await config();
-    const response = await fetch(`${apiBase}/auth/extension-device/token/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ device_code: pending.deviceCode }),
-    });
-    const data = await response.json().catch(() => ({}));
-    if (generation !== connectionGeneration || !pending) return;
-    if (response.ok && data.access) {
-      const completed = await browser.runtime.sendMessage({ type: 'COMPLETE_DEVICE_LOGIN', tokens: data });
-      if (!completed || !completed.success) throw new Error((completed && completed.error) || 'Could not finish account connection.');
-      pending = null;
-      show('success');
-      return;
-    }
-    if (data.error === 'authorization_pending') {
-      renderPending();
-    } else if (data.error === 'slow_down') {
-      pending.intervalMs = Number(data.interval || 10) * 1000;
-      await browser.storage.local.set({ extensionDeviceAuthorization: pending });
-      pendingMessage.textContent = 'Still waiting for approval. Polling has been slowed for safety.';
-    } else if (data.error === 'access_denied') {
-      await browser.storage.local.remove('extensionDeviceAuthorization');
-      pending = null;
-      fail('The connection was denied.');
-      return;
-    } else if (data.error === 'expired_token') {
-      await browser.storage.local.remove('extensionDeviceAuthorization');
-      pending = null;
-      fail('This connection code expired.');
-      return;
-    } else {
-      pendingMessage.textContent = 'Network unavailable. Vocab Pass will retry while this tab is visible.';
-    }
-  } catch {
-    if (pending) pendingMessage.textContent = 'Network unavailable. Vocab Pass will retry while this tab is visible.';
-  } finally {
-    if (generation !== connectionGeneration) return;
-    pollInFlight = false;
-    if (pending) schedulePoll(pending.intervalMs);
-  }
-}
-
-document.getElementById('open-approval').addEventListener('click', () => void openApproval());
-copyApprovalUrl.addEventListener('click', () => void copyComputerLink());
-document.getElementById('cancel-connect').addEventListener('click', async () => {
-  cancelConnection();
-  await browser.storage.local.remove('extensionDeviceAuthorization');
-  window.close();
+    await navigator.clipboard.writeText(state.verificationUri);
+    document.getElementById('copy-status').textContent = t('connectUrlCopied', 'Link copied.');
+  } catch { document.getElementById('copy-status').textContent = t('connectUrlCopyFallback', 'Press and hold the link to copy it.'); }
 });
-document.getElementById('retry-connect').addEventListener('click', () => void start());
-document.getElementById('close-connect').addEventListener('click', () => window.close());
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') schedulePoll(0);
-  else clearTimeout(pollTimer);
+document.getElementById('retry-connect').addEventListener('click', () => void run(() => start(true)));
+document.getElementById('cancel-connect').addEventListener('click', () => void run(async () => {
+  await send('DEVICE_CONNECTION_CANCEL');
+  window.location.href = browser.runtime.getURL('popup/options.html');
+}));
+document.getElementById('close-connect').addEventListener('click', () => {
+  window.location.href = browser.runtime.getURL('popup/popup.html');
 });
-window.addEventListener('focus', () => schedulePoll(0));
-window.addEventListener('online', () => schedulePoll(0));
-browser.runtime.onMessage.addListener((message) => {
-  if (message.type === 'AUTH_CLEARED') cancelConnection();
+browser.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.extensionDeviceAuthorization) void send('DEVICE_CONNECTION_STATUS').then(render);
 });
-
-config().then(({ frontendUrl }) => {
-  document.getElementById('privacy-link').href = `${frontendUrl}/privacy-policy`;
+window.addEventListener('focus', () => void send('DEVICE_CONNECTION_STATUS').then(render));
+browser.storage.local.get('frontendUrl').then(({ frontendUrl }) => {
+  document.getElementById('privacy-link').href = `${frontendUrl || 'https://langsly.com'}/privacy-policy`;
 });
-void start();
+void run(() => start());

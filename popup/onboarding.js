@@ -54,7 +54,7 @@ if (onboardAccountConnectBtn) {
     setOnboardLoginControlsDisabled(true);
     onboardAccountConnectBtn.textContent = t('deviceLoginOpening', 'Opening secure connection...');
 
-    const response = await browser.runtime.sendMessage({ type: 'START_DEVICE_LOGIN' });
+    const response = await browser.runtime.sendMessage({ type: 'START_DEVICE_LOGIN' }).catch(() => ({ success: false }));
 
     if (response.success) {
       onboardError.textContent = t('deviceLoginContinueInTab', 'Continue in the connection tab, then return here.');
