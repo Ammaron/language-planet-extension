@@ -18,7 +18,7 @@ test('logout clears session-owned state, budgets, requests, and every HTTP(S) co
   assert.match(content, /stopDocumentWork\(\{ loggedOut: true \}\)/);
   assert.match(content, /restoreOriginalPageText\(\)/);
   assert.match(content, /VocabPopup\.reset\(\)/);
-  assert.match(content, /phraseCoordinator\.cancel\(\)/);
+  assert.match(content, /validationCoordinator\.cancel\(\)/);
   assert.match(content, /stopSafetyController\(\)/);
 });
 

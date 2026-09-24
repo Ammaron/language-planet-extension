@@ -17,6 +17,7 @@ class VocabMatcher {
   constructor(words, options = {}) {
     this.root = new TrieNode();
     this.wordMap = new Map(); // lowercaseKey -> VocabWord[]
+    this.wordsById = new Map(words.map(word => [String(word.id), word]));
     this.rotationSalt = options.rotationSalt || '';
     this.buildTrie(words);
     this.buildFailureLinks();
@@ -137,7 +138,38 @@ class VocabMatcher {
     }
 
     const resolved = this.postProcess(rawMatches, text);
-    return this.groupAdjacentMatches(resolved, text);
+    return this.groupAdjacentMatches(this.expandGrammarMatches(resolved, text), text);
+  }
+
+  expandGrammarMatches(matches, text) {
+    const replaced = new Set();
+    const expanded = [];
+    for (const match of matches) {
+      if (match.word.validation_version !== 3 || !['noun', 'adjective'].includes(match.word.part_of_speech)) continue;
+      const source = match.word.search_language;
+      const prefix = text.slice(0, match.start);
+      const copula = prefix.match(source === 'en'
+        ? /\b(i|you|he|she|we|they) (am|is|are)(?: not)? (?:a |an )?$/iu
+        : /(?<![\p{L}\p{N}_])(yo|tú|él|ella|nosotros|nosotras|ellos|ellas)(?: no)? (soy|eres|es|somos|son|estoy|estás|está|estamos|están) $/iu);
+      const verbs = copula ? [...this.wordsById.values()].filter(word => word.validation_version === 3
+        && word.part_of_speech === 'verb' && word.search_language === source && word.term_language === match.word.term_language
+        && (word.effective_runtime_triggers || []).some(trigger => [copula[2], `${copula[1]} ${copula[2]}`].includes(trigger.toLowerCase()))) : [];
+      const article = match.word.part_of_speech === 'noun' ? prefix.match(source === 'en'
+        ? /\b(the|a|an|my)\s+$/iu : /\b(el|la|los|las|un|una|unos|unas|mi|mis)\s+$/iu) : null;
+      const lead = verbs.length ? copula : article;
+      if (!lead) continue;
+      const start = match.start - lead[0].length;
+      const inside = matches.filter(other => other !== match && other.start < match.end && other.end > start);
+      if (inside.some(other => other.start < start || other.end > match.end || other.word.validation_version !== 3
+        || (verbs.length && other.word.part_of_speech !== 'verb') || !verbs.length)) continue;
+      const candidates = [...new Set([...(match.word._candidateIds || [match.word.id]), ...verbs.map(word => word.id)])];
+      if (candidates.length > 20 || match.end - start > 255) continue;
+      inside.forEach(other => replaced.add(other));
+      replaced.add(match);
+      expanded.push({ ...match, start, original: text.slice(start, match.end),
+        word: { ...match.word, _candidateIds: candidates, _grammarPhrase: !!verbs.length } });
+    }
+    return [...matches.filter(match => !replaced.has(match)), ...expanded].sort((a, b) => a.start - b.start);
   }
 
   postProcess(rawMatches, text) {
@@ -207,7 +239,7 @@ class VocabMatcher {
       // A Spanish finite verb may need to grow an omitted English subject.
       // Keep it out of the generic VERB + NOUN phrase rule, and stop an
       // explicit PRONOUN + VERB group before later unmatched context.
-      if (isAdjacent && !containsContextualVerb) {
+      if (isAdjacent && !containsContextualVerb && prev.word.validation_version !== 3 && curr.word.validation_version !== 3) {
         currentGroup.push(curr);
       } else {
         groups.push(currentGroup);
@@ -280,6 +312,9 @@ class VocabMatcher {
 
     if (candidates.length === 1) {
       const chosen = this.cloneCandidate(candidates[0]);
+      chosen._candidateIds = [candidates[0].id];
+      chosen._sentenceContext = sentence;
+      chosen._matchOffset = offset;
       this._attachContextualRewrite(chosen, [candidates[0]], sentence, offset);
       return chosen;
     }
@@ -449,8 +484,10 @@ class VocabMatcher {
     }
     if (end < text.length) end++;
 
-    const sentence = text.substring(start, end).trim();
-    const offset = position - start;
+    const raw = text.substring(start, end);
+    const leading = raw.length - raw.trimStart().length;
+    const sentence = raw.trim();
+    const offset = position - start - leading;
 
     return { sentence, offset: Math.max(0, offset) };
   }

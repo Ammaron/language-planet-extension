@@ -252,6 +252,32 @@
   "listenButton": {
     "message": "Escuchar"
   },
+  "formAudioUnavailable": {
+    "message": "Audio no disponible para esta forma"
+  },
+  "grammarRelatedForm": { "message": "Forma relacionada dentro del alcance enseñado" },
+  "grammarIntroducedForm": { "message": "Forma enseñada" },
+  "grammarFeature_masculine": { "message": "masculino" },
+  "grammarFeature_feminine": { "message": "femenino" },
+  "grammarFeature_common": { "message": "común" },
+  "grammarFeature_not_applicable": { "message": "no corresponde" },
+  "grammarFeature_singular": { "message": "singular" },
+  "grammarFeature_plural": { "message": "plural" },
+  "grammarFeature_invariant": { "message": "invariable" },
+  "grammarFeature_present": { "message": "presente" },
+  "grammarFeature_past": { "message": "pasado" },
+  "grammarFeature_imperfect": { "message": "imperfecto" },
+  "grammarFeature_future": { "message": "futuro" },
+  "grammarFeature_conditional": { "message": "condicional" },
+  "grammarFeature_indicative": { "message": "indicativo" },
+  "grammarFeature_subjunctive": { "message": "subjuntivo" },
+  "grammarFeature_imperative": { "message": "imperativo" },
+  "grammarFeature_infinitive": { "message": "infinitivo" },
+  "grammarFeature_participle": { "message": "participio" },
+  "grammarFeature_gerund": { "message": "gerundio" },
+  "grammarFeature_positive": { "message": "positivo" },
+  "grammarFeature_comparative": { "message": "comparativo" },
+  "grammarFeature_superlative": { "message": "superlativo" },
   "listenVoiceSpanish": {
     "message": "Escuchar (voz)"
   },

@@ -57,8 +57,9 @@ globalThis.LangslyRequestCoordinator = (() => {
     return { request, cancel, snapshot };
   }
 
-  function createBatchCoordinator({ send, maxBatch = 20, maxPerWindow = 60, windowMs = 60_000 }) {
+  function createBatchCoordinator({ send, keyOf = null, maxBatch = 20, maxPerWindow = 60, windowMs = 60_000 }) {
     const queue = [];
+    const pending = new Map();
     let inFlight = false;
     let generation = 0;
     let acceptedAt = [];
@@ -77,9 +78,15 @@ globalThis.LangslyRequestCoordinator = (() => {
         .then(
           (results) => {
             const values = Array.isArray(results) ? results : [];
-            batch.forEach((entry, index) => entry.resolve(batchGeneration === generation ? (values[index] || null) : null));
+            batch.forEach((entry, index) => {
+              if (entry.key !== null && pending.get(entry.key) === entry.promise) pending.delete(entry.key);
+              entry.resolve(batchGeneration === generation ? (values[index] || null) : null);
+            });
           },
-          () => batch.forEach((entry) => entry.resolve(null))
+          () => batch.forEach((entry) => {
+            if (entry.key !== null && pending.get(entry.key) === entry.promise) pending.delete(entry.key);
+            entry.resolve(null);
+          })
         )
         .finally(() => {
           inFlight = false;
@@ -88,6 +95,8 @@ globalThis.LangslyRequestCoordinator = (() => {
     }
 
     function request(payload) {
+      const key = keyOf ? String(keyOf(payload)) : null;
+      if (key !== null && pending.has(key)) return pending.get(key);
       const now = Date.now();
       prune(now);
       if (acceptedAt.length >= maxPerWindow) return Promise.resolve(null);
@@ -95,7 +104,8 @@ globalThis.LangslyRequestCoordinator = (() => {
 
       let resolve;
       const promise = new Promise((done) => { resolve = done; });
-      queue.push({ payload, resolve, generation });
+      queue.push({ payload, resolve, generation, key, promise });
+      if (key !== null) pending.set(key, promise);
       queueMicrotask(pump);
       return promise;
     }
@@ -103,6 +113,7 @@ globalThis.LangslyRequestCoordinator = (() => {
     function cancel() {
       generation += 1;
       while (queue.length > 0) queue.shift().resolve(null);
+      pending.clear();
       acceptedAt = [];
     }
 

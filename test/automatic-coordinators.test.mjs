@@ -96,6 +96,45 @@ test('disambiguation batches are serialized at 20 items and reject work beyond 6
   assert.equal(peak, 1);
 });
 
+test('validation coordinator suppresses duplicate pending requests before counting quota', async () => {
+  const factory = await loadGlobal('content/request-coordinator.js', 'LangslyRequestCoordinator');
+  let calls = 0;
+  const coordinator = factory.createBatchCoordinator({
+    keyOf: ({ sentence, offset }) => `${sentence}:${offset}`,
+    maxPerWindow: 1,
+    send: async (items) => {
+      calls += 1;
+      return items.map(item => ({ item_id: item.item_id, decision: 'keep' }));
+    },
+  });
+  const first = coordinator.request({ item_id: 'one', sentence: 'mañana', offset: 0 });
+  const duplicate = coordinator.request({ item_id: 'one', sentence: 'mañana', offset: 0 });
+  const overBudget = coordinator.request({ item_id: 'two', sentence: 'mañana', offset: 1 });
+  assert.strictEqual(first, duplicate);
+  assert.equal(await overBudget, null);
+  assert.equal((await first).decision, 'keep');
+  assert.equal(calls, 1);
+});
+
+test('an old batch cannot erase a new matching request after cancellation', async () => {
+  const factory = await loadGlobal('content/request-coordinator.js', 'LangslyRequestCoordinator');
+  const releases = [];
+  const coordinator = factory.createBatchCoordinator({
+    keyOf: ({ sentence }) => sentence,
+    send: (items) => new Promise(resolve => releases.push(() => resolve(items))),
+  });
+  const oldRequest = coordinator.request({ sentence: 'mañana' });
+  await tick();
+  coordinator.cancel();
+  const newRequest = coordinator.request({ sentence: 'mañana' });
+  releases.shift()();
+  assert.equal(await oldRequest, null);
+  await tick();
+  assert.strictEqual(coordinator.request({ sentence: 'mañana' }), newRequest);
+  releases.shift()();
+  assert.deepEqual(await newRequest, { sentence: 'mañana' });
+});
+
 test('encounter writes and flushes serialize, send no more than 50, and preserve appends during a flush', async () => {
   const factory = await loadGlobal('background/encounter-coordinator.js', 'LangslyEncounterCoordinator');
   let stored = [];

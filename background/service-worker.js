@@ -244,16 +244,35 @@ async function completeLoginWithTokens(data, isCurrent = () => true) {
   const generation = authGeneration;
   const saved = await _withSessionMutation(async () => {
     if (generation !== authGeneration || !isCurrent()) return false;
+    // A device approval can switch learners without a preceding logout.
+    // Invalidate old validation responses and remove account-owned page state
+    // before exposing the new credentials to background requests.
+    authGeneration += 1;
+    for (const controller of activeAuthControllers) controller.abort();
+    activeAuthControllers.clear();
+    automaticBudgetBuckets.clear();
+    if (encounterCoordinator) await encounterCoordinator.clear();
+    const all = await browser.storage.local.get(null);
+    const cacheKeys = Object.keys(all).filter(key => (
+      key.startsWith('phrase_') || key.startsWith('disambig_') || key.startsWith('contextual_')
+    ));
+    await browser.storage.local.remove([
+      'vocabWords', 'lastSync', 'wordCount', 'matchableWordCount',
+      'pendingEncounters', 'rotation_salt', 'difficulty',
+      'themePacks', 'activeThemeSlug', 'activeThemeName', 'themeTokens',
+      'themeSyncStatus', 'extensionSourceLanguage', ...cacheKeys,
+    ]);
     await browser.storage.local.set({ authToken: data.access, refreshToken: data.refresh });
-    return true;
+    return authGeneration;
   });
   if (!saved) return { success: false, error: 'cancelled' };
-  await _ensureRotationSalt(generation);
+  await broadcastAuthCleared();
+  await _ensureRotationSalt(saved);
   await _withSessionMutation(async () => {
-    if (generation === authGeneration) await browser.storage.local.set({ syncStatus: 'success' });
+    if (saved === authGeneration) await browser.storage.local.set({ syncStatus: 'success' });
   });
   void Promise.allSettled([syncVocabulary(), syncThemes()]);
-  return generation === authGeneration ? { success: true } : { success: false, error: 'cancelled' };
+  return saved === authGeneration ? { success: true } : { success: false, error: 'cancelled' };
 }
 
 const deviceConnection = globalThis.createDeviceConnection({ browser, fetch: (...args) => fetch(...args), getConfig, complete: completeLoginWithTokens });
@@ -584,7 +603,7 @@ async function syncVocabulary() {
   const level = difficulty || 'normal';
   const sourceLanguage = await getExtensionSourceLanguage();
 
-  const res = await authFetch(`${apiBase}/lessons/vocabpass/words/?difficulty=${level}&source_language=${encodeURIComponent(sourceLanguage)}`);
+  const res = await authFetch(`${apiBase}/lessons/vocabpass/words/?difficulty=${level}&source_language=${encodeURIComponent(sourceLanguage)}&validation_version=3`);
   if (!res) {
     await _setSessionStorage({ syncStatus: 'failed' }, generation);
     return;
@@ -1014,6 +1033,41 @@ browser.runtime.onMessage.addListener((message, sender) => {
         return entry;
       } catch (err) {
         return { replacement_text: '', uncertain: true, error: err.message };
+      }
+    })();
+  }
+
+  // ─── Versioned occurrence validation ──────────
+  if (message.type === 'VALIDATE_REPLACEMENTS') {
+    return (async () => {
+      const generation = authGeneration;
+      const items = Array.isArray(message.items) ? message.items.slice(0, 20) : [];
+      if (!items.length || !_consumeAutomaticBudget(sender, 'disambiguate', items.length, 60, 300)) {
+        return { results: [], error: 'quota_exceeded' };
+      }
+      try {
+        const { apiBase } = await getConfig();
+        const { difficulty, lastSync } = await browser.storage.local.get(['difficulty', 'lastSync']);
+        const versions = [...new Set(items.map(item => item.validation_version))];
+        if (versions.some(version => ![2, 3].includes(version))) return { results: [], error: 'unsupported_version' };
+        const responses = await Promise.all(versions.map(async version => {
+        const deadline = new Promise(resolve => setTimeout(() => resolve(null), 8000));
+        const res = await Promise.race([authFetch(`${apiBase}/lessons/vocabpass/disambiguate/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ validation_version: version, difficulty: difficulty || 'normal', items: items.filter(item => item.validation_version === version) }),
+        }), deadline]);
+        if (!res || !res.ok || generation !== authGeneration) return { results: [], error: 'validator_unavailable' };
+        const data = await res.json();
+        const current = await browser.storage.local.get(['difficulty', 'lastSync']);
+        if (generation !== authGeneration || data.validation_version !== version
+          || (current.difficulty || 'normal') !== (difficulty || 'normal')
+          || current.lastSync !== lastSync) return { results: [], error: 'cancelled' };
+        return { results: Array.isArray(data.results) ? data.results : [] };
+        }));
+        return { results: responses.flatMap(response => response.results || []) };
+      } catch {
+        return { results: [], error: 'validator_unavailable' };
       }
     })();
   }

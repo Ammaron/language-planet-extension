@@ -326,8 +326,10 @@ const VocabPopup = (() => {
     if (currentAudioUrl) {
       return playAudio(currentAudioUrl, translation, termLanguage);
     }
+    if (state.grammarForm) return 'unavailable';
 
-    const syncedAudioUrl = await syncAudioUrlForWord(state.wordId);
+    // A lemma recording must never masquerade as a different surface form.
+    const syncedAudioUrl = state.grammarForm ? '' : await syncAudioUrlForWord(state.wordId);
     if (syncedAudioUrl) {
       setPrivateData(span, { audioUrl: syncedAudioUrl });
       return playAudio(syncedAudioUrl, translation, termLanguage);
@@ -539,6 +541,12 @@ const VocabPopup = (() => {
     if (hint) {
       popupEl.appendChild(createEl('div', 'lp-popup-hint', hint));
     }
+    for (const form of privateData(span).grammarDetails || []) {
+      const featureLabels = Object.values(form.features).map(value => t(`grammarFeature_${value}`, String(value).replaceAll('_', ' ')));
+      const scopeLabel = form.learningScope === 'related' ? t('grammarRelatedForm', 'Related form within taught scope')
+        : form.learningScope === 'introduced' ? t('grammarIntroducedForm', 'Introduced form') : '';
+      popupEl.appendChild(createEl('div', 'lp-popup-hint', [form.surface, form.lemma, ...featureLabels, scopeLabel].filter(Boolean).join(' · ')));
+    }
 
     // Example
     if (example) {
@@ -571,6 +579,9 @@ const VocabPopup = (() => {
     listenBtn.type = 'button';
     if (hasAudio) {
       applyListenAudioState(listenBtn, termLanguage);
+    } else if (privateData(span).grammarForm) {
+      setListenButtonContent(listenBtn, t('formAudioUnavailable', 'Audio unavailable for this form'));
+      listenBtn.disabled = true;
     } else {
       applyListenFallbackState(listenBtn, termLanguage);
     }

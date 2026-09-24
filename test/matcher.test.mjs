@@ -40,6 +40,41 @@ function createMatcher(words, grammarOverrides = {}) {
   return new VocabMatcher(words, { rotationSalt: 'test-salt' });
 }
 
+test('v3 proposes a complete copular phrase without introducing content vocabulary', () => {
+  const words = [
+    { id: 'doctor', term: 'doctor', translation: 'doctor', search_language: 'en', term_language: 'es', part_of_speech: 'noun', validation_version: 3, effective_runtime_triggers: ['doctor'] },
+    { id: 'ser', term: 'es', translation: 'is', search_language: 'en', term_language: 'es', part_of_speech: 'verb', validation_version: 3, effective_runtime_triggers: ['is'] },
+  ];
+  const result = createMatcher(words).findMatches('She is not a doctor.');
+  assert.equal(result.singles.length, 1);
+  assert.equal(result.singles[0].original, 'She is not a doctor');
+  assert.deepEqual([...result.singles[0].word._candidateIds].sort(), ['doctor', 'ser']);
+  const nounOnly = createMatcher([words[0]]).findMatches('She is a doctor.');
+  assert.equal(nounOnly.singles[0].original, 'a doctor');
+});
+
+test('v3 Spanish accented subjects remain inside the validated phrase', () => {
+  const matcher = createMatcher([
+    { id: 'doctor', term: 'doctor', translation: 'doctor', search_language: 'es', term_language: 'en', part_of_speech: 'noun', validation_version: 3, effective_runtime_triggers: ['doctor'] },
+    { id: 'be', term: 'is', translation: 'es', search_language: 'es', term_language: 'en', part_of_speech: 'verb', validation_version: 3, effective_runtime_triggers: ['es', 'eres'] },
+  ]);
+  for (const phrase of ['Él es doctor', 'Tú eres doctor']) {
+    const result = matcher.findMatches(`${phrase}.`);
+    assert.equal(result.singles.length, 1);
+    assert.equal(result.singles[0].original, phrase);
+  }
+});
+
+test('v3 one-word noun proposals include articles but preserve unrelated text', () => {
+  const matcher = createMatcher([{ id: 'hand', term: 'mano', translation: 'hand', source_forms: ['hand'], search_language: 'en', term_language: 'es', part_of_speech: 'noun', validation_version: 3 }]);
+  for (const phrase of ['the hand', 'a hand', 'my hand']) {
+    const result = matcher.findMatches(`Look at ${phrase}.`);
+    assert.equal(result.singles[0].original, phrase);
+    assert.equal(result.singles[0].start, 8);
+  }
+  assert.equal(matcher.findMatches('Please hand me a book.').singles[0].original, 'hand');
+});
+
 test('explicit multi-word phrases outrank overlapping single-word matches', () => {
   const matcher = createMatcher([
     {

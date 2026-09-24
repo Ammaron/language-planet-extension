@@ -69,6 +69,8 @@ let contentObserver = null;
 let mutationDebounceTimer = null;
 let pendingMutationNodes = [];
 let lifecycleGeneration = 0;
+let vocabularyRevision = 0;
+let validationSequence = 0;
 let lifecycleState = 'idle';
 let initPromise = null;
 let scanInProgress = false;
@@ -76,33 +78,17 @@ const pendingScanRoots = [];
 const scanIdleHandles = new Set();
 const scanTimeoutHandles = new Set();
 const automaticEncounterWordIds = new Set();
-let disambiguationState = new WeakMap();
-let contextualRewriteState = new WeakMap();
-const phraseCoordinator = LangslyRequestCoordinator.createRequestCoordinator({
-  maxConcurrent: 2,
-  maxUnique: 20,
-  keyOf: (payload) => JSON.stringify([payload.source_phrase, payload.source_language, payload.target_language, payload.word_ids]),
-  send: (payload) => browser.runtime.sendMessage({ type: 'PHRASE_TRANSLATE', ...payload }),
-});
-const disambiguationCoordinator = LangslyRequestCoordinator.createBatchCoordinator({
+const validationCoordinator = LangslyRequestCoordinator.createBatchCoordinator({
   maxBatch: 20,
   maxPerWindow: 60,
   windowMs: 60_000,
-  send: (items) => browser.runtime.sendMessage({ type: 'DISAMBIGUATE', items })
-    .then((response) => (response && Array.isArray(response.results) ? response.results : [])),
-});
-const contextualRewriteCoordinator = LangslyRequestCoordinator.createRequestCoordinator({
-  maxConcurrent: 2,
-  maxUnique: 30,
-  keyOf: (payload) => JSON.stringify([
-    payload.sentence,
-    payload.matched_text,
-    payload.match_offset,
-    payload.source_language,
-    payload.target_language,
-    payload.candidate_ids,
-  ]),
-  send: (payload) => browser.runtime.sendMessage({ type: 'CONTEXTUAL_REWRITE', ...payload }),
+  keyOf: ({ item_id, ...item }) => JSON.stringify(item),
+  send: (items) => browser.runtime.sendMessage({ type: 'VALIDATE_REPLACEMENTS', items })
+    .then(response => {
+      const byId = new Map((response && Array.isArray(response.results) ? response.results : [])
+        .map(result => [result.item_id, result]));
+      return items.map(item => byId.get(item.item_id) || null);
+    }),
 });
 const LEGACY_FRONTEND_URL = 'http://localhost:3000';
 const DEFAULT_FRONTEND_URL = 'https://langsly.com';
@@ -346,8 +332,7 @@ function runProcessNode(root, complete) {
       scheduleIdleWork(processBatch);
     } else {
       // All text nodes processed — request async disambiguation for ambiguous words
-      requestDisambiguation();
-      requestContextualRewrites();
+      requestPendingValidations();
       complete();
     }
   }
@@ -357,7 +342,7 @@ function runProcessNode(root, complete) {
     const end = Math.min(index + 20, textNodes.length);
     while (index < end) replaceInTextNode(textNodes[index++]);
     if (index < textNodes.length) scheduleScanTimeout(fallbackProcessBatch);
-    else { requestDisambiguation(); requestContextualRewrites(); complete(); }
+    else { requestPendingValidations(); complete(); }
   };
 
   if ('requestIdleCallback' in window) {
@@ -404,15 +389,16 @@ function replaceInTextNode(textNode) {
   const domain = window.location.hostname;
 
   for (const event of events) {
+    event.context = sentenceContextForNode(textNode, event.start);
     // Add text before this event
     if (event.start > lastEnd) {
       fragment.appendChild(document.createTextNode(text.substring(lastEnd, event.start)));
     }
 
     if (event.type === 'single') {
-      fragment.appendChild(buildSingleWordSpan(event.data, domain));
+      fragment.appendChild(buildPendingSingleSpan(event.data, domain, event.context));
     } else {
-      fragment.appendChild(buildPhraseSpan(event.data, text, domain));
+      fragment.appendChild(buildPendingPhraseSpan(event.data, text, domain, event.context));
     }
 
     lastEnd = event.end;
@@ -425,6 +411,24 @@ function replaceInTextNode(textNode) {
 
   if (!textNode.parentNode) return;
   textNode.parentNode.replaceChild(fragment, textNode);
+}
+
+function sentenceContextForNode(textNode, matchStart) {
+  const blockSelector = 'p,li,div,h1,h2,h3,h4,h5,h6,blockquote,td,th,article,section';
+  const block = textNode.parentElement.closest(blockSelector) || textNode.parentElement;
+  if (!block || block.querySelector('script,style,code,pre,input,textarea,select,button,[contenteditable]')) return null;
+  const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+  let combined = '';
+  let position = -1;
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const parent = node.parentElement;
+    if (!parent || parent.closest(`[${LP_PROCESSED}]`) || SKIP_TAGS.has(parent.tagName)
+      || parent.isContentEditable || (parent !== block && parent.closest(blockSelector) !== block)) return null;
+    if (node === textNode) position = combined.length + matchStart;
+    combined += node.textContent;
+    if (combined.length > 500) return null;
+  }
+  return position < 0 ? null : matcher._extractSentence(combined, position);
 }
 
 function displaySingleTerm(term, original) {
@@ -444,409 +448,200 @@ function displayPhraseTerm(match, index) {
   return term;
 }
 
-/**
- * Build a span for a single matched word (preserves current behavior exactly).
- */
-function buildSingleWordSpan(match, domain) {
+function buildPendingSingleSpan(match, domain, context) {
+  if (!context || !context.sentence || !Number.isInteger(context.offset)) {
+    return document.createTextNode(match.original);
+  }
   const span = document.createElement('span');
-  span.className = LP_CLASS;
-  const needsContextualRewrite = Boolean(match.word._needsContextualRewrite);
-  // Contextual rewrites are opt-in upgrades. Keep the page's Spanish visible
-  // until the backend returns a confident, learner-vocabulary-backed result.
-  span.textContent = needsContextualRewrite
-    ? match.original
-    : displaySingleTerm(match.word.term, match.original);
+  const componentCandidates = match.word._candidateIds || [match.word.id];
+  const contextualVerb = match.word.validation_version !== 3 && Boolean(match.word._needsContextualRewrite);
+  const supportingPronouns = contextualVerb ? [...matcher.wordsById.values()]
+    .filter(word => String(word.part_of_speech || '').toLowerCase() === 'pronoun'
+      && word.search_language === match.word.search_language
+      && word.term_language === match.word.term_language)
+    .map(word => word.id)
+    .filter(id => !componentCandidates.map(String).includes(String(id)))
+    .slice(0, Math.max(0, 20 - componentCandidates.length)) : [];
+  span.textContent = match.original;
   span.setAttribute(LP_PROCESSED, 'true');
+  span.className = 'lp-validation-pending';
   setPrivate(span, {
-    wordId: match.word.id,
     original: match.original,
-    translation: match.word.term,
-    baseTranslation: match.word.translation || '',
-    matchedForm: match.matchedForm || match.original,
-    termLanguage: match.word.term_language || 'es',
-    pos: match.word.part_of_speech || '',
-    hint: match.word.context_hint || '',
-    example: match.word.example_sentence || '',
-    exampleTranslation: match.word.example_translation || '',
-    audioUrl: match.word.pronunciation_audio || '',
-    sourceLanguage: match.word.search_language || 'en',
-    targetLanguage: match.word.term_language || 'es',
-    meaningKey: match.word.meaning_key || match.word._localMeaningKey || '',
-    method: match.word._method || match.word._localMethod || 'local',
-    disambigAlternatives: Array.isArray(match.word._alternatives) ? match.word._alternatives : [],
-    disambigCandidates: match.word._isAmbiguous ? match.word._candidateIds : [],
-    disambigSentence: String(match.word._sentenceContext || '').slice(0, 320),
-    disambigOffset: Number(match.word._matchOffset) || 0,
-    disambigSourceLang: match.word.search_language || 'en',
-    contextualCandidates: Array.isArray(match.word._contextualCandidateIds)
-      ? match.word._contextualCandidateIds
-      : [match.word.id],
-    contextualRewrite: needsContextualRewrite,
+    sentence: context.sentence,
+    offset: context.offset,
+    candidates: [...componentCandidates, ...supportingPronouns],
+    components: [match.word.id],
+    componentCandidates: [componentCandidates],
+    proposed: displaySingleTerm(match.word.term, match.original),
+    validationVersion: match.word.validation_version === 3 ? 3 : 2,
+    sourceLanguage: match.word.search_language || '',
+    targetLanguage: match.word.term_language || '',
+    domain,
+    phrase: contextualVerb,
+    phraseMatches: [match],
   });
-
-  // Mark ambiguous words for async backend disambiguation
-  if (match.word._isAmbiguous && !needsContextualRewrite) {
-    span.classList.add('lp-disambig-pending');
-  }
-  if (needsContextualRewrite) {
-    span.classList.add('lp-contextual-pending');
-  }
-
-  const localConfidence = parseFloat(match.word._localConfidence || '0');
-  if (!Number.isNaN(localConfidence) && localConfidence > 0 && localConfidence < 0.62) {
-    span.classList.add('lp-uncertain');
-    setPrivate(span, { uncertain: 'true' });
-  } else {
-    setPrivate(span, { uncertain: 'false' });
-  }
-
-  span.addEventListener('click', (e) => {
-    if (!e.isTrusted) return;
-    e.preventDefault();
-    e.stopPropagation();
-    Promise.resolve(VocabPopup.showWord(span)).catch(() => {});
-    recordEncounter(match.word.id, domain, true);
-  });
-
-  recordEncounter(match.word.id, domain, false);
   return span;
 }
 
-/**
- * Build a span for a phrase group.
- * Attempts client-side grammar composition first; falls back to word-by-word
- * rendering with async backend upgrade for low-confidence or unmatched patterns.
- */
-function buildPhraseSpan(phrase, fullText, domain) {
-  const { matches, sourceText, start, end } = phrase;
-  const GR = window.GrammarRules;
-
-  // Prepare word data for composition rules
-  const wordData = matches.map((m, index) => ({
-    word: m.word,
-    pos: m.word.part_of_speech || '',
-    term: displayPhraseTerm(m, index),
-    original: m.original,
-    matchedForm: m.matchedForm,
-  }));
-
-  // Detect target language from vocab term data
-  const targetLang = matches[0].word.term_language || 'es';
-
-  // Attempt client-side composition
-  const composed = GR ? GR.composePhrase(wordData, targetLang) : null;
-
+function buildPendingPhraseSpan(phrase, fullText, domain, contextOverride) {
+  const { matches, sourceText, start } = phrase;
+  if (!contextOverride || !contextOverride.sentence || !Number.isInteger(contextOverride.offset)) {
+    return document.createTextNode(sourceText);
+  }
   const span = document.createElement('span');
+  span.textContent = sourceText;
   span.setAttribute(LP_PROCESSED, 'true');
+  span.className = 'lp-validation-pending';
+  const context = contextOverride;
+  const composed = window.GrammarRules?.composePhrase(matches.map((match, index) => ({
+    word: match.word,
+    pos: match.word.part_of_speech || '',
+    term: displayPhraseTerm(match, index),
+    original: match.original,
+    matchedForm: match.matchedForm,
+  })), matches[0].word.term_language || '');
   setPrivate(span, {
     original: sourceText,
-    phraseType: composed && composed.source !== 'rules_low' ? 'composed' : 'word-by-word',
-    words: matches.map(m => m.word.id),
-    sourcePhrase: sourceText,
-    targetLang,
+    sentence: context.sentence,
+    offset: context.offset,
+    candidates: [...new Set(matches.flatMap(match => match.word._candidateIds || [match.word.id]))],
+    components: matches.map(match => match.word.id),
+    componentCandidates: matches.map(match => match.word._candidateIds || [match.word.id]),
+    proposed: composed?.translation || matches.map((match, index) => displayPhraseTerm(match, index)).join(' '),
+    sourceLanguage: matches[0].word.search_language || '',
+    targetLanguage: matches[0].word.term_language || '',
+    domain,
+    phrase: true,
+    phraseMatches: matches,
   });
-
-  if (composed && composed.source !== 'rules_low') {
-    // High-confidence composition — render as a single phrase span
-    span.className = 'lp-vocab-phrase';
-    span.textContent = composed.translation;
-    setPrivate(span, { source: composed.source, confidence: composed.confidence });
-  } else {
-    // Low confidence or no rule match — render words individually inside phrase span
-    // Mark for potential async backend upgrade
-    span.className = 'lp-vocab-phrase lp-phrase-pending';
-
-    // Render each match word with gap text between them
-    let lastMatchEnd = start;
-    for (const match of matches) {
-      if (match.start > lastMatchEnd) {
-        span.appendChild(document.createTextNode(fullText.substring(lastMatchEnd, match.start)));
-      }
-      const wordSpan = document.createElement('span');
-      wordSpan.className = LP_CLASS;
-      wordSpan.textContent = displaySingleTerm(match.word.term, match.original);
-      wordSpan.setAttribute(LP_PROCESSED, 'true');
-      setPrivate(wordSpan, {
-        wordId: match.word.id,
-        original: match.original,
-        translation: match.word.term,
-        baseTranslation: match.word.translation || '',
-        matchedForm: match.matchedForm || match.original,
-        termLanguage: match.word.term_language || 'es',
-        pos: match.word.part_of_speech || '',
-        hint: match.word.context_hint || '',
-        example: match.word.example_sentence || '',
-        exampleTranslation: match.word.example_translation || '',
-        audioUrl: match.word.pronunciation_audio || '',
-        sourceLanguage: match.word.search_language || 'en',
-        targetLanguage: match.word.term_language || 'es',
-      });
-      wordSpan.addEventListener('click', (e) => {
-        if (!e.isTrusted) return;
-        e.preventDefault();
-        e.stopPropagation();
-        Promise.resolve(VocabPopup.showWord(wordSpan)).catch(() => {});
-        recordEncounter(match.word.id, domain, true);
-      });
-      span.appendChild(wordSpan);
-      lastMatchEnd = match.end;
-    }
-    if (lastMatchEnd < end) {
-      span.appendChild(document.createTextNode(fullText.substring(lastMatchEnd, end)));
-    }
-
-    // Request async backend translation for pending phrases
-    requestPhraseTranslation(span, sourceText, targetLang, matches);
-  }
-
-  // Click handler — show phrase popup with all component words
-  span.addEventListener('click', (e) => {
-    if (!e.isTrusted) return;
-    e.preventDefault();
-    e.stopPropagation();
-    Promise.resolve(VocabPopup.showPhrase(span, matches)).catch(() => {});
-    for (const m of matches) {
-      recordEncounter(m.word.id, domain, true);
-    }
-  });
-
-  // Record show encounters for all words
-  for (const m of matches) {
-    recordEncounter(m.word.id, domain, false);
-  }
-
   return span;
 }
 
-/**
- * Request async backend phrase translation via the service worker.
- * On success, upgrades the phrase span from word-by-word to composed.
- */
-function requestPhraseTranslation(span, sourcePhrase, targetLang, matches) {
-  // Detect source language
-  const sourceLang = matches[0].word.search_language || 'en';
-  const generation = lifecycleGeneration;
-
-  phraseCoordinator.request({
-    source_phrase: sourcePhrase,
-    source_language: sourceLang,
-    target_language: targetLang,
-    word_ids: matches.map(m => m.word.id),
-  }).then(response => {
-    if (generation === lifecycleGeneration && response && response.translated_phrase && span.isConnected) {
-      // Upgrade the span from word-by-word to composed
-      span.textContent = response.translated_phrase;
-      span.className = 'lp-vocab-phrase';
-      span.classList.remove('lp-phrase-pending');
+function requestPendingValidations() {
+  document.querySelectorAll('.lp-validation-pending').forEach(span => {
+    const state = getPrivate(span);
+    if (state.validationQueued) return;
+    setPrivate(span, { validationQueued: true });
+    const item = {
+      item_id: String(++validationSequence),
+      validation_version: state.validationVersion || 2,
+      sentence: String(state.sentence || ''),
+      matched_text: state.original,
+      match_offset: Number(state.offset),
+      candidate_ids: state.candidates,
+      component_ids: state.components,
+      component_candidate_ids: state.componentCandidates,
+      proposed_replacement: state.proposed,
+      source_language: state.sourceLanguage,
+      target_language: state.targetLanguage,
+      phrase: state.phrase,
+    };
+    const generation = lifecycleGeneration;
+    const revision = vocabularyRevision;
+    const original = state.original;
+    let expired = false;
+    let stale = false;
+    const editObserver = new MutationObserver(mutations => {
+      if (mutations.some(mutation => {
+        const element = mutation.target.nodeType === Node.TEXT_NODE
+          ? mutation.target.parentElement : mutation.target;
+        return !element?.closest(`[${LP_PROCESSED}]`);
+      })) stale = true;
+    });
+    if (span.parentElement) editObserver.observe(span.parentElement, {
+      subtree: true, childList: true, characterData: true,
+    });
+    const timer = setTimeout(() => {
+      expired = true;
+      editObserver.disconnect();
+      if (span.isConnected && span.textContent === original && span.parentNode) {
+        span.parentNode.replaceChild(document.createTextNode(original), span);
+      }
+    }, 8000);
+    validationCoordinator.request(item).then(result => {
+      // Identical pending occurrences share a request. The coordinator has
+      // already matched the backend item ID; give this subscriber its own ID.
+      if (result && result.item_id !== item.item_id) result = { ...result, item_id: item.item_id };
+      clearTimeout(timer);
+      if (expired || stale || generation !== lifecycleGeneration || revision !== vocabularyRevision
+        || !extensionActive || !span.isConnected || span.textContent !== original
+        || result?.item_id !== item.item_id || result?.validation_version !== item.validation_version
+        || result?.decision !== 'replace' || !result.replacement_text) return;
+      const ids = Array.isArray(result.vocabulary_ids) ? result.vocabulary_ids.map(String) : [];
+      if (!ids.length || ids.some(id => !state.candidates.map(String).includes(id))) return;
+      const words = ids.map(id => matcher.wordsById.get(id));
+      if (words.some(word => !word)) return;
+      let exactForm = null;
+      let grammarDetails = [];
+      if (item.validation_version === 3) {
+        if (result.source_range?.offset !== item.match_offset || result.source_range?.text !== item.matched_text) return;
+        if (!Array.isArray(result.form_ids) || result.form_ids.length !== ids.length) return;
+        const forms = result.form_ids.map(id => words.flatMap(word => word.word_forms || []).find(form => form.id === id));
+        if (forms.some(form => !form) || !result.plan || !Array.isArray(result.plan.atoms)
+          || result.plan.atoms.some(atom => atom.form_id && !result.form_ids.includes(atom.form_id))) return;
+        exactForm = forms[0];
+        grammarDetails = forms.map(form => ({ surface: form.surface, features: form.features || {}, learningScope: form.learning_scope,
+          lemma: words.find(word => (word.word_forms || []).some(row => row.id === form.id))?.grammar_profile?.lemma || '' }));
+      }
+      span.textContent = result.replacement_text;
+      span.className = state.phrase ? 'lp-vocab-phrase' : LP_CLASS;
+      const selected = words[0];
       setPrivate(span, {
-        phraseType: 'composed',
-        source: response.source || 'backend',
-        cacheEntryId: response.cache_entry_id || '',
+        wordId: selected.id,
+        words: ids,
+        original,
+        translation: result.replacement_text,
+        baseTranslation: ids.length > 1 ? '' : selected.translation || '',
+        termLanguage: selected.term_language || state.targetLanguage,
+        sourceLanguage: state.sourceLanguage,
+        targetLanguage: state.targetLanguage,
+        pos: ids.length > 1 ? '' : selected.part_of_speech || '',
+        hint: item.validation_version === 3 ? grammarExplanation(result.explanation, state.sourceLanguage) : selected.context_hint || '',
+        example: selected.example_sentence || '',
+        exampleTranslation: selected.example_translation || '',
+        audioUrl: exactForm ? (result.replacement_text === exactForm.surface ? exactForm.pronunciation_audio || '' : '') : selected.pronunciation_audio || '',
+        grammarForm: !!exactForm,
+        grammarDetails,
+        meaningKey: selected.meaning_key || '',
+        phraseType: state.phrase ? 'composed' : undefined,
+        method: result.method || 'validation_v2',
+        uncertain: 'false',
       });
-    }
-  }).catch(() => {
-    // Silent failure — word-by-word rendering remains as fallback
-  }).finally(() => {
-    if (span.isConnected) span.classList.remove('lp-phrase-pending');
-  });
-}
-
-/**
- * Collect all ambiguous word spans and request spaCy-based disambiguation
- * from the backend. On response, upgrades spans where the backend chose
- * a different candidate than the local keyword heuristic.
- */
-function requestDisambiguation() {
-  const pending = document.querySelectorAll('.lp-disambig-pending');
-  pending.forEach((span) => {
-    if (disambiguationState.has(span)) return;
-    const state = getPrivate(span);
-    const candidates = Array.isArray(state.disambigCandidates) ? state.disambigCandidates : [];
-    if (candidates.length < 2) {
-      disambiguationState.set(span, 'resolved');
-      span.classList.remove('lp-disambig-pending');
-      return;
-    }
-
-    const item = {
-      sentence: String(state.disambigSentence || '').slice(0, 320),
-      matched_text: state.matchedForm || state.original || '',
-      match_offset: Number(state.disambigOffset) || 0,
-      candidate_ids: candidates,
-      source_language: state.disambigSourceLang || 'en',
-      rotation_salt: rotationSalt,
-    };
-    const generation = lifecycleGeneration;
-    disambiguationState.set(span, 'queued');
-    disambiguationCoordinator.request(item).then((result) => {
-      if (generation === lifecycleGeneration && result && result.chosen_id && span.isConnected) {
-        upgradeDisambiguatedSpan(span, result.chosen_id, result);
-      }
-    }).catch(() => null).finally(() => {
-      disambiguationState.set(span, 'resolved');
-      if (span.isConnected) span.classList.remove('lp-disambig-pending');
-    });
-  });
-}
-
-/**
- * Upgrade Spanish finite verbs only after a confident contextual response.
- * Ambiguous responses intentionally leave the original source text visible.
- */
-function requestContextualRewrites() {
-  const pending = document.querySelectorAll('.lp-contextual-pending');
-  pending.forEach((span) => {
-    if (contextualRewriteState.has(span)) return;
-    const state = getPrivate(span);
-    const candidates = Array.isArray(state.contextualCandidates)
-      ? state.contextualCandidates.filter(Boolean)
-      : [];
-    if (candidates.length === 0) {
-      contextualRewriteState.set(span, 'resolved');
-      span.classList.remove('lp-contextual-pending');
-      return;
-    }
-
-    const item = {
-      sentence: String(state.disambigSentence || '').slice(0, 500),
-      matched_text: state.matchedForm || state.original || '',
-      match_offset: Number(state.disambigOffset) || 0,
-      candidate_ids: candidates,
-      source_language: state.disambigSourceLang || 'es',
-      target_language: state.targetLanguage || 'en',
-    };
-    const generation = lifecycleGeneration;
-    contextualRewriteState.set(span, 'queued');
-    contextualRewriteCoordinator.request(item).then((response) => {
-      if (generation !== lifecycleGeneration || !span.isConnected || !response) return;
-      if (response.replacement_text && !response.uncertain) {
-        span.textContent = response.replacement_text;
-        const selected = Array.isArray(response.selected_vocabulary_ids)
-          ? response.selected_vocabulary_ids
-          : [];
-        setPrivate(span, {
-          translation: response.replacement_text,
-          wordId: selected[selected.length - 1] || state.wordId,
-          selectedVocabularyIds: selected,
-          method: response.method || 'contextual',
-          uncertain: 'false',
-          contextualConfidence: Number(response.confidence) || 0,
-        });
-        span.classList.remove('lp-uncertain');
-      } else {
-        // Preserve the original source-language token on uncertainty/failure.
-        span.textContent = state.original || span.textContent;
-        setPrivate(span, {
-          method: response.method || 'contextual_uncertain',
-          uncertain: 'true',
-          contextualConfidence: Number(response.confidence) || 0,
-        });
-      }
-    }).catch(() => {
-      if (generation === lifecycleGeneration && span.isConnected) {
-        span.textContent = state.original || span.textContent;
-      }
-    }).finally(() => {
-      contextualRewriteState.set(span, 'resolved');
-      if (span.isConnected) span.classList.remove('lp-contextual-pending');
-    });
-  });
-}
-
-function requestDisambiguationLegacy() {
-  const pending = document.querySelectorAll('.lp-disambig-pending');
-  if (pending.length === 0) return;
-
-  const items = [];
-  const spanMap = new Map(); // index → span element
-
-  pending.forEach((span, i) => {
-    try {
-      const state = getPrivate(span);
-      const candidates = Array.isArray(state.disambigCandidates) ? state.disambigCandidates : [];
-      if (candidates.length < 2) return;
-
-      items.push({
-        sentence: String(state.disambigSentence || '').slice(0, 320),
-        matched_text: state.matchedForm || state.original || '',
-        match_offset: Number(state.disambigOffset) || 0,
-        candidate_ids: candidates,
-        source_language: state.disambigSourceLang || 'en',
-        rotation_salt: rotationSalt,
+      span.addEventListener('click', event => {
+        if (!event.isTrusted) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const popup = state.phrase
+          ? VocabPopup.showPhrase(span, ids.map(id => {
+            const match = state.phraseMatches.find(entry => String(entry.word.id) === id);
+            return { word: matcher.wordsById.get(id), original: match?.original || original };
+          }))
+          : VocabPopup.showWord(span);
+        Promise.resolve(popup).catch(() => {});
+        ids.forEach(id => recordEncounter(id, state.domain, true));
       });
-      spanMap.set(items.length - 1, span);
-    } catch {
-      // Skip malformed data
-    }
-  });
-
-  if (items.length === 0) return;
-
-  browser.runtime.sendMessage({
-    type: 'DISAMBIGUATE',
-    items,
-  }).then(response => {
-    if (!response || !response.results) return;
-
-    for (let i = 0; i < response.results.length; i++) {
-      const result = response.results[i];
-      const span = spanMap.get(i);
-      if (!result || !span || !span.isConnected) continue;
-
-      if (result.chosen_id) {
-        upgradeDisambiguatedSpan(span, result.chosen_id, result);
+      ids.forEach(id => recordEncounter(id, state.domain, false));
+    }).catch(() => {}).finally(() => {
+      clearTimeout(timer);
+      editObserver.disconnect();
+      if (span.isConnected && span.classList.contains('lp-validation-pending') && span.parentNode) {
+        span.parentNode.replaceChild(document.createTextNode(original), span);
       }
-
-      span.classList.remove('lp-disambig-pending');
-    }
-  }).catch(() => {
-    // Silent failure — local disambiguation remains
-    pending.forEach(span => span.classList.remove('lp-disambig-pending'));
+    });
   });
 }
 
-/**
- * Upgrade a span to use a different VocabularyWord after disambiguation.
- * Looks up the new word from the cached vocabWords in storage.
- */
-function upgradeDisambiguatedSpan(span, newWordId, result = null) {
-  browser.storage.local.get('vocabWords').then(({ vocabWords }) => {
-    if (!vocabWords) return;
-    const newWord = vocabWords.find(w => w.id === newWordId);
-    if (!newWord || !span.isConnected) return;
-
-    // Update extension-owned metadata without exposing IDs to page scripts.
-    span.textContent = newWord.term;
-    const previous = getPrivate(span);
-    setPrivate(span, {
-      wordId: newWord.id,
-      translation: newWord.term,
-      baseTranslation: newWord.translation || '',
-      termLanguage: newWord.term_language || 'es',
-      pos: newWord.part_of_speech || '',
-      hint: newWord.context_hint || '',
-      example: newWord.example_sentence || '',
-      exampleTranslation: newWord.example_translation || '',
-      audioUrl: newWord.pronunciation_audio || '',
-      sourceLanguage: newWord.search_language || previous.sourceLanguage || 'en',
-      targetLanguage: newWord.term_language || previous.targetLanguage || 'es',
-      meaningKey: (result && result.chosen_meaning_key) || newWord.meaning_key || previous.meaningKey || '',
-      method: (result && result.method) || previous.method || 'spacy',
-    });
-
-    if (result && Array.isArray(result.alternatives)) {
-      setPrivate(span, { disambigAlternatives: result.alternatives });
-    }
-
-    if (result && typeof result.uncertain === 'boolean') {
-      setPrivate(span, { uncertain: result.uncertain ? 'true' : 'false' });
-      if (result.uncertain) {
-        span.classList.add('lp-uncertain');
-      } else {
-        span.classList.remove('lp-uncertain');
-      }
-    }
-  });
+function grammarExplanation(code, language) {
+  const spanish = language === 'es';
+  const explanations = {
+    approved_default_masculine: spanish ? 'Forma masculina predeterminada; el género no estaba especificado.' : "Masculine default; gender wasn't specified.",
+    approved_default_feminine: spanish ? 'Forma femenina predeterminada; el género no estaba especificado.' : "Feminine default; gender wasn't specified.",
+    reviewed_noun_agreement: spanish ? 'Forma revisada que concuerda en género y número.' : 'Reviewed form with matching gender and number.',
+    authored_expression: spanish ? 'Expresión completa enseñada en tu curso.' : 'Complete expression taught in your course.',
+    reviewed_identity: spanish ? 'Identidad u ocupación; se conserva la persona y el número.' : 'Identity or occupation; person and number are preserved.',
+    reviewed_condition: spanish ? 'Estado actual; se conserva la persona y el número.' : 'Current condition; person and number are preserved.',
+  };
+  return explanations[code] || '';
 }
 
 // ─── Debounced MutationObserver ──────────────────
@@ -902,6 +697,8 @@ browser.runtime.onMessage.addListener((message) => {
   }
 
   if (message.type === 'VOCAB_UPDATED' && message.words) {
+    vocabularyRevision += 1;
+    validationCoordinator.cancel();
     restoreOriginalPageText();
     browser.storage.local.get('rotation_salt').then(({ rotation_salt }) => {
       rotationSalt = rotation_salt || '';
@@ -920,6 +717,10 @@ browser.runtime.onMessage.addListener((message) => {
 
 // ─── Start ───────────────────────────────────────
 function restoreOriginalPageText() {
+  document.querySelectorAll('.lp-validation-pending').forEach((element) => {
+    if (!element.parentNode) return;
+    element.parentNode.replaceChild(document.createTextNode(getPrivate(element).original || element.textContent), element);
+  });
   document.querySelectorAll('.lp-vocab-phrase').forEach((element) => {
     if (!element.parentNode) return;
     element.parentNode.replaceChild(document.createTextNode(getPrivate(element).original || element.textContent), element);
@@ -932,6 +733,8 @@ function restoreOriginalPageText() {
 
 function stopDocumentWork({ loggedOut = false } = {}) {
   lifecycleGeneration += 1;
+  vocabularyRevision += 1;
+  validationCoordinator.cancel();
   extensionActive = false;
   lifecycleState = loggedOut ? 'logged-out' : 'excluded';
   initPromise = null;
@@ -955,15 +758,10 @@ function stopDocumentWork({ loggedOut = false } = {}) {
   restoreOriginalPageText();
   VocabPopup.reset();
   privateState = globalThis.LangslyPrivateState;
-  disambiguationState = new WeakMap();
-  contextualRewriteState = new WeakMap();
   document.documentElement.removeAttribute('data-lp-theme');
   window.removeEventListener('beforeunload', flushEncounterBuffer);
   if (loggedOut) {
     automaticEncounterWordIds.clear();
-    phraseCoordinator.cancel();
-    disambiguationCoordinator.cancel();
-    contextualRewriteCoordinator.cancel();
     stopSafetyController();
   }
 }
