@@ -600,6 +600,8 @@ function requestPendingValidations() {
         example: selected.example_sentence || '',
         exampleTranslation: selected.example_translation || '',
         audioUrl: exactForm ? (result.replacement_text === exactForm.surface ? exactForm.pronunciation_audio || '' : '') : selected.pronunciation_audio || '',
+        // Writing practice only ever attaches to a single, whole-word replacement.
+        hanziWriting: ids.length === 1 && !state.phrase && !exactForm ? selected.hanzi_writing || null : null,
         grammarForm: !!exactForm,
         grammarDetails,
         meaningKey: selected.meaning_key || '',

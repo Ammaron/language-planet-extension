@@ -20,6 +20,7 @@ const VocabPopup = (() => {
   let popupHost = null;
   let popupAnchor = null;
   let popupGeneration = 0;
+  let practicePanel = null;
   let privateState = globalThis.LangslyPrivateState || new WeakMap();
   globalThis.LangslyPrivateState = privateState;
   const privateData = (element) => privateState.get(element) || {};
@@ -93,6 +94,8 @@ const VocabPopup = (() => {
   }
 
   function handleOutsideClick(e) {
+    // A stroke that ends outside the popup must never close practice.
+    if (practicePanel && practicePanel.drawing) return;
     if (popupHost && !popupHost.contains(e.target)
       && !e.target.classList.contains(LP_CLASS)
       && !e.target.classList.contains('lp-vocab-phrase')) {
@@ -100,7 +103,15 @@ const VocabPopup = (() => {
     }
   }
 
+  function closePractice() {
+    if (!practicePanel) return;
+    const panel = practicePanel;
+    practicePanel = null;
+    panel.close();
+  }
+
   function hide() {
+    closePractice();
     if (popupEl) {
       popupHost.remove();
       popupEl = null;
@@ -368,6 +379,7 @@ const VocabPopup = (() => {
       example: selected.example_sentence || '',
       exampleTranslation: selected.example_translation || '',
       audioUrl: selected.pronunciation_audio || '',
+      hanziWriting: selected.hanzi_writing || null,
       meaningKey: selected.meaning_key || previous.meaningKey || '',
       uncertain: 'false',
     });
@@ -477,6 +489,7 @@ const VocabPopup = (() => {
       example: word.example_sentence || '',
       exampleTranslation: word.example_translation || '',
       audioUrl: word.pronunciation_audio || '',
+      hanziWriting: word.hanzi_writing || null,
       sourceLanguage: word.search_language || 'en',
       targetLanguage: word.term_language || 'es',
       meaningKey: word.meaning_key || word._localMeaningKey || '',
@@ -493,6 +506,53 @@ const VocabPopup = (() => {
       cache_entry_id: cacheEntryId,
       reason: 'user_reported',
     }).catch(() => {});
+  }
+
+  async function practiceEnabled() {
+    try {
+      const { hanziWritingPracticeEnabled } = await browser.storage.local.get('hanziWritingPracticeEnabled');
+      return hanziWritingPracticeEnabled !== false;
+    } catch {
+      return false;
+    }
+  }
+
+  function focusWord(word) {
+    if (!word || !word.isConnected || typeof word.focus !== 'function') return;
+    if (!word.hasAttribute('tabindex')) word.setAttribute('tabindex', '-1');
+    try { word.focus({ preventScroll: true }); } catch { /* focus is best-effort */ }
+  }
+
+  /**
+   * Replace the popup body with the practice panel. The word details stay in
+   * the DOM, hidden, so "Back to word" restores them exactly as they were.
+   */
+  function openPractice(span, anchor, reference, trigger) {
+    const practice = globalThis.LangslyWritingPractice;
+    if (!popupEl || practicePanel || !practice) return;
+    const host = popupEl;
+    const details = [...host.children];
+    for (const child of details) child.hidden = true;
+    host.classList.add('lp-writing-open');
+    const restoreDetails = () => {
+      closePractice();
+      for (const child of details) child.hidden = false;
+      host.classList.remove('lp-writing-open');
+      if (popupEl === host && anchor.isConnected) positionPopup(anchor);
+      if (trigger && typeof trigger.focus === 'function') trigger.focus();
+    };
+    practicePanel = practice.openPanel({
+      host,
+      anchor: span,
+      reference,
+      onBack: restoreDetails,
+      onClose: ({ reason } = {}) => {
+        if (popupEl !== host) return;
+        hide();
+        if (reason !== 'anchor_removed' && reason !== 'pagehide') focusWord(span);
+      },
+    });
+    if (anchor.isConnected) positionPopup(anchor);
   }
 
   /**
@@ -516,6 +576,7 @@ const VocabPopup = (() => {
     } = privateData(span);
     const alternatives = Array.isArray(privateData(span).disambigAlternatives) ? privateData(span).disambigAlternatives : [];
     const correctionOptions = await buildCorrectionOptions(span, alternatives);
+    const writingEnabled = await practiceEnabled();
     if (expectedGeneration !== popupGeneration || !span.isConnected) return;
     const safeCandidateIds = buildSafeCandidateIds(span, alternatives, correctionOptions);
 
@@ -606,6 +667,23 @@ const VocabPopup = (() => {
     setActionButtonContent(wrongBtn, 'warning-circle', t('wrongMeaning', 'Wrong meaning?'));
     actions.appendChild(wrongBtn);
     popupEl.appendChild(actions);
+
+    // Optional, secondary: only for eligible Chinese target words, and only on click.
+    const writing = globalThis.LangslyWritingPractice
+      ? globalThis.LangslyWritingPractice.eligibleReference(privateData(span), { enabled: writingEnabled })
+      : null;
+    if (writing) {
+      const writingRow = createEl('div', 'lp-popup-actions lp-writing-entry');
+      const practiceBtn = createEl('button', 'lp-popup-listen', t('practiceWritingButton', 'Practice writing'));
+      practiceBtn.type = 'button';
+      practiceBtn.addEventListener('click', (e) => {
+        if (!e.isTrusted) return;
+        e.stopPropagation();
+        openPractice(span, anchor || span, writing, practiceBtn);
+      });
+      writingRow.appendChild(practiceBtn);
+      popupEl.appendChild(writingRow);
+    }
 
     const chooser = createEl('div', 'lp-phrase-words');
     chooser.style.display = 'none';

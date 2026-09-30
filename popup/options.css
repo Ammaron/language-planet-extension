@@ -17,6 +17,17 @@ body {
 
 .hidden { display: none !important; }
 
+.options-section .checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.options-section .checkbox-row input { margin-top: 2px; flex: 0 0 auto; }
+
+.options-section a { color: #2563eb; }
+
 .options-header {
   display: flex;
   align-items: center;

@@ -1,5 +1,5 @@
 /* global browser */
-const DEFAULTS = { syncInterval: 60 };
+const DEFAULTS = { syncInterval: 60, hanziWritingPracticeEnabled: true };
 
 function t(key, substitutions, fallback) {
   if (window.LangslyI18n) return window.LangslyI18n.t(key, substitutions, fallback);
@@ -13,6 +13,7 @@ function formatMinutes(value) {
 
 const syncIntervalSlider = document.getElementById('sync-interval');
 const syncIntervalLabel = document.getElementById('sync-interval-label');
+const writingPracticeEnabled = document.getElementById('writing-practice-enabled');
 const resetPreferencesBtn = document.getElementById('reset-preferences');
 const saveBtn = document.getElementById('save-btn');
 const saveStatus = document.getElementById('save-status');
@@ -37,18 +38,22 @@ async function renderAccountState() {
 
 function applyPreferenceValues({
   syncInterval = DEFAULTS.syncInterval,
+  hanziWritingPracticeEnabled = DEFAULTS.hanziWritingPracticeEnabled,
 }) {
   syncIntervalSlider.value = syncInterval;
+  writingPracticeEnabled.checked = hanziWritingPracticeEnabled !== false;
   syncIntervalLabel.textContent = formatMinutes(syncInterval);
 }
 
 async function loadSettings() {
-  const { syncInterval } = await browser.storage.local.get([
+  const { syncInterval, hanziWritingPracticeEnabled } = await browser.storage.local.get([
     'syncInterval',
+    'hanziWritingPracticeEnabled',
   ]);
 
   applyPreferenceValues({
     syncInterval: syncInterval || DEFAULTS.syncInterval,
+    hanziWritingPracticeEnabled: hanziWritingPracticeEnabled !== false,
   });
   await renderAccountState();
 }
@@ -86,6 +91,7 @@ resetPreferencesBtn.addEventListener('click', () => {
 saveBtn.addEventListener('click', async () => {
   const settings = {
     syncInterval: parseInt(syncIntervalSlider.value, 10),
+    hanziWritingPracticeEnabled: writingPracticeEnabled.checked,
   };
 
   await browser.storage.local.set(settings);

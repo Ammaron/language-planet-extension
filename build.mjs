@@ -2,6 +2,7 @@ import { copyFile, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { deflateRawSync } from 'node:zlib';
 import { verifyChineseLocaleForBuild } from './release/chinese-locale-review.mjs';
+import { verifyHanziVendor } from './release/hanzi-writer-vendor.mjs';
 
 const root = dirname(new URL(import.meta.url).pathname.replace(/^\/(.:)/, '$1'));
 const dist = join(root, 'dist');
@@ -11,11 +12,13 @@ const fixedDate = new Date('1980-01-01T00:00:00Z');
 
 const runtimeFiles = [
   'vendor/browser-polyfill.min.js', 'shared/i18n.js', 'background/device-connection.js', 'content/connection-bridge.js', 'background/theme-utils.js', 'background/encounter-coordinator.js', 'background/service-worker.js',
-  'content/request-coordinator.js', 'content/grammar-rules.js', 'content/matcher.js', 'content/popup.js', 'content/content.js', 'content/content.css',
+  'background/hanzi-practice.js',
+  'content/request-coordinator.js', 'content/grammar-rules.js', 'content/matcher.js', 'content/writing-practice.js', 'content/popup.js', 'content/content.js', 'content/content.css',
   'popup/popup.html', 'popup/popup.js', 'popup/popup.css',
   'popup/options.html', 'popup/options.js', 'popup/options.css',
   'popup/onboarding.html', 'popup/onboarding.js', 'popup/onboarding.css',
   'popup/connect.html', 'popup/connect.js', 'popup/connect.css',
+  'popup/licenses.html', 'popup/licenses.js', 'popup/licenses.css', 'vendor/LICENSE-webextension-polyfill',
   'icons/langsly-icon.png', 'icons/icon16.png', 'icons/icon48.png', 'icons/icon128.png',
 ];
 
@@ -38,8 +41,12 @@ async function copy(relativePath, target) {
   await copyFile(source, destination);
 }
 
+// Pinned, unmodified Hanzi Writer build, notices and pilot stroke data.
+// verifyHanziVendor fails the build if any byte differs from the manifest.
+const hanziVendorFiles = [...verifyHanziVendor(root), 'vendor/hanzi-writing-manifest.json'];
+
 async function copyRuntime(target) {
-  for (const file of runtimeFiles) await copy(file, target);
+  for (const file of [...runtimeFiles, ...hanziVendorFiles]) await copy(file, target);
   for (const locale of await listFiles(join(root, '_locales'))) await copy(`_locales/${locale}`, target);
 }
 
@@ -99,7 +106,7 @@ await copyRuntime(chromeDir); await copyRuntime(firefoxDir);
 await writeFile(join(chromeDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 
 const firefoxManifest = structuredClone(manifest);
-firefoxManifest.background = { scripts: ['vendor/browser-polyfill.min.js', 'shared/i18n.js', 'background/theme-utils.js', 'background/encounter-coordinator.js', 'background/device-connection.js', 'background/service-worker.js'] };
+firefoxManifest.background = { scripts: ['vendor/browser-polyfill.min.js', 'shared/i18n.js', 'background/theme-utils.js', 'background/encounter-coordinator.js', 'background/device-connection.js', 'background/hanzi-practice.js', 'background/service-worker.js'] };
 firefoxManifest.browser_specific_settings = {
   gecko: {
     id: 'vocabpass@languageplanet.app',
@@ -116,7 +123,7 @@ await createZip(firefoxDir, join(dist, `langsly-vocab-pass-firefox-amo-${version
 
 const sourceDir = join(dist, 'amo-source');
 await mkdir(sourceDir, { recursive: true });
-const sourceFiles = [...runtimeFiles, 'manifest.json', 'build.mjs', 'build.sh', 'build.ps1', 'build.cmd', 'BUILDING.md', 'THIRD_PARTY_NOTICES.md', 'package.json', 'package-lock.json', 'vendor/browser-polyfill.js', 'vendor/LICENSE-webextension-polyfill'];
+const sourceFiles = [...new Set([...runtimeFiles, ...hanziVendorFiles, 'vendor/.gitattributes', 'release/hanzi-writer-vendor.mjs', 'manifest.json', 'build.mjs', 'build.sh', 'build.ps1', 'build.cmd', 'BUILDING.md', 'THIRD_PARTY_NOTICES.md', 'package.json', 'package-lock.json', 'vendor/browser-polyfill.js', 'vendor/LICENSE-webextension-polyfill'])];
 // Review drafts are test inputs in the AMO source archive, never runtime assets.
 sourceFiles.push('docs/evidence/zh_CN.messages.draft.json', 'docs/evidence/zh_CN.messages.draft.meta.json');
 for (const file of sourceFiles) await copy(file, sourceDir);

@@ -18,6 +18,7 @@ if (typeof importScripts === 'function') {
     importScripts('encounter-coordinator.js');
   }
   if (!globalThis.createDeviceConnection) importScripts('device-connection.js');
+  if (!globalThis.LangslyHanziPractice) importScripts('hanzi-practice.js');
 }
 
 function t(key, substitutions, fallback) {
@@ -36,6 +37,7 @@ const automaticBudgetBuckets = new Map();
 const activeAuthControllers = new Set();
 let authGeneration = 0;
 let encounterCoordinator = null;
+let hanziPractice = null;
 let refreshPromise = null;
 let refreshPromiseGeneration = -1;
 let sessionMutationTail = Promise.resolve();
@@ -149,6 +151,7 @@ async function clearTokens() {
   automaticBudgetBuckets.clear();
   await _withSessionMutation(async () => {
     if (encounterCoordinator) await encounterCoordinator.clear();
+    if (hanziPractice) await hanziPractice.clear();
     const all = await browser.storage.local.get(null);
     const cacheKeys = Object.keys(all).filter(key => (
       key.startsWith('phrase_')
@@ -171,6 +174,7 @@ async function clearTokens() {
     'wordCount',
     'syncStatus',
     'pendingEncounters',
+    'hanziPracticeQueue',
     'extensionDeviceAuthorization',
     'extensionSourceLanguage',
       ...cacheKeys,
@@ -252,13 +256,14 @@ async function completeLoginWithTokens(data, isCurrent = () => true) {
     activeAuthControllers.clear();
     automaticBudgetBuckets.clear();
     if (encounterCoordinator) await encounterCoordinator.clear();
+    if (hanziPractice) await hanziPractice.clear();
     const all = await browser.storage.local.get(null);
     const cacheKeys = Object.keys(all).filter(key => (
       key.startsWith('phrase_') || key.startsWith('disambig_') || key.startsWith('contextual_')
     ));
     await browser.storage.local.remove([
       'vocabWords', 'lastSync', 'wordCount', 'matchableWordCount',
-      'pendingEncounters', 'rotation_salt', 'difficulty',
+      'pendingEncounters', 'hanziPracticeQueue', 'rotation_salt', 'difficulty',
       'themePacks', 'activeThemeSlug', 'activeThemeName', 'themeTokens',
       'themeSyncStatus', 'extensionSourceLanguage', ...cacheKeys,
     ]);
@@ -655,6 +660,33 @@ encounterCoordinator = LangslyEncounterCoordinator.create({
   },
 });
 
+// ─── Character-writing practice (optional; the server's extension switch gates it) ──
+hanziPractice = LangslyHanziPractice.create({
+  storage: browser.storage.local,
+  fetchPackaged: async (packagedPath) => {
+    const res = await fetch(browser.runtime.getURL(packagedPath));
+    if (!res.ok) throw new Error('packaged_file_missing');
+    return res.arrayBuffer();
+  },
+  digestHex: async bytes => [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))]
+    .map(byte => byte.toString(16).padStart(2, '0')).join(''),
+  send: async (summary) => {
+    const { access } = await getTokens();
+    if (!access) return 0;
+    const { apiBase } = await getConfig();
+    const res = await authFetch(`${apiBase}/lessons/hanzi-writing/vocabulary-practice/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(summary),
+    });
+    return res ? res.status : 0;
+  },
+});
+
+function isOwnContentScript(sender) {
+  return !!(sender && sender.id === browser.runtime.id && sender.tab && typeof sender.tab.id === 'number');
+}
+
 function flushEncounters() {
   return encounterCoordinator.flush();
 }
@@ -685,7 +717,10 @@ browser.alarms.onAlarm.addListener((alarm) => {
     syncVocabulary();
     syncThemes();
   }
-  if (alarm.name === 'encounter-flush') flushEncounters();
+  if (alarm.name === 'encounter-flush') {
+    flushEncounters();
+    void hanziPractice.flush();
+  }
 });
 
 // ─── Message Handling ────────────────────────────
@@ -721,6 +756,23 @@ browser.runtime.onMessage.addListener((message, sender) => {
     return Promise.allSettled([syncVocabulary(), syncThemes()]).then(() => ({ success: true }));
   }
 
+  if (message.type === 'HANZI_WRITER_LOAD') {
+    if (!isOwnContentScript(sender) || !browser.scripting) return Promise.resolve({ success: false, error: 'unavailable' });
+    // Injected only after the learner's explicit click, into the requesting
+    // frame's isolated world. The file is packaged and hash-checked at build time.
+    return browser.scripting.executeScript({
+      target: { tabId: sender.tab.id, frameIds: [sender.frameId || 0] },
+      files: [LangslyHanziPractice.LIBRARY_FILE],
+    }).then(() => ({ success: true }), () => ({ success: false, error: 'inject_failed' }));
+  }
+  if (message.type === 'HANZI_CHARACTER_DATA') {
+    if (!isOwnContentScript(sender)) return Promise.resolve({ success: false, error: 'untrusted_sender' });
+    return hanziPractice.characterData(message).catch(() => ({ success: false, error: 'data_unavailable' }));
+  }
+  if (message.type === 'HANZI_PRACTICE_RECORD') {
+    if (!isOwnContentScript(sender)) return Promise.resolve({ success: false, error: 'untrusted_sender' });
+    return hanziPractice.record(message.summary).catch(() => ({ success: false, error: 'record_failed' }));
+  }
   if (message.type === 'FETCH_AUDIO') {
     return fetchAudioAsDataUrl(message.url);
   }

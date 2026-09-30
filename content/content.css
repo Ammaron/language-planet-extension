@@ -280,6 +280,120 @@
   }
 }
 
+/* ─── Optional Character-Writing Practice ─── */
+.lp-vocab-popup > [hidden] {
+  display: none !important;
+}
+
+.lp-writing-entry {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--lp-popup-border);
+}
+
+.lp-writing-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 252px;
+  max-width: 100%;
+  color: var(--lp-popup-text);
+}
+
+.lp-writing-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lp-writing-title {
+  font-weight: 600;
+}
+
+.lp-writing-term {
+  font-size: 18px;
+  color: var(--lp-popup-translation);
+}
+
+.lp-writing-nav,
+.lp-writing-modes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lp-writing-nav {
+  justify-content: space-between;
+}
+
+.lp-writing-position {
+  font-size: 13px;
+  color: var(--lp-popup-hint);
+}
+
+.lp-writing-mode {
+  flex: 1 1 0;
+  justify-content: center;
+}
+
+.lp-writing-mode-active {
+  border-color: var(--lp-popup-translation);
+  color: var(--lp-popup-translation);
+  font-weight: 600;
+}
+
+.lp-writing-surface {
+  width: 220px;
+  height: 220px;
+  align-self: center;
+  border: 1px solid var(--lp-popup-border);
+  border-radius: 8px;
+  /* Stroke colors are fixed dark-on-light, so the surface stays light. */
+  background:
+    linear-gradient(to right, transparent calc(50% - 0.5px), #e5e7eb calc(50% - 0.5px), #e5e7eb calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(to bottom, transparent calc(50% - 0.5px), #e5e7eb calc(50% - 0.5px), #e5e7eb calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    #ffffff;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.lp-writing-surface svg {
+  display: block;
+}
+
+.lp-writing-status {
+  min-height: 1.5em;
+  font-size: 13px;
+}
+
+.lp-writing-tools,
+.lp-writing-footer {
+  flex-wrap: wrap;
+}
+
+.lp-writing-note {
+  font-size: 12px;
+}
+
+@media (max-width: 480px) {
+  .lp-vocab-popup.lp-writing-open {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+    max-width: none;
+    border-radius: 12px 12px 0 0;
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+  }
+
+  .lp-writing-panel {
+    width: auto;
+  }
+}
+
 /* ─── Phrase Span Styling ──────────────────── */
 .lp-vocab-phrase {
   color: inherit;

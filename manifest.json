@@ -6,7 +6,8 @@
   "default_locale": "en",
   "permissions": [
     "storage",
-    "alarms"
+    "alarms",
+    "scripting"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -25,6 +26,7 @@
         "content/request-coordinator.js",
         "content/grammar-rules.js",
         "content/matcher.js",
+        "content/writing-practice.js",
         "content/popup.js",
         "content/content.js"
       ],

@@ -1,0 +1,70 @@
+{
+  "manifest_schema_version": 1,
+  "stroke_order_convention": "mainland",
+  "packages": [
+    {
+      "name": "hanzi-writer",
+      "version": "3.7.3",
+      "license": "MIT",
+      "npm_integrity": "sha512-fdOFrb1cXWL/pV/oplJkcdziCvjJzhhf+qoIBm5IpVGxPBZEu4eLB6ZG5RJDbKXyNbNlyx8oIpa3XrcUBcSXpg==",
+      "modified": false
+    },
+    {
+      "name": "hanzi-writer-data",
+      "version": "2.0.1",
+      "license": "Arphic Public License",
+      "npm_integrity": "sha512-nbQwM+MaryGoq7pBMIZLCd3lFq03nXuJuwku1+6UbjL58uU+9OULVcMkoNvNuJSoIV7f1bbPRfD4D/LQa5S7qg==",
+      "modified": false
+    }
+  ],
+  "files": [
+    {
+      "path": "vendor/hanzi-writer/hanzi-writer.min.js",
+      "upstream": "hanzi-writer@3.7.3/dist/hanzi-writer.min.js",
+      "sha256": "17b11a1e025b780cb518d49b30faacc770dfa7fbc387aa3876e3e5c1bd31e642"
+    },
+    {
+      "path": "vendor/hanzi-writer/LICENSE",
+      "upstream": "hanzi-writer@3.7.3/LICENSE",
+      "sha256": "7735d83cdf892c8db41c27103b42c89b4b63149770c1e08ae13cbbebb81da637"
+    },
+    {
+      "path": "vendor/hanzi-writer/COPYING.md",
+      "upstream": "hanzi-writer@3.7.3/COPYING.md",
+      "sha256": "220344521c6e1a8b82c5d3a13dfc797be7e0785b2b61b0403eff02a5cbd61c59"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/ARPHICPL.TXT",
+      "upstream": "hanzi-writer-data@2.0.1/ARPHICPL.TXT",
+      "sha256": "5590533436c70f10f2f524ee61456238c290175c6662fbe1c700b5f038a6d328"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4f60.json",
+      "upstream": "hanzi-writer-data@2.0.1/你.json",
+      "sha256": "21057a26cb5c1753ea710d503b759cc17948263501ffd76ef1737cb2b5d5f966"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/597d.json",
+      "upstream": "hanzi-writer-data@2.0.1/好.json",
+      "sha256": "c9f085fe6519e2b2c9653c7edf51bdbc78339fcc0b10f94c1f33c7f4f4d4a3a5"
+    }
+  ],
+  "characters": [
+    {
+      "character": "你",
+      "codepoint": "U+4F60",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4f60.json",
+      "sha256": "21057a26cb5c1753ea710d503b759cc17948263501ffd76ef1737cb2b5d5f966",
+      "stroke_count": 7
+    },
+    {
+      "character": "好",
+      "codepoint": "U+597D",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/597d.json",
+      "sha256": "c9f085fe6519e2b2c9653c7edf51bdbc78339fcc0b10f94c1f33c7f4f4d4a3a5",
+      "stroke_count": 6
+    }
+  ]
+}
