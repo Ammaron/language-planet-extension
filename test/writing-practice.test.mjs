@@ -220,6 +220,19 @@ test('help follows the step: Trace has hints, Write and Watch do not', async () 
   harness.controller.close();
 });
 
+test('choosing Watch plays the strokes without another click', async () => {
+  const harness = await openHarness();
+  assert.equal(records(harness.sent).length, 0, 'Trace never plays anything by itself');
+  harness.controller.selectMode('watch');
+  await harness.controller.ready;
+  for (let i = 0; i < 100 && !records(harness.sent).length; i += 1) await settle(20);
+  const [watched] = records(harness.sent);
+  assert.equal(watched.mode, 'watch');
+  assert.equal(watched.outcome, 'watched');
+  assert.equal(watched.character, '你');
+  harness.controller.close();
+});
+
 test('the library loads only after the panel opens, and missing data offers a retry', async () => {
   const harness = await openHarness();
   assert.equal(harness.libraryLoads(), 1);

@@ -597,7 +597,12 @@ const LangslyWritingPractice = (() => {
         lifecycleDocument: doc,
         reducedMotion,
         callbacks: {
-          onReady: () => { setStatus(readyText()); renderTools(); },
+          onReady: () => {
+            setStatus(readyText());
+            renderTools();
+            // Choosing Watch is the request to watch: play the strokes right away.
+            if (mode === 'watch') void session?.playAll();
+          },
           onLoadError: () => showUnavailable(),
           onMistake: ({ isBackwards }) => setStatus(isBackwards
             ? t('writingBackwards', 'That stroke went the wrong way. Try it again in the shown direction.')
