@@ -76,11 +76,32 @@
   "sourceLanguage": {
     "message": "Idioma de página"
   },
+  "pageTextLanguage": {
+    "message": "Idioma del texto de la página"
+  },
+  "pageTextLanguageHelp": {
+    "message": "Elige el idioma de las páginas donde Vocab Pass debe detectar palabras. El curso de Langsly se selecciona por separado en tu cuenta."
+  },
+  "pageLanguageEnglish": {
+    "message": "Inglés"
+  },
+  "pageLanguageSpanish": {
+    "message": "Español"
+  },
+  "pageLanguageSimplifiedChinese": {
+    "message": "Chino simplificado"
+  },
   "matchableWords": {
     "message": "Detectables"
   },
   "noMatchableWordsWarning": {
     "message": "Las palabras se sincronizaron, pero ninguna tiene activadores de texto para el idioma de página seleccionado."
+  },
+  "sourceLanguageUnsupported": {
+    "message": "Este idioma de página no es compatible. Elige un idioma admitido en Langsly."
+  },
+  "sourceLanguageUnavailable": {
+    "message": "Aún no hay vocabulario revisado para este idioma de página y curso."
   },
   "currentPage": {
     "message": "Página actual"

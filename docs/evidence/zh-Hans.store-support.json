@@ -1,0 +1,14 @@
+{
+  "listing.summary": "在日常阅读的网站上学习。Langsly Vocab Pass 突出显示从 Langsly 同步的词汇和短语，提供语境词义与音频，并记录可信的学习互动。",
+  "listing.connection": "Vocab Pass 通过短期设备代码连接你的 Langsly 账户。连接后，它会同步词汇、难度和主题，并在支持的网站上突出显示学过的词。点击突出显示的内容可查看翻译、短语含义、语境消歧、音频和反馈控件。你可以通过网站控制暂停或阻止 Vocab Pass；离线缓存保留最近同步的词汇。",
+  "listing.protections": "Vocab Pass 自动避开浏览器内部页面、Langsly 页面、含密码字段的页面，以及身份验证、银行、支付、政府、健康和法律类基础保护页面。这些基础保护无法关闭。",
+  "listing.data": "自动处理可能会向 Langsly 发送当前域名、匹配的短语，或长度受限的可见句子上下文；翻译或消歧需要时，还可能发送至 OpenRouter。Vocab Pass 不会发送完整页面、表单值、隐藏文本或完整网址。连接前请阅读 Langsly 隐私政策。",
+  "listing.compatibility": "支持 Firefox 桌面版 140.0 或更高版本，以及 Firefox for Android 142.0 或更高版本；附加组件 ID 为 vocabpass@languageplanet.app。",
+  "listing.releaseNotes": "Firefox 发布候选版本 0.2.5；是否已发布须以商店证据为准。包含设备代码账户连接、语境词汇、音频备用方案、主题、难度和各网站控制。",
+  "privacy.declarations": "申报身份验证信息（设备授权和账户令牌）、浏览活动（主机名与网站阻止状态）、网站活动（可信点击和突出显示曝光），以及网站内容（匹配短语或受限的可见上下文）。Vocab Pass 不出售数据；应列明 Langsly 和 OpenRouter 等适用的数据接收方。",
+  "reviewer.account": "安装对应的已签名候选包。打开“连接账户”，再打开 Langsly。登录并明确批准或拒绝请求。检查确认、拒绝、十分钟过期、重新连接、离线缓存和网站控制。",
+  "reviewer.credentials": "专用审核账户仅通过 Mozilla 私密审核备注中的凭据字段提供。请在私密窗口验证，审核后撤销或轮换凭据。不要将凭据放入源码包。",
+  "reviewer.endpoints": "网站批准页面：https://langsly.com/extension-connect\n设备 API：https://api.langsly.com/api/auth/extension-device/\n隐私政策：https://langsly.com/privacy-policy",
+  "screenshots.instructions": "使用实际提交的构建包，在 Firefox 桌面版、Android 手机和平板上截图：同意与入门流程、设备代码披露、文章突出显示、语境与音频控制、横竖屏设置，以及敏感页面未激活的证据。移除私人邮箱、访问代码、令牌和个人标签页。响应式模拟不能证明 Android 验收通过。",
+  "qa.instructions": "记录浏览器与设备版本、构建包 SHA-256、截图和跟踪数据。检查全新安装、账户批准／拒绝／过期、音频、网站控制、敏感页面排除、隐藏标签页暂停及受限处理。已安装浏览器、实体设备、生产 API 和商店验收分别需要证据。"
+}

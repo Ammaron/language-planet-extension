@@ -1,0 +1,24 @@
+{
+  "source_documents": {
+    "release/amo-listing.md": "21e01d4fc71023b77a257142b50ad1056a5b37a583f5f91a9cdd95e4b19e0d18",
+    "release/reviewer-instructions.md": "6f1066b28515bb0e660d16ab490510554d64d59fa26670f7144d24941ca74446",
+    "release/screenshot-checklist.md": "5570a6db83c6b3cd0a027ef5f58e1743841b2577be7ff255fd589c4ca89a4524",
+    "release/qa-matrix.md": "e2ea527192628f928618db2ecded82ed2fa41cccf415f8d7da50cbcad95422af",
+    "package.json": "4ddb3b005ac0bc7bc9078a589293cbba0d5f6cd0e1c435765c493f8c75d58cb3",
+    "manifest.json": "ee0d76d37ef0570ff000b3f154b2ea36890874264542e22544b56d944959dda4"
+  },
+  "fields": {
+    "listing.summary": "Learn from the websites you already read. Langsly Vocab Pass highlights words and phrases from your synchronized Langsly vocabulary, provides contextual meaning and audio, and records trusted learning interactions.",
+    "listing.connection": "Vocab Pass connects to your Langsly account through a short-lived device code. Once connected, it synchronizes your vocabulary, difficulty, and theme, then highlights learned terms on supported websites. Tap a highlight for translation, phrase meaning, contextual disambiguation, audio, and feedback controls. Site controls let you pause or block Vocab Pass, and an offline cache preserves recently synchronized vocabulary.",
+    "listing.protections": "Vocab Pass automatically avoids browser-internal and Langsly pages, pages with password fields, and baseline authentication, banking, payment, government, health, and legal pages. Those baseline protections cannot be disabled.",
+    "listing.data": "Automatic processing may send the current domain, matched phrases, or a short bounded piece of visible sentence context to Langsly and, when translation or disambiguation needs it, OpenRouter. Vocab Pass does not send complete pages, form values, hidden text, or full URLs. See Langsly's privacy policy before connecting.",
+    "listing.compatibility": "Firefox Desktop 140.0 or later; Firefox for Android 142.0 or later; add-on ID vocabpass@languageplanet.app.",
+    "listing.releaseNotes": "Firefox release candidate 0.2.5; publication status requires store evidence. Includes device-code account connection, contextual vocabulary, audio fallback, themes, difficulty and per-site controls.",
+    "privacy.declarations": "Declare authentication information (device authorization and account tokens), browsing activity (hostname and site-block state), website activity (trusted taps and highlight exposures), and website content (matched phrases or bounded visible context). Vocab Pass does not sell data; name Langsly and OpenRouter as applicable recipients.",
+    "reviewer.account": "Install the exact signed candidate. Open Connect account, then Open Langsly. Sign in and explicitly Approve or Deny the request. Test confirmation, denial, the ten-minute expiry, reconnect, offline cache and site controls.",
+    "reviewer.credentials": "Provide the dedicated reviewer account only through Mozilla private reviewer-notes credential fields. Verify it privately and revoke or rotate it after review. Never put credentials in source archives.",
+    "reviewer.endpoints": "Website approval: https://langsly.com/extension-connect\nDevice API: https://api.langsly.com/api/auth/extension-device/\nPrivacy: https://langsly.com/privacy-policy",
+    "screenshots.instructions": "Capture the exact submitted artifact on Firefox Desktop, Android phone and tablet: consent/onboarding, device-code disclosure, article highlights, contextual/audio controls, settings in portrait/landscape and inactive sensitive-page proof. Remove private addresses, access codes, tokens and personal tabs. Responsive mocks do not establish Android acceptance.",
+    "qa.instructions": "Record browser/device versions, artifact SHA-256, screenshots and traces. Check fresh install, account approval/denial/expiry, audio, per-site controls, sensitive-page exclusions, hidden-tab pause and bounded processing. Installed-browser, physical-device, production API and store acceptance remain separate evidence gates."
+  }
+}

@@ -1,6 +1,7 @@
 import { copyFile, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { deflateRawSync } from 'node:zlib';
+import { verifyChineseLocaleForBuild } from './release/chinese-locale-review.mjs';
 
 const root = dirname(new URL(import.meta.url).pathname.replace(/^\/(.:)/, '$1'));
 const dist = join(root, 'dist');
@@ -9,8 +10,7 @@ const firefoxDir = join(dist, 'firefox');
 const fixedDate = new Date('1980-01-01T00:00:00Z');
 
 const runtimeFiles = [
-  'vendor/browser-polyfill.min.js', 'shared/i18n.js',
-  'background/device-connection.js', 'content/connection-bridge.js', 'background/theme-utils.js', 'background/encounter-coordinator.js', 'background/service-worker.js',
+  'vendor/browser-polyfill.min.js', 'shared/i18n.js', 'background/device-connection.js', 'content/connection-bridge.js', 'background/theme-utils.js', 'background/encounter-coordinator.js', 'background/service-worker.js',
   'content/request-coordinator.js', 'content/grammar-rules.js', 'content/matcher.js', 'content/popup.js', 'content/content.js', 'content/content.css',
   'popup/popup.html', 'popup/popup.js', 'popup/popup.css',
   'popup/options.html', 'popup/options.js', 'popup/options.css',
@@ -91,6 +91,7 @@ async function createZip(sourceDirectory, outputPath) {
 }
 
 const manifest = JSON.parse(await readFile(join(root, 'manifest.json'), 'utf8'));
+verifyChineseLocaleForBuild(root);
 await rm(dist, { recursive: true, force: true });
 await mkdir(chromeDir, { recursive: true });
 await mkdir(firefoxDir, { recursive: true });
@@ -116,6 +117,8 @@ await createZip(firefoxDir, join(dist, `langsly-vocab-pass-firefox-amo-${version
 const sourceDir = join(dist, 'amo-source');
 await mkdir(sourceDir, { recursive: true });
 const sourceFiles = [...runtimeFiles, 'manifest.json', 'build.mjs', 'build.sh', 'build.ps1', 'build.cmd', 'BUILDING.md', 'THIRD_PARTY_NOTICES.md', 'package.json', 'package-lock.json', 'vendor/browser-polyfill.js', 'vendor/LICENSE-webextension-polyfill'];
+// Review drafts are test inputs in the AMO source archive, never runtime assets.
+sourceFiles.push('docs/evidence/zh_CN.messages.draft.json', 'docs/evidence/zh_CN.messages.draft.meta.json');
 for (const file of sourceFiles) await copy(file, sourceDir);
 for (const locale of await listFiles(join(root, '_locales'))) await copy(`_locales/${locale}`, sourceDir);
 for (const test of await listFiles(join(root, 'test'))) await copy(`test/${test}`, sourceDir);

@@ -76,11 +76,32 @@
   "sourceLanguage": {
     "message": "Page language"
   },
+  "pageTextLanguage": {
+    "message": "Page text language"
+  },
+  "pageTextLanguageHelp": {
+    "message": "Choose the language of the pages where Vocab Pass should match words. Your Langsly course stays selected in your account."
+  },
+  "pageLanguageEnglish": {
+    "message": "English"
+  },
+  "pageLanguageSpanish": {
+    "message": "Spanish"
+  },
+  "pageLanguageSimplifiedChinese": {
+    "message": "Simplified Chinese"
+  },
   "matchableWords": {
     "message": "Matchable"
   },
   "noMatchableWordsWarning": {
     "message": "Words synced, but none have page text triggers for the selected source language."
+  },
+  "sourceLanguageUnsupported": {
+    "message": "This page language is not supported. Choose a supported language in Langsly."
+  },
+  "sourceLanguageUnavailable": {
+    "message": "Reviewed vocabulary is not yet available for this page language and course."
   },
   "currentPage": {
     "message": "Current page"

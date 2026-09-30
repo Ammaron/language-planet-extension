@@ -1,4 +1,6 @@
-# AMO listing copy — Langsly Vocab Pass 0.2.1
+# AMO listing copy — Langsly Vocab Pass 0.2.5
+
+Version 0.2.5 is the current source candidate. These instructions do not establish a signed artifact, store submission, publication, or installed-device acceptance.
 
 ## Summary
 
@@ -20,7 +22,7 @@ Automatic processing may send the current domain, matched phrases, or a short bo
 
 ## Release notes
 
-First public Firefox release. Adds desktop/Android parity, device-code account connection, automatic phrase and contextual disambiguation, audio fallback, themes, difficulty controls, per-site controls, encounter tracking, offline synchronization, mobile layouts, and hardened sensitive-page protections.
+Firefox release candidate; publication status requires store evidence. Adds desktop/Android parity, device-code account connection, automatic phrase and contextual disambiguation, audio fallback, themes, difficulty controls, per-site controls, encounter tracking, offline synchronization, mobile layouts, and hardened sensitive-page protections.
 
 ## Required AMO data declarations
 

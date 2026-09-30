@@ -1,0 +1,18 @@
+{
+  "locale": "zh-Hans",
+  "status": "draft_unreviewed",
+  "source_sha256": "409e8b1dbcbbde0072c04e392a4897559ccd773c05f822f7fd0272be6ae0ac36",
+  "draft_sha256": "1892e3448c72897d28ff514c912de46f6b30f02ce40a922f9303e49852a93262",
+  "native_reviewer": null,
+  "product_reviewer": null,
+  "privacy_reviewer": null,
+  "legal_billing_reviewer": null,
+  "accessibility_reviewer": null,
+  "release_evidence": {
+    "artifact_sha256": null,
+    "screenshots_and_device_acceptance": null,
+    "store_privacy_declarations": null,
+    "support_route": null
+  },
+  "source_note": "Proposed copy grounded in the listed repository sources. No store publication or reviewer approval asserted."
+}

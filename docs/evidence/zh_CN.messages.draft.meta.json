@@ -1,0 +1,9 @@
+{
+  "locale": "zh-Hans",
+  "extension_locale": "zh_CN",
+  "status": "draft_unreviewed",
+  "source_sha256": "cec35c79c37ae251485e0b541df299401dc07688f09aa464a07e48c03226570b",
+  "draft_sha256": "c6dde745eb089648ee0fd9216eec85c3c18148f7ef1f3f7554e89cd6762e79a5",
+  "source": "_locales/en/messages.json",
+  "draft": "docs/evidence/zh_CN.messages.draft.json"
+}
