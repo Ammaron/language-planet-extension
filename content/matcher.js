@@ -19,6 +19,8 @@ class VocabMatcher {
     this.wordMap = new Map(); // lowercaseKey -> VocabWord[]
     this.wordsById = new Map(words.map(word => [String(word.id), word]));
     this.rotationSalt = options.rotationSalt || '';
+    this.chineseSegmenter = typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function'
+      ? new Intl.Segmenter('zh-Hans', { granularity: 'word' }) : null;
     this.buildTrie(words);
     this.buildFailureLinks();
   }
@@ -33,10 +35,13 @@ class VocabMatcher {
       const explicit = Array.isArray(word.source_forms) ? word.source_forms : [];
       if (explicit.some(form => this.isSlashSeparatedGloss(form))) continue;
       const authored = explicit.map(form => this.normalizeKey(form)).filter(Boolean);
+      // Chinese page replacement requires reviewed exact Source Forms. Never
+      // turn a translated display gloss into a runtime page trigger.
+      if (this.isChineseSource(word) && authored.length === 0) continue;
       const effective = Array.isArray(word.effective_runtime_triggers)
         ? word.effective_runtime_triggers : null;
       if (effective || authored.length > 0) {
-        const triggers = effective || authored;
+        const triggers = this.isChineseSource(word) ? authored : (effective || authored);
         if (triggers.some(form => this.isSlashSeparatedGloss(form))) continue;
         for (const form of triggers) keys.add(this.normalizeKey(form));
       } else {
@@ -173,7 +178,11 @@ class VocabMatcher {
   }
 
   postProcess(rawMatches, text) {
-    const bounded = rawMatches.filter(m => this.isWordBoundary(text, m.start, m.end - m.start, m.entry.key));
+    const needsChineseBoundaries = rawMatches.some(m => this.isChineseSource(m.entry.word));
+    const chineseBoundaries = needsChineseBoundaries ? this.getChineseBoundaries(text) : null;
+    const bounded = rawMatches.filter(m => this.isChineseSource(m.entry.word)
+      ? !!chineseBoundaries && chineseBoundaries.has(m.start) && chineseBoundaries.has(m.end)
+      : this.isWordBoundary(text, m.start, m.end - m.start, m.entry.key));
 
     // Prefer longer multi-word source keys over overlapping single words.
     bounded.sort((a, b) => (
@@ -223,6 +232,10 @@ class VocabMatcher {
     if (!isGlueGap) return { singles: matches, phrases: [] };
 
     const sourceLang = this.detectSourceLanguage(matches);
+    // Chinese occurrences have authored Source Forms and are validated one at
+    // a time. The generic English/Spanish glue-word phrase builder cannot
+    // establish that adjacent Chinese segments form a reviewed replacement.
+    if (sourceLang === 'zh') return { singles: matches, phrases: [] };
 
     const groups = [];
     let currentGroup = [matches[0]];
@@ -285,6 +298,21 @@ class VocabMatcher {
       && String(word.part_of_speech || '').toLowerCase() === 'verb'
       && !/\s/.test(String(match.original || match.matchedForm || '').trim())
       && !/\s/.test(String(word.term || '').trim());
+  }
+
+  isChineseSource(word) {
+    const code = String(word && word.search_language || '').toLowerCase().replace(/_/g, '-');
+    return code === 'zh' || code.startsWith('zh-');
+  }
+
+  getChineseBoundaries(text) {
+    if (!this.chineseSegmenter) return null;
+    const boundaries = new Set([0, text.length]);
+    for (const item of this.chineseSegmenter.segment(text)) {
+      boundaries.add(item.index);
+      boundaries.add(item.index + item.segment.length);
+    }
+    return boundaries;
   }
 
   isWordBoundary(text, start, length, key = '') {
@@ -471,7 +499,7 @@ class VocabMatcher {
 
   _extractSentence(text, position) {
     let start = position;
-    while (start > 0 && !/[.!?\n]/.test(text[start - 1])) {
+    while (start > 0 && !/[.!?。！？\n]/.test(text[start - 1])) {
       start--;
     }
     while (start < position && /\s/.test(text[start])) {
@@ -479,7 +507,7 @@ class VocabMatcher {
     }
 
     let end = position;
-    while (end < text.length && !/[.!?\n]/.test(text[end])) {
+    while (end < text.length && !/[.!?。！？\n]/.test(text[end])) {
       end++;
     }
     if (end < text.length) end++;

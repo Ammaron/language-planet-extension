@@ -196,6 +196,13 @@ function updateStatus(status) {
     statusBanner.className = 'status-banner warning';
     statusBanner.classList.remove('hidden');
   }
+  if (statusBanner && ['unsupported_locale', 'source_unavailable'].includes(status.syncStatus)) {
+    statusBanner.textContent = status.syncStatus === 'unsupported_locale'
+      ? t('sourceLanguageUnsupported', 'This page language is not supported. Choose a supported language in Langsly.')
+      : t('sourceLanguageUnavailable', 'Reviewed vocabulary is not yet available for this page language and course.');
+    statusBanner.className = 'status-banner warning';
+    statusBanner.classList.remove('hidden');
+  }
 
   // Update difficulty buttons
   diffBtns.forEach(btn => {
@@ -215,7 +222,7 @@ function updateStatus(status) {
         statusBanner.className = 'status-banner offline';
         statusBanner.classList.remove('hidden');
       }
-    } else if (status.syncStatus === 'failed') {
+    } else if (['failed', 'unsupported_locale', 'source_unavailable'].includes(status.syncStatus)) {
       statusIndicator.className = 'status-dot error';
       statusIndicator.title = t('statusSyncFailed', 'Sync failed');
     } else {

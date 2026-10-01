@@ -11,6 +11,9 @@ if (typeof importScripts === 'function') {
   if (!globalThis.LangslyI18n) {
     importScripts('../shared/i18n.js');
   }
+  if (!globalThis.LangslySourceLanguage) {
+    importScripts('../shared/source-language.js');
+  }
   if (!globalThis.LangslyTheme) {
     importScripts('theme-utils.js');
   }
@@ -36,6 +39,8 @@ const AUTO_BUDGET_WINDOW_MS = 60 * 1000;
 const automaticBudgetBuckets = new Map();
 const activeAuthControllers = new Set();
 let authGeneration = 0;
+let sourceGeneration = 0;
+let vocabularySyncGeneration = 0;
 let encounterCoordinator = null;
 let hanziPractice = null;
 let refreshPromise = null;
@@ -48,9 +53,11 @@ function _withSessionMutation(task) {
   return result;
 }
 
-function _setSessionStorage(values, expectedGeneration = authGeneration) {
+function _setSessionStorage(values, expectedGeneration = authGeneration, expectedSourceGeneration = null, expectedSyncGeneration = null) {
   return _withSessionMutation(async () => {
     if (expectedGeneration !== authGeneration) return false;
+    if (expectedSourceGeneration !== null && expectedSourceGeneration !== sourceGeneration) return false;
+    if (expectedSyncGeneration !== null && expectedSyncGeneration !== vocabularySyncGeneration) return false;
     await browser.storage.local.set(values);
     return true;
   });
@@ -197,12 +204,13 @@ async function clearSession() {
 }
 
 function normalizeLanguageCode(value) {
-  return String(value || '').trim().toLowerCase().replace(/_/g, '-').split('-')[0] || '';
+  return globalThis.LangslySourceLanguage.resolve(value);
 }
 
 async function getExtensionSourceLanguage() {
   const { extensionSourceLanguage } = await browser.storage.local.get('extensionSourceLanguage');
-  return normalizeLanguageCode(extensionSourceLanguage) || DEFAULT_EXTENSION_SOURCE_LANGUAGE;
+  const resolved = normalizeLanguageCode(extensionSourceLanguage);
+  return resolved === null ? null : resolved || DEFAULT_EXTENSION_SOURCE_LANGUAGE;
 }
 
 function countMatchableWords(words) {
@@ -278,6 +286,16 @@ async function completeLoginWithTokens(data, isCurrent = () => true) {
   });
   void Promise.allSettled([syncVocabulary(), syncThemes()]);
   return saved === authGeneration ? { success: true } : { success: false, error: 'cancelled' };
+}
+
+async function broadcastVocabulary(words, isCurrent = () => true) {
+  const tabs = await browser.tabs.query({ url: ['http://*/*', 'https://*/*'] });
+  for (const tab of tabs) {
+    if (!isCurrent()) return;
+    if (tab.id) {
+      browser.tabs.sendMessage(tab.id, { type: 'VOCAB_UPDATED', words }).catch(() => {});
+    }
+  }
 }
 
 const deviceConnection = globalThis.createDeviceConnection({ browser, fetch: (...args) => fetch(...args), getConfig, complete: completeLoginWithTokens });
@@ -599,44 +617,84 @@ async function applyTheme(themeSlug) {
   return { success: true, ...themeState };
 }
 
+async function failVocabularySync(sourceLanguage, generation, sourceRevision, syncRevision) {
+  if (sourceLanguage !== 'zh') {
+    await _setSessionStorage({ syncStatus: 'failed' }, generation, sourceRevision, syncRevision);
+    return;
+  }
+  // A failed Chinese refresh cannot confirm that the old reviewed source
+  // forms are still eligible. Remove them from storage and active pages.
+  const stored = await _setSessionStorage({
+    vocabWords: [], wordCount: 0, matchableWordCount: 0,
+    lastSync: null, syncStatus: 'failed', extensionSourceLanguage: 'zh',
+  }, generation, sourceRevision, syncRevision);
+  if (stored && sourceRevision === sourceGeneration && syncRevision === vocabularySyncGeneration) {
+    await broadcastVocabulary([], () => generation === authGeneration
+      && sourceRevision === sourceGeneration && syncRevision === vocabularySyncGeneration);
+  }
+}
+
 async function syncVocabulary() {
   const generation = authGeneration;
+  const sourceRevision = sourceGeneration;
+  const syncRevision = ++vocabularySyncGeneration;
   const { access } = await getTokens();
-  if (!access) return;
+  const sourceLanguage = await getExtensionSourceLanguage();
+  if (!access) {
+    if (sourceLanguage === 'zh') await failVocabularySync(sourceLanguage, generation, sourceRevision, syncRevision);
+    return;
+  }
   const { apiBase } = await getConfig();
   const { difficulty } = await browser.storage.local.get('difficulty');
   const level = difficulty || 'normal';
-  const sourceLanguage = await getExtensionSourceLanguage();
-
-  const res = await authFetch(`${apiBase}/lessons/vocabpass/words/?difficulty=${level}&source_language=${encodeURIComponent(sourceLanguage)}&validation_version=3`);
-  if (!res) {
-    await _setSessionStorage({ syncStatus: 'failed' }, generation);
+  if (sourceLanguage === null) {
+    const stored = await _setSessionStorage({
+      vocabWords: [], wordCount: 0, matchableWordCount: 0,
+      lastSync: null, syncStatus: 'unsupported_locale',
+    }, generation, sourceRevision, syncRevision);
+    if (stored && sourceRevision === sourceGeneration && syncRevision === vocabularySyncGeneration) {
+      await broadcastVocabulary([], () => generation === authGeneration
+        && sourceRevision === sourceGeneration && syncRevision === vocabularySyncGeneration);
+    }
     return;
   }
-  if (!res.ok) {
-    await _setSessionStorage({ syncStatus: 'failed' }, generation);
+
+  let data;
+  try {
+    const res = await authFetch(`${apiBase}/lessons/vocabpass/words/?difficulty=${level}&source_language=${encodeURIComponent(sourceLanguage)}&validation_version=3`);
+    if (!res || !res.ok) {
+      await failVocabularySync(sourceLanguage, generation, sourceRevision, syncRevision);
+      return;
+    }
+    data = await res.json();
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      await failVocabularySync(sourceLanguage, generation, sourceRevision, syncRevision);
+      return;
+    }
+  } catch {
+    await failVocabularySync(sourceLanguage, generation, sourceRevision, syncRevision);
     return;
   }
-
-  const data = await res.json();
-  if (generation !== authGeneration) return;
-  const matchableWordCount = countMatchableWords(data.words);
+  if (generation !== authGeneration || sourceRevision !== sourceGeneration || syncRevision !== vocabularySyncGeneration) return;
+  if (sourceLanguage !== await getExtensionSourceLanguage()) return;
+  const sourceReady = sourceLanguage === 'zh'
+    ? globalThis.LangslySourceLanguage.isChineseVocabularyResponseReady(data)
+    : data.source_language_ready !== false;
+  const words = sourceReady && Array.isArray(data.words) ? data.words : [];
+  const matchableWordCount = countMatchableWords(words);
   const stored = await _setSessionStorage({
-    vocabWords: data.words,
-    lastSync: new Date().toISOString(),
-    wordCount: data.count,
+    vocabWords: words,
+    lastSync: sourceReady ? new Date().toISOString() : null,
+    wordCount: words.length,
     matchableWordCount,
     extensionSourceLanguage: sourceLanguage,
-    syncStatus: 'success',
-  }, generation);
+    syncStatus: sourceReady ? 'success' : 'source_unavailable',
+  }, generation, sourceRevision, syncRevision);
   if (!stored) return;
 
-  // Notify all content scripts to refresh (only web pages, not internal tabs)
-  const tabs = await browser.tabs.query({ url: ['http://*/*', 'https://*/*'] });
-  for (const tab of tabs) {
-    if (tab.id) {
-      browser.tabs.sendMessage(tab.id, { type: 'VOCAB_UPDATED', words: data.words }).catch(() => {});
-    }
+  if (sourceRevision === sourceGeneration && syncRevision === vocabularySyncGeneration) {
+    await broadcastVocabulary(words, () => generation === authGeneration
+      && sourceRevision === sourceGeneration && syncRevision === vocabularySyncGeneration);
   }
 }
 
@@ -754,6 +812,30 @@ browser.runtime.onMessage.addListener((message, sender) => {
 
   if (message.type === 'SYNC_NOW') {
     return Promise.allSettled([syncVocabulary(), syncThemes()]).then(() => ({ success: true }));
+  }
+
+  if (message.type === 'SET_SOURCE_LANGUAGE') {
+    if (sender.url !== browser.runtime.getURL('popup/options.html')) {
+      return Promise.resolve({ success: false, error: 'untrusted_sender' });
+    }
+    return (async () => {
+      const sourceLanguage = normalizeLanguageCode(message.sourceLanguage);
+      if (!['en', 'es', 'zh'].includes(sourceLanguage)) {
+        return { success: false, error: 'unsupported_source_language' };
+      }
+      const generation = authGeneration;
+      const sourceRevision = ++sourceGeneration;
+      const stored = await _setSessionStorage({
+        extensionSourceLanguage: sourceLanguage,
+        vocabWords: [], wordCount: 0, matchableWordCount: 0,
+        lastSync: null, syncStatus: 'syncing',
+      }, generation, sourceRevision);
+      if (!stored) return { success: false, error: 'cancelled' };
+      if (sourceRevision !== sourceGeneration) return { success: false, error: 'cancelled' };
+      await broadcastVocabulary([], () => generation === authGeneration && sourceRevision === sourceGeneration);
+      await syncVocabulary();
+      return { success: generation === authGeneration };
+    })();
   }
 
   if (message.type === 'HANZI_WRITER_LOAD') {

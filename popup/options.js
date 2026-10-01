@@ -1,5 +1,5 @@
 /* global browser */
-const DEFAULTS = { syncInterval: 60, hanziWritingPracticeEnabled: true };
+const DEFAULTS = { syncInterval: 60, extensionSourceLanguage: 'en', hanziWritingPracticeEnabled: true };
 
 function t(key, substitutions, fallback) {
   if (window.LangslyI18n) return window.LangslyI18n.t(key, substitutions, fallback);
@@ -13,6 +13,7 @@ function formatMinutes(value) {
 
 const syncIntervalSlider = document.getElementById('sync-interval');
 const syncIntervalLabel = document.getElementById('sync-interval-label');
+const pageSourceLanguage = document.getElementById('page-source-language');
 const writingPracticeEnabled = document.getElementById('writing-practice-enabled');
 const resetPreferencesBtn = document.getElementById('reset-preferences');
 const saveBtn = document.getElementById('save-btn');
@@ -38,21 +39,26 @@ async function renderAccountState() {
 
 function applyPreferenceValues({
   syncInterval = DEFAULTS.syncInterval,
+  extensionSourceLanguage = DEFAULTS.extensionSourceLanguage,
   hanziWritingPracticeEnabled = DEFAULTS.hanziWritingPracticeEnabled,
 }) {
   syncIntervalSlider.value = syncInterval;
   writingPracticeEnabled.checked = hanziWritingPracticeEnabled !== false;
   syncIntervalLabel.textContent = formatMinutes(syncInterval);
+  const source = window.LangslySourceLanguage.resolve(extensionSourceLanguage);
+  pageSourceLanguage.value = ['en', 'es', 'zh'].includes(source) ? source : DEFAULTS.extensionSourceLanguage;
 }
 
 async function loadSettings() {
-  const { syncInterval, hanziWritingPracticeEnabled } = await browser.storage.local.get([
+  const { syncInterval, extensionSourceLanguage, hanziWritingPracticeEnabled } = await browser.storage.local.get([
     'syncInterval',
+    'extensionSourceLanguage',
     'hanziWritingPracticeEnabled',
   ]);
 
   applyPreferenceValues({
     syncInterval: syncInterval || DEFAULTS.syncInterval,
+    extensionSourceLanguage: extensionSourceLanguage || DEFAULTS.extensionSourceLanguage,
     hanziWritingPracticeEnabled: hanziWritingPracticeEnabled !== false,
   });
   await renderAccountState();
@@ -100,6 +106,11 @@ saveBtn.addEventListener('click', async () => {
     type: 'UPDATE_CONFIG',
     syncInterval: settings.syncInterval,
   });
+  const sourceResult = await browser.runtime.sendMessage({
+    type: 'SET_SOURCE_LANGUAGE',
+    sourceLanguage: pageSourceLanguage.value,
+  });
+  if (!sourceResult?.success) return;
 
   saveStatus.classList.remove('hidden');
   setTimeout(() => saveStatus.classList.add('hidden'), 2000);

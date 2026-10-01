@@ -29,6 +29,16 @@
     </div>
 
     <div class="options-section">
+      <label for="page-source-language" data-i18n="pageTextLanguage">Page text language</label>
+      <select id="page-source-language">
+        <option value="en" data-i18n="pageLanguageEnglish">English</option>
+        <option value="es" data-i18n="pageLanguageSpanish">Spanish</option>
+        <option value="zh" data-i18n="pageLanguageSimplifiedChinese">Simplified Chinese</option>
+      </select>
+      <p data-i18n="pageTextLanguageHelp">Choose the language of the pages where Vocab Pass should match words. Your Langsly course stays selected in your account.</p>
+    </div>
+
+    <div class="options-section">
       <h2 data-i18n="writingPracticeSettingsTitle">Character writing</h2>
       <label class="checkbox-row" for="writing-practice-enabled">
         <input type="checkbox" id="writing-practice-enabled" checked>
@@ -55,6 +65,7 @@
   </div>
   <script src="../vendor/browser-polyfill.min.js"></script>
   <script src="../shared/i18n.js"></script>
+  <script src="../shared/source-language.js"></script>
   <script src="options.js"></script>
 </body>
 </html>
