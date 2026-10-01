@@ -14,6 +14,15 @@ class TrieNode {
 }
 
 class VocabMatcher {
+  // English words that count a following noun ("three books", "several books").
+  static QUANTITY_WORDS = new Set([
+    'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+    'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty',
+    'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety',
+    'hundred', 'thousand', 'million', 'billion', 'dozen',
+    'several', 'many', 'few', 'both', 'couple', 'pair', 'multiple', 'numerous',
+  ]);
+
   constructor(words, options = {}) {
     this.root = new TrieNode();
     this.wordMap = new Map(); // lowercaseKey -> VocabWord[]
