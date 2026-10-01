@@ -60,6 +60,183 @@ const setPrivate = (element, values) => {
 };
 const MAX_TEXT_NODES_PER_SCAN = 500;
 const MAX_MUTATION_NODES = 200;
+const BLOCK_SELECTOR = 'p,li,div,h1,h2,h3,h4,h5,h6,blockquote,td,th,article,section';
+
+// ─── Chinese islands (English pages, reviewed words only) ───
+// Islands, not bridges: one reviewed Chinese word or course phrase at a time,
+// never composed, and never touching another island or Chinese text.
+const ZH_PAGE_ISLAND_LIMIT = 10;
+const ZH_SAME_WORD_LIMIT = 2;
+const ZH_BLOCKED_PAGE_LANGUAGE = /^(zh|ja|ko)(-|$)/i;
+const CJK_TEXT = /[⺀-⿟　-ヿ㄀-ㇿ㐀-䶿一-鿿가-힯豈-﫿＀-￯]|[\u{20000}-\u{3ffff}]/u;
+const BRIDGE_GAP = /^[\s\p{P}\p{S}]*$/u;
+const PINYIN_MODES = new Set(['auto', 'always', 'popup']);
+let zhPinyinMode = 'auto';
+let zhPinyinTaps = {};
+let zhIslandBudget = { page: 0, words: new Map(), sentences: new WeakMap() };
+
+function isZhTarget(word) {
+  const code = String(word && word.term_language || '').toLowerCase().replace(/_/g, '-');
+  return code === 'zh' || code.startsWith('zh-');
+}
+
+// Chinese targets sync only for a zh-hans active course; never mix them with
+// Spanish islands on the same page.
+function vocabularyForPage(words) {
+  const list = Array.isArray(words) ? words : [];
+  const chinese = list.filter(isZhTarget);
+  return chinese.length ? chinese : list;
+}
+
+function ownBlockText(block) {
+  let text = '';
+  const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    if (!node.parentElement || node.parentElement.closest(`[${LP_PROCESSED}]`)) continue;
+    text += node.textContent;
+  }
+  return text;
+}
+
+function zhIslandAllowed(textNode, match, context) {
+  const parent = textNode.parentElement;
+  if (!parent || !context) return false;
+  const marked = parent.closest('[lang]');
+  if (marked && ZH_BLOCKED_PAGE_LANGUAGE.test(marked.getAttribute('lang') || '')) return false;
+  const block = parent.closest(BLOCK_SELECTOR) || parent;
+  if (CJK_TEXT.test(ownBlockText(block))) return false;
+  const wordId = String(match.word.id);
+  const sentenceKey = String(context.sentence);
+  if (zhIslandBudget.page >= ZH_PAGE_ISLAND_LIMIT) return false;
+  if ((zhIslandBudget.words.get(wordId) || 0) >= ZH_SAME_WORD_LIMIT) return false;
+  const blockSentences = zhIslandBudget.sentences.get(block) || new Set();
+  if (blockSentences.has(sentenceKey)) return false;
+  zhIslandBudget.page += 1;
+  zhIslandBudget.words.set(wordId, (zhIslandBudget.words.get(wordId) || 0) + 1);
+  blockSentences.add(sentenceKey);
+  zhIslandBudget.sentences.set(block, blockSentences);
+  return true;
+}
+
+function recentTapCount(wordId) {
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  return (Array.isArray(zhPinyinTaps[wordId]) ? zhPinyinTaps[wordId] : []).filter(time => time > weekAgo).length;
+}
+
+// Pinyin ruby follows the server's SRS stage and the learner's mode. Two or
+// more taps on a word within 7 days step it back toward full pinyin.
+function effectivePinyinStage(word) {
+  if (zhPinyinMode === 'popup') return 'hidden';
+  if (zhPinyinMode === 'always') return 'full';
+  const order = ['full', 'faded', 'hidden'];
+  let index = Math.max(0, order.indexOf(word.pinyin_stage || 'full'));
+  if (recentTapCount(String(word.id)) >= 2) index = Math.max(0, index - 1);
+  return order[index];
+}
+
+function rubySyllables(word) {
+  const reading = word.reading || (word.zh_target && word.zh_target.reading) || {};
+  const citation = Array.isArray(reading.citation) ? reading.citation : [];
+  const spoken = Array.isArray(reading.spoken) ? reading.spoken : null;
+  // The reviewer chooses whether 一/不 show their spoken (sandhi) tone.
+  return [...String(word.term || '')].map((char, index) => (
+    reading.ruby === 'spoken' && spoken && ['一', '不'].includes(char) ? spoken[index] : citation[index]
+  ) || '');
+}
+
+function renderChineseIsland(span, word) {
+  span.textContent = '';
+  span.setAttribute('lang', 'zh-Hans');
+  span.setAttribute('translate', 'no');
+  const stage = effectivePinyinStage(word);
+  span.setAttribute('data-lp-pinyin', stage);
+  if (stage === 'hidden') {
+    span.textContent = word.term;
+    return;
+  }
+  const ruby = document.createElement('ruby');
+  ruby.className = stage === 'faded' ? 'lp-pinyin lp-pinyin-faded' : 'lp-pinyin';
+  const syllables = rubySyllables(word);
+  [...String(word.term)].forEach((char, index) => {
+    ruby.appendChild(document.createTextNode(char));
+    const rt = document.createElement('rt');
+    rt.textContent = syllables[index];
+    ruby.appendChild(rt);
+  });
+  span.appendChild(ruby);
+}
+
+function revertIsland(island) {
+  if (!island.parentNode) return;
+  island.parentNode.replaceChild(document.createTextNode(getPrivate(island).original || island.textContent), island);
+}
+
+// Leftmost island wins. Whitespace and punctuation between two islands, or
+// between an island and existing Chinese text, still make a bridge.
+function enforceNoBridges(island) {
+  const block = island.parentElement && (island.parentElement.closest(BLOCK_SELECTOR) || island.parentElement);
+  if (!block) return;
+  const walker = document.createTreeWalker(block, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        if (node.classList.contains('lp-zh-island')) return NodeFilter.FILTER_ACCEPT;
+        if (node.classList.contains('lp-validation-pending')) return NodeFilter.FILTER_SKIP;
+        return node.hasAttribute(LP_PROCESSED) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_SKIP;
+      }
+      return node.parentElement && node.parentElement.closest('.lp-zh-island')
+        ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+    },
+  });
+  const sequence = [];
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) sequence.push(node);
+  let neighbour = false;
+  for (const node of sequence) {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      if (neighbour) {
+        revertIsland(node);
+        neighbour = false; // the restored English word ends the run
+      } else {
+        neighbour = true;
+      }
+      continue;
+    }
+    for (const char of node.textContent) {
+      if (CJK_TEXT.test(char)) neighbour = true;
+      else if (!BRIDGE_GAP.test(char)) neighbour = false;
+    }
+  }
+}
+
+function recordPinyinTap(wordId) {
+  const id = String(wordId);
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  zhPinyinTaps = { ...zhPinyinTaps, [id]: [...(zhPinyinTaps[id] || []).filter(time => time > weekAgo), Date.now()].slice(-10) };
+  browser.storage.local.set({ zhPinyinTaps }).catch(() => {});
+}
+
+async function loadPinyinPreferences() {
+  try {
+    const stored = await browser.storage.local.get(['zhPinyinMode', 'zhPinyinTaps']);
+    zhPinyinMode = PINYIN_MODES.has(stored.zhPinyinMode) ? stored.zhPinyinMode : 'auto';
+    zhPinyinTaps = stored.zhPinyinTaps && typeof stored.zhPinyinTaps === 'object' ? stored.zhPinyinTaps : {};
+  } catch {
+    zhPinyinMode = 'auto';
+    zhPinyinTaps = {};
+  }
+}
+
+// One contrast line, built only from other synced (reviewed) Chinese rows that
+// share a trigger with this word, e.g. "知道 = to know (a fact)".
+function chineseContrast(word) {
+  const triggers = new Set((word.source_forms || []).map(form => String(form).toLowerCase()));
+  for (const other of matcher ? matcher.wordsById.values() : []) {
+    if (String(other.id) === String(word.id) || !isZhTarget(other)) continue;
+    if ((other.source_forms || []).some(form => triggers.has(String(form).toLowerCase()))) {
+      return { term: other.term, gloss: other.translation || '' };
+    }
+  }
+  return null;
+}
 
 let matcher = null;
 let whitelistedDomains = [];
@@ -215,7 +392,9 @@ async function runInit(generation) {
     }
   }
 
-  matcher = new VocabMatcher(vocabWords, { rotationSalt: rotationSalt });
+  await loadPinyinPreferences();
+  if (generation !== lifecycleGeneration) return;
+  matcher = new VocabMatcher(vocabularyForPage(vocabWords), { rotationSalt: rotationSalt });
   extensionActive = true;
   lifecycleState = 'active';
   detectTheme();
@@ -395,7 +574,9 @@ function replaceInTextNode(textNode) {
       fragment.appendChild(document.createTextNode(text.substring(lastEnd, event.start)));
     }
 
-    if (event.type === 'single') {
+    if (event.type === 'single' && isZhTarget(event.data.word) && !zhIslandAllowed(textNode, event.data, event.context)) {
+      fragment.appendChild(document.createTextNode(event.data.original));
+    } else if (event.type === 'single') {
       fragment.appendChild(buildPendingSingleSpan(event.data, domain, event.context));
     } else {
       fragment.appendChild(buildPendingPhraseSpan(event.data, text, domain, event.context));
@@ -414,7 +595,7 @@ function replaceInTextNode(textNode) {
 }
 
 function sentenceContextForNode(textNode, matchStart) {
-  const blockSelector = 'p,li,div,h1,h2,h3,h4,h5,h6,blockquote,td,th,article,section';
+  const blockSelector = BLOCK_SELECTOR;
   const block = textNode.parentElement.closest(blockSelector) || textNode.parentElement;
   if (!block || block.querySelector('script,style,code,pre,input,textarea,select,button,[contenteditable]')) return null;
   const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
@@ -583,9 +764,14 @@ function requestPendingValidations() {
         grammarDetails = forms.map(form => ({ surface: form.surface, features: form.features || {}, learningScope: form.learning_scope,
           lemma: words.find(word => (word.word_forms || []).some(row => row.id === form.id))?.grammar_profile?.lemma || '' }));
       }
-      span.textContent = result.replacement_text;
-      span.className = state.phrase ? 'lp-vocab-phrase' : LP_CLASS;
       const selected = words[0];
+      const chineseIsland = isZhTarget(selected);
+      // A Chinese island shows the synced reviewed term, nothing else.
+      if (chineseIsland && (state.phrase || ids.length !== 1 || result.replacement_text !== selected.term)) return;
+      if (chineseIsland) renderChineseIsland(span, selected);
+      else span.textContent = result.replacement_text;
+      span.className = state.phrase ? 'lp-vocab-phrase' : LP_CLASS;
+      if (chineseIsland) span.classList.add('lp-zh-island');
       setPrivate(span, {
         wordId: selected.id,
         words: ids,
@@ -597,8 +783,19 @@ function requestPendingValidations() {
         targetLanguage: state.targetLanguage,
         pos: ids.length > 1 ? '' : selected.part_of_speech || '',
         hint: item.validation_version === 3 ? grammarExplanation(result.explanation, state.sourceLanguage) : selected.context_hint || '',
-        example: selected.example_sentence || '',
-        exampleTranslation: selected.example_translation || '',
+        // Chinese: only the reviewed chunk, never an unreviewed example.
+        example: chineseIsland ? '' : selected.example_sentence || '',
+        exampleTranslation: chineseIsland ? '' : selected.example_translation || '',
+        zh: chineseIsland ? {
+          term: selected.term,
+          reading: selected.reading || selected.zh_target.reading,
+          measureWords: selected.measure_words || selected.zh_target.measure_words,
+          usageNote: selected.zh_target.usage_note || '',
+          chunk: selected.zh_target.chunk || null,
+          gloss: selected.translation || '',
+          pinyinStage: effectivePinyinStage(selected),
+          contrast: chineseContrast(selected),
+        } : null,
         audioUrl: exactForm ? (result.replacement_text === exactForm.surface ? exactForm.pronunciation_audio || '' : '') : selected.pronunciation_audio || '',
         // Writing practice only ever attaches to a single, whole-word replacement.
         hanziWriting: ids.length === 1 && !state.phrase && !exactForm ? selected.hanzi_writing || null : null,
@@ -613,6 +810,7 @@ function requestPendingValidations() {
         if (!event.isTrusted) return;
         event.preventDefault();
         event.stopPropagation();
+        if (chineseIsland) recordPinyinTap(selected.id);
         const popup = state.phrase
           ? VocabPopup.showPhrase(span, ids.map(id => {
             const match = state.phraseMatches.find(entry => String(entry.word.id) === id);
@@ -622,6 +820,11 @@ function requestPendingValidations() {
         Promise.resolve(popup).catch(() => {});
         ids.forEach(id => recordEncounter(id, state.domain, true));
       });
+      if (chineseIsland) {
+        // Re-checked on every async apply: a later island next to this one reverts.
+        enforceNoBridges(span);
+        if (!span.isConnected) return;
+      }
       ids.forEach(id => recordEncounter(id, state.domain, false));
     }).catch(() => {}).finally(() => {
       clearTimeout(timer);
@@ -705,7 +908,7 @@ browser.runtime.onMessage.addListener((message) => {
     browser.storage.local.get('rotation_salt').then(({ rotation_salt }) => {
       rotationSalt = rotation_salt || '';
       if (extensionActive) {
-        matcher = new VocabMatcher(message.words, { rotationSalt });
+        matcher = new VocabMatcher(vocabularyForPage(message.words), { rotationSalt });
         processDocument();
       } else {
         lifecycleGeneration += 1;
@@ -719,6 +922,7 @@ browser.runtime.onMessage.addListener((message) => {
 
 // ─── Start ───────────────────────────────────────
 function restoreOriginalPageText() {
+  zhIslandBudget = { page: 0, words: new Map(), sentences: new WeakMap() };
   document.querySelectorAll('.lp-validation-pending').forEach((element) => {
     if (!element.parentNode) return;
     element.parentNode.replaceChild(document.createTextNode(getPrivate(element).original || element.textContent), element);

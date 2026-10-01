@@ -41,6 +41,15 @@ class VocabMatcher {
 
     for (const word of words) {
       const keys = new Set();
+      if (this.isChineseTarget(word)) {
+        // Chinese targets: the reviewed profile triggers only (synced as
+        // source_forms). Never the gloss, never generated English forms.
+        const authored = (Array.isArray(word.source_forms) ? word.source_forms : [])
+          .map(form => this.normalizeKey(form)).filter(Boolean);
+        if (authored.some(form => this.isSlashSeparatedGloss(form))) continue;
+        for (const key of authored) this.insertWord(key, word);
+        continue;
+      }
       const explicit = Array.isArray(word.source_forms) ? word.source_forms : [];
       if (explicit.some(form => this.isSlashSeparatedGloss(form))) continue;
       const authored = explicit.map(form => this.normalizeKey(form)).filter(Boolean);
@@ -151,14 +160,30 @@ class VocabMatcher {
       }
     }
 
-    const resolved = this.postProcess(rawMatches, text);
+    const resolved = this.withoutCountedChineseNouns(this.postProcess(rawMatches, text), text);
     return this.groupAdjacentMatches(this.expandGrammarMatches(resolved, text), text);
+  }
+
+  // "three books" needs a measure word (三本书); an island would prime 三书.
+  // Skip a Chinese noun right after an English number or quantity word.
+  withoutCountedChineseNouns(matches, text) {
+    return matches.filter(match => {
+      if (!this.isChineseTarget(match.word)) return true;
+      if (String(match.word.part_of_speech || '').toLowerCase() !== 'noun') return true;
+      const before = text.slice(Math.max(0, match.start - 40), match.start).toLowerCase();
+      if (before.length > 0 && !/\s$/u.test(before)) return true;
+      const tokens = before.match(/[\p{L}\p{N}][\p{L}\p{N}'’,.-]*/gu) || [];
+      let previous = (tokens[tokens.length - 1] || '').replace(/[,.]+$/u, '');
+      if (previous === 'of' && tokens.length > 1) previous = tokens[tokens.length - 2];
+      return !(VocabMatcher.QUANTITY_WORDS.has(previous) || /^\d[\d,.]*$/u.test(previous));
+    });
   }
 
   expandGrammarMatches(matches, text) {
     const replaced = new Set();
     const expanded = [];
     for (const match of matches) {
+      if (this.isChineseTarget(match.word)) continue;
       if (match.word.validation_version !== 3 || !['noun', 'adjective'].includes(match.word.part_of_speech)) continue;
       const source = match.word.search_language;
       const prefix = text.slice(0, match.start);
@@ -245,6 +270,8 @@ class VocabMatcher {
     // a time. The generic English/Spanish glue-word phrase builder cannot
     // establish that adjacent Chinese segments form a reviewed replacement.
     if (sourceLang === 'zh') return { singles: matches, phrases: [] };
+    // Chinese targets are islands, never bridges: singles only, never composed.
+    if (matches.some(match => this.isChineseTarget(match.word))) return { singles: matches, phrases: [] };
 
     const groups = [];
     let currentGroup = [matches[0]];
@@ -307,6 +334,11 @@ class VocabMatcher {
       && String(word.part_of_speech || '').toLowerCase() === 'verb'
       && !/\s/.test(String(match.original || match.matchedForm || '').trim())
       && !/\s/.test(String(word.term || '').trim());
+  }
+
+  isChineseTarget(word) {
+    const code = String(word && word.term_language || '').toLowerCase().replace(/_/g, '-');
+    return code === 'zh' || code.startsWith('zh-');
   }
 
   isChineseSource(word) {
@@ -450,6 +482,7 @@ class VocabMatcher {
   }
 
   _attachContextualRewrite(chosen, candidates, sentence, offset) {
+    if (this.isChineseTarget(chosen)) return;
     const sourceLanguage = String(chosen.search_language || '').toLowerCase();
     const targetTerm = String(chosen.term || '').trim();
     if (!sourceLanguage.startsWith('es')

@@ -619,7 +619,22 @@ async function applyTheme(themeSlug) {
 
 async function failVocabularySync(sourceLanguage, generation, sourceRevision, syncRevision) {
   if (sourceLanguage !== 'zh') {
-    await _setSessionStorage({ syncStatus: 'failed' }, generation, sourceRevision, syncRevision);
+    // Cached English/Spanish words stay usable through a transient failure, but
+    // Chinese targets need a fresh, reviewed sync: purge them from storage and pages.
+    const { vocabWords } = await browser.storage.local.get('vocabWords');
+    const cached = Array.isArray(vocabWords) ? vocabWords : [];
+    const kept = withoutChineseTargets(cached);
+    if (kept.length === cached.length) {
+      await _setSessionStorage({ syncStatus: 'failed' }, generation, sourceRevision, syncRevision);
+      return;
+    }
+    const stored = await _setSessionStorage({
+      vocabWords: kept, wordCount: kept.length, matchableWordCount: countMatchableWords(kept), syncStatus: 'failed',
+    }, generation, sourceRevision, syncRevision);
+    if (stored && sourceRevision === sourceGeneration && syncRevision === vocabularySyncGeneration) {
+      await broadcastVocabulary(kept, () => generation === authGeneration
+        && sourceRevision === sourceGeneration && syncRevision === vocabularySyncGeneration);
+    }
     return;
   }
   // A failed Chinese refresh cannot confirm that the old reviewed source
@@ -632,6 +647,23 @@ async function failVocabularySync(sourceLanguage, generation, sourceRevision, sy
     await broadcastVocabulary([], () => generation === authGeneration
       && sourceRevision === sourceGeneration && syncRevision === vocabularySyncGeneration);
   }
+}
+
+// Chinese as a target (English pages) is gated server-side by a switch, this
+// capability and a per-user allowlist. Older builds never send it.
+const ZH_TARGET_CAPABILITY = 'zh_target_v1';
+
+function withoutChineseTargets(words) {
+  return words.filter(word => !globalThis.LangslySourceLanguage.isChineseTargetWord(word));
+}
+
+// Keep a Chinese target row only when the server says the gate is open for this
+// client and the row carries complete reviewed data; drop it otherwise.
+function readyVocabularyRows(words, data) {
+  const source = globalThis.LangslySourceLanguage;
+  const zhTargetEnabled = !!data && data.zh_target_enabled === true;
+  return words.filter(word => !source.isChineseTargetWord(word)
+    || (zhTargetEnabled && source.isReadyChineseTargetRow(word)));
 }
 
 async function syncVocabulary() {
@@ -661,7 +693,7 @@ async function syncVocabulary() {
 
   let data;
   try {
-    const res = await authFetch(`${apiBase}/lessons/vocabpass/words/?difficulty=${level}&source_language=${encodeURIComponent(sourceLanguage)}&validation_version=3`);
+    const res = await authFetch(`${apiBase}/lessons/vocabpass/words/?difficulty=${level}&source_language=${encodeURIComponent(sourceLanguage)}&validation_version=3&capabilities=${ZH_TARGET_CAPABILITY}`);
     if (!res || !res.ok) {
       await failVocabularySync(sourceLanguage, generation, sourceRevision, syncRevision);
       return;
@@ -680,7 +712,7 @@ async function syncVocabulary() {
   const sourceReady = sourceLanguage === 'zh'
     ? globalThis.LangslySourceLanguage.isChineseVocabularyResponseReady(data)
     : data.source_language_ready !== false;
-  const words = sourceReady && Array.isArray(data.words) ? data.words : [];
+  const words = sourceReady && Array.isArray(data.words) ? readyVocabularyRows(data.words, data) : [];
   const matchableWordCount = countMatchableWords(words);
   const stored = await _setSessionStorage({
     vocabWords: words,
@@ -709,7 +741,7 @@ encounterCoordinator = LangslyEncounterCoordinator.create({
   save: (pendingEncounters) => browser.storage.local.set({ pendingEncounters }),
   send: async (encounters) => {
     const { apiBase } = await getConfig();
-    const res = await authFetch(`${apiBase}/lessons/vocabpass/encounters/batch/`, {
+    const res = await authFetch(`${apiBase}/lessons/vocabpass/encounters/batch/?capabilities=${ZH_TARGET_CAPABILITY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ encounters }),
@@ -1138,8 +1170,9 @@ browser.runtime.onMessage.addListener((message, sender) => {
           matched_text: String(message.matched_text || '').slice(0, 255),
           match_offset: Number(message.match_offset) || 0,
           candidate_ids: Array.isArray(message.candidate_ids) ? message.candidate_ids.slice(0, 20) : [],
-          source_language: message.source_language || 'es',
-          target_language: message.target_language || 'en',
+          // No language defaults: a missing pair is refused, never assumed Spanish.
+          source_language: message.source_language || '',
+          target_language: message.target_language || '',
         };
         const cacheKey = await _contextualCacheKey(payload);
         const cached = await browser.storage.local.get(cacheKey);
@@ -1186,7 +1219,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
         if (versions.some(version => ![2, 3].includes(version))) return { results: [], error: 'unsupported_version' };
         const responses = await Promise.all(versions.map(async version => {
         const deadline = new Promise(resolve => setTimeout(() => resolve(null), 8000));
-        const res = await Promise.race([authFetch(`${apiBase}/lessons/vocabpass/disambiguate/`, {
+        const res = await Promise.race([authFetch(`${apiBase}/lessons/vocabpass/disambiguate/?capabilities=${ZH_TARGET_CAPABILITY}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ validation_version: version, difficulty: difficulty || 'normal', items: items.filter(item => item.validation_version === version) }),
@@ -1283,7 +1316,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
     return (async () => {
       try {
         const { apiBase } = await getConfig();
-        const res = await authFetch(`${apiBase}/lessons/vocabpass/disambiguate/feedback/`, {
+        const res = await authFetch(`${apiBase}/lessons/vocabpass/disambiguate/feedback/?capabilities=${ZH_TARGET_CAPABILITY}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1291,8 +1324,8 @@ browser.runtime.onMessage.addListener((message, sender) => {
             matched_text: message.matched_text || '',
             match_offset: message.match_offset || 0,
             candidate_ids: message.candidate_ids || [],
-            source_language: message.source_language || 'en',
-            target_language: message.target_language || 'es',
+            source_language: message.source_language || '',
+            target_language: message.target_language || '',
             shown_word_id: message.shown_word_id || '',
             chosen_word_id: message.chosen_word_id || '',
             was_uncertain: !!message.was_uncertain,
@@ -1356,7 +1389,7 @@ function _disambigCacheKey(item) {
 
 async function _contextualCacheKey(item) {
   const candidatesSorted = [...(item.candidate_ids || [])].sort().join(',');
-  const raw = `${item.sentence || ''}|${item.matched_text || ''}|${item.match_offset || 0}|${item.source_language || 'es'}|${item.target_language || 'en'}|${candidatesSorted}`;
+  const raw = `${item.sentence || ''}|${item.matched_text || ''}|${item.match_offset || 0}|${item.source_language || ''}|${item.target_language || ''}|${candidatesSorted}`;
   try {
     const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
     const hash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');

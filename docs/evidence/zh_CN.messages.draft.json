@@ -202,5 +202,14 @@
   "aboutTitle": "关于",
   "openSourceLicenses": "开源许可",
   "licensesIntro": "Vocab Pass 包含以下开源软件和数据。每份声明均完整显示。",
-  "hanziDataProvenance": "笔画数据由 hanzi-writer-data 项目基于 Make Me a Hanzi（版权所有 2016 Shaunak Kishore）整理，而后者源自 Arphic PL KaitiM GB 和 UKai（版权所有 1999 Arphic Technology Co., Ltd.）。Vocab Pass 按原样提供这些字符文件。"
+  "hanziDataProvenance": "笔画数据由 hanzi-writer-data 项目基于 Make Me a Hanzi（版权所有 2016 Shaunak Kishore）整理，而后者源自 Arphic PL KaitiM GB 和 UKai（版权所有 1999 Arphic Technology Co., Ltd.）。Vocab Pass 按原样提供这些字符文件。",
+  "zhSaidLabel": "读作",
+  "zhNoReviewedAudio": "暂无审核过的音频",
+  "zhAudioUnavailable": "音频不可用",
+  "zhMeasureWordLabel": "量词",
+  "pinyinModeTitle": "中文词语上方的拼音",
+  "pinyinModeAuto": "随着学习逐渐淡出（默认）",
+  "pinyinModeAlways": "始终显示",
+  "pinyinModePopupOnly": "仅在单词弹窗中显示",
+  "pinyinModeHelp": "学会一个词后，拼音会逐渐淡出。一周内点击同一个词两次，拼音会重新显示。"
 }

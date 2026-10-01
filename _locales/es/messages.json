@@ -438,5 +438,14 @@
   "aboutTitle": { "message": "Acerca de" },
   "openSourceLicenses": { "message": "Licencias de código abierto" },
   "licensesIntro": { "message": "Vocab Pass incluye el siguiente software y datos de código abierto. Cada aviso se muestra completo." },
-  "hanziDataProvenance": { "message": "Datos de trazos derivados por el proyecto hanzi-writer-data a partir de Make Me a Hanzi (copyright 2016 Shaunak Kishore), que deriva de Arphic PL KaitiM GB y UKai (copyright 1999 Arphic Technology Co., Ltd.). Vocab Pass incluye los archivos de caracteres sin modificar." }
+  "hanziDataProvenance": { "message": "Datos de trazos derivados por el proyecto hanzi-writer-data a partir de Make Me a Hanzi (copyright 2016 Shaunak Kishore), que deriva de Arphic PL KaitiM GB y UKai (copyright 1999 Arphic Technology Co., Ltd.). Vocab Pass incluye los archivos de caracteres sin modificar." },
+  "zhSaidLabel": { "message": "se dice" },
+  "zhNoReviewedAudio": { "message": "Aún no hay audio revisado" },
+  "zhAudioUnavailable": { "message": "Audio no disponible" },
+  "zhMeasureWordLabel": { "message": "Clasificador" },
+  "pinyinModeTitle": { "message": "Pinyin sobre las palabras en chino" },
+  "pinyinModeAuto": { "message": "Desvanecer mientras aprendo (predeterminado)" },
+  "pinyinModeAlways": { "message": "Mostrar siempre" },
+  "pinyinModePopupOnly": { "message": "Solo en la ventana de la palabra" },
+  "pinyinModeHelp": { "message": "El pinyin se desvanece a medida que aprendes una palabra. Si tocas una palabra dos veces en una semana, vuelve a aparecer." }
 }

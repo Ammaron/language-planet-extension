@@ -438,5 +438,14 @@
   "aboutTitle": { "message": "About" },
   "openSourceLicenses": { "message": "Open-source licenses" },
   "licensesIntro": { "message": "Vocab Pass includes the following open-source software and data. Each notice is shown in full." },
-  "hanziDataProvenance": { "message": "Stroke data derived by the hanzi-writer-data project from Make Me a Hanzi (copyright 2016 Shaunak Kishore), which is derived from Arphic PL KaitiM GB and UKai (copyright 1999 Arphic Technology Co., Ltd.). Vocab Pass ships the character files unmodified." }
+  "hanziDataProvenance": { "message": "Stroke data derived by the hanzi-writer-data project from Make Me a Hanzi (copyright 2016 Shaunak Kishore), which is derived from Arphic PL KaitiM GB and UKai (copyright 1999 Arphic Technology Co., Ltd.). Vocab Pass ships the character files unmodified." },
+  "zhSaidLabel": { "message": "said" },
+  "zhNoReviewedAudio": { "message": "No reviewed audio yet" },
+  "zhAudioUnavailable": { "message": "Audio unavailable" },
+  "zhMeasureWordLabel": { "message": "Measure word" },
+  "pinyinModeTitle": { "message": "Pinyin above Chinese words" },
+  "pinyinModeAuto": { "message": "Fade as I learn (default)" },
+  "pinyinModeAlways": { "message": "Always show" },
+  "pinyinModePopupOnly": { "message": "Only in the word popup" },
+  "pinyinModeHelp": { "message": "Pinyin fades as you learn a word. Tapping a word twice in a week brings it back." }
 }

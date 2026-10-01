@@ -485,3 +485,75 @@ button.lp-phrase-word-row:hover {
   color: var(--lp-popup-translation);
   font-weight: 500;
 }
+
+/* ─── Chinese islands (English pages) ─────────────────────────
+   Glyph shapes follow the lang attribute: without it, 直骨角 render with
+   Japanese or Traditional forms on some systems. */
+/* Scoped to our own nodes: never restyle the host page's Chinese text. */
+.lp-zh-island:lang(zh-Hans),
+.lp-vocab-popup :lang(zh-Hans) {
+  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC",
+    "Noto Sans CJK SC", "Source Han Sans SC", "WenQuanYi Micro Hei", sans-serif;
+}
+
+.lp-zh-island {
+  font-style: normal;
+  font-weight: inherit;
+}
+
+.lp-zh-island ruby {
+  ruby-position: over;
+  ruby-align: center;
+}
+
+.lp-zh-island rt {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 0.55em;
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--lp-popup-hint, #6b7280);
+}
+
+.lp-zh-island ruby.lp-pinyin-faded rt {
+  opacity: 0.35;
+  transition: opacity 120ms ease-in-out;
+}
+
+.lp-zh-island:hover ruby.lp-pinyin-faded rt,
+.lp-zh-island:focus ruby.lp-pinyin-faded rt {
+  opacity: 1;
+}
+
+.lp-zh-popup .lp-zh-term {
+  font-size: 1.35em;
+}
+
+.lp-zh-reading {
+  margin: 2px 0 6px;
+  font-size: 13px;
+}
+
+.lp-zh-pinyin {
+  color: var(--lp-popup-text);
+}
+
+.lp-zh-said {
+  margin-left: 8px;
+  color: var(--lp-popup-hint);
+}
+
+.lp-zh-chunk {
+  margin: 6px 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--lp-popup-example-bg);
+}
+
+.lp-zh-chunk-text {
+  font-size: 18px;
+  color: var(--lp-popup-text);
+}
+
+.lp-zh-term-small {
+  font-size: 15px;
+}

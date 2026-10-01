@@ -1,5 +1,6 @@
 /* global browser */
-const DEFAULTS = { syncInterval: 60, extensionSourceLanguage: 'en', hanziWritingPracticeEnabled: true };
+const DEFAULTS = { syncInterval: 60, extensionSourceLanguage: 'en', hanziWritingPracticeEnabled: true, zhPinyinMode: 'auto' };
+const PINYIN_MODES = ['auto', 'always', 'popup'];
 
 function t(key, substitutions, fallback) {
   if (window.LangslyI18n) return window.LangslyI18n.t(key, substitutions, fallback);
@@ -15,6 +16,7 @@ const syncIntervalSlider = document.getElementById('sync-interval');
 const syncIntervalLabel = document.getElementById('sync-interval-label');
 const pageSourceLanguage = document.getElementById('page-source-language');
 const writingPracticeEnabled = document.getElementById('writing-practice-enabled');
+const zhPinyinModeSelect = document.getElementById('zh-pinyin-mode');
 const resetPreferencesBtn = document.getElementById('reset-preferences');
 const saveBtn = document.getElementById('save-btn');
 const saveStatus = document.getElementById('save-status');
@@ -41,7 +43,9 @@ function applyPreferenceValues({
   syncInterval = DEFAULTS.syncInterval,
   extensionSourceLanguage = DEFAULTS.extensionSourceLanguage,
   hanziWritingPracticeEnabled = DEFAULTS.hanziWritingPracticeEnabled,
+  zhPinyinMode = DEFAULTS.zhPinyinMode,
 }) {
+  zhPinyinModeSelect.value = PINYIN_MODES.includes(zhPinyinMode) ? zhPinyinMode : DEFAULTS.zhPinyinMode;
   syncIntervalSlider.value = syncInterval;
   writingPracticeEnabled.checked = hanziWritingPracticeEnabled !== false;
   syncIntervalLabel.textContent = formatMinutes(syncInterval);
@@ -50,16 +54,18 @@ function applyPreferenceValues({
 }
 
 async function loadSettings() {
-  const { syncInterval, extensionSourceLanguage, hanziWritingPracticeEnabled } = await browser.storage.local.get([
+  const { syncInterval, extensionSourceLanguage, hanziWritingPracticeEnabled, zhPinyinMode } = await browser.storage.local.get([
     'syncInterval',
     'extensionSourceLanguage',
     'hanziWritingPracticeEnabled',
+    'zhPinyinMode',
   ]);
 
   applyPreferenceValues({
     syncInterval: syncInterval || DEFAULTS.syncInterval,
     extensionSourceLanguage: extensionSourceLanguage || DEFAULTS.extensionSourceLanguage,
     hanziWritingPracticeEnabled: hanziWritingPracticeEnabled !== false,
+    zhPinyinMode: zhPinyinMode || DEFAULTS.zhPinyinMode,
   });
   await renderAccountState();
 }
@@ -98,6 +104,7 @@ saveBtn.addEventListener('click', async () => {
   const settings = {
     syncInterval: parseInt(syncIntervalSlider.value, 10),
     hanziWritingPracticeEnabled: writingPracticeEnabled.checked,
+    zhPinyinMode: PINYIN_MODES.includes(zhPinyinModeSelect.value) ? zhPinyinModeSelect.value : DEFAULTS.zhPinyinMode,
   };
 
   await browser.storage.local.set(settings);

@@ -198,13 +198,21 @@ const VocabPopup = (() => {
     }
   }
 
+  function isChineseLanguage(languageCode) {
+    const code = String(languageCode || '').toLowerCase().replace(/_/g, '-');
+    return code === 'zh' || code.startsWith('zh-');
+  }
+
   function speakFallback(translation, termLanguage) {
     const text = String(translation || '').trim();
+    // Chinese is reviewed audio only: browser voices may be zh-TW or Cantonese.
+    // With no language at all, speech would guess one, so stay silent.
+    if (!termLanguage || isChineseLanguage(termLanguage)) return false;
     if (!text || typeof SpeechSynthesisUtterance === 'undefined' || typeof speechSynthesis === 'undefined') return false;
 
     try {
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = termLanguage || 'es';
+      utterance.lang = termLanguage;
       speechSynthesis.speak(utterance);
       return true;
     } catch {
@@ -285,6 +293,7 @@ const VocabPopup = (() => {
       }
     }
 
+    if (isChineseLanguage(termLanguage)) return 'unavailable';
     speakFallback(translation, termLanguage);
     return 'fallback';
   }
@@ -365,7 +374,8 @@ const VocabPopup = (() => {
     const { vocabWords } = await browser.storage.local.get('vocabWords');
     if (!Array.isArray(vocabWords)) return null;
     const selected = vocabWords.find(w => String(w.id) === String(alternativeId));
-    if (!selected || !span.isConnected) return null;
+    // Chinese islands never switch to another word: only the validator chooses.
+    if (!selected || !span.isConnected || isChineseLanguage(selected.term_language)) return null;
 
     span.textContent = selected.term;
     const previous = privateData(span);
@@ -373,7 +383,7 @@ const VocabPopup = (() => {
       wordId: selected.id,
       translation: selected.term,
       baseTranslation: selected.translation || '',
-      termLanguage: selected.term_language || previous.termLanguage || 'es',
+      termLanguage: selected.term_language || previous.termLanguage || '',
       pos: selected.part_of_speech || '',
       hint: selected.context_hint || '',
       example: selected.example_sentence || '',
@@ -466,12 +476,14 @@ const VocabPopup = (() => {
       matched_text: state.matchedForm || state.original || '',
       match_offset: Number(state.disambigOffset) || 0,
       candidate_ids: payload.candidateIds || [],
-      source_language: state.sourceLanguage || state.disambigSourceLang || 'en',
-      target_language: state.targetLanguage || 'es',
+      source_language: state.sourceLanguage || state.disambigSourceLang || '',
+      target_language: state.targetLanguage || '',
       shown_word_id: payload.shownWordId || '',
       chosen_word_id: payload.chosenWordId || '',
       was_uncertain: state.uncertain === 'true',
-      method_used: state.method || 'spacy',
+      // The feedback API knows spacy/llm/fallback; validator results say "model:<version>".
+      method_used: ['spacy', 'llm', 'fallback'].includes(state.method) ? state.method
+        : String(state.method || '').startsWith('model:') ? 'llm' : 'fallback',
     }).catch(() => {});
   }
 
@@ -483,7 +495,7 @@ const VocabPopup = (() => {
       translation: word.term || '',
       baseTranslation: word.translation || '',
       matchedForm: (match && match.matchedForm) || (match && match.original) || '',
-      termLanguage: word.term_language || 'es',
+      termLanguage: word.term_language || '',
       pos: word.part_of_speech || '',
       hint: word.context_hint || '',
       example: word.example_sentence || '',
@@ -491,7 +503,7 @@ const VocabPopup = (() => {
       audioUrl: word.pronunciation_audio || '',
       hanziWriting: word.hanzi_writing || null,
       sourceLanguage: word.search_language || 'en',
-      targetLanguage: word.term_language || 'es',
+      targetLanguage: word.term_language || '',
       meaningKey: word.meaning_key || word._localMeaningKey || '',
       method: word._method || word._localMethod || 'local',
       disambigAlternatives: Array.isArray(word._alternatives) ? word._alternatives : [],
@@ -555,10 +567,155 @@ const VocabPopup = (() => {
     if (anchor.isConnected) positionPopup(anchor);
   }
 
+  function chineseEl(tag, className, text) {
+    const el = createEl(tag, className, text);
+    el.setAttribute('lang', 'zh-Hans');
+    return el;
+  }
+
+  function pinyinText(syllables) {
+    return Array.isArray(syllables) ? syllables.join(' ') : '';
+  }
+
+  function appendReading(parent, citation, spoken) {
+    parent.appendChild(createEl('span', 'lp-zh-pinyin', pinyinText(citation)));
+    if (Array.isArray(spoken) && spoken.length) {
+      parent.appendChild(createEl('span', 'lp-zh-said', `${t('zhSaidLabel', 'said')}: ${pinyinText(spoken)}`));
+    }
+  }
+
+  /**
+   * Chinese island popup (phrase-first). Every line comes from the reviewed
+   * profile synced for this word: hanzi, citation and spoken pinyin, the
+   * reviewed chunk directly under the word, one contrast line from another
+   * reviewed row, the measure word and the usage note. Reviewed audio only;
+   * never browser speech, never an alternative-word chooser.
+   */
+  async function showChineseWord(span, anchor = span) {
+    hide();
+    const expectedGeneration = popupGeneration;
+    const state = privateData(span);
+    const zh = state.zh || {};
+    const writingEnabled = await practiceEnabled();
+    if (expectedGeneration !== popupGeneration || !span.isConnected) return;
+
+    popupEl = document.createElement('div');
+    popupEl.className = 'lp-vocab-popup lp-zh-popup';
+    popupEl.setAttribute(LP_PROCESSED, 'true');
+
+    const header = createEl('div', 'lp-popup-header');
+    header.appendChild(createEl('span', 'lp-popup-original', state.original || ''));
+    header.appendChild(createEl('span', 'lp-popup-arrow', '→'));
+    header.appendChild(chineseEl('span', 'lp-popup-translation lp-zh-term', zh.term || ''));
+    if (zh.gloss) header.appendChild(createEl('span', 'lp-popup-base', `(${zh.gloss})`));
+    if (state.pos) header.appendChild(createEl('span', 'lp-popup-pos', state.pos));
+    popupEl.appendChild(header);
+
+    const reading = zh.reading || {};
+    const readingRow = createEl('div', 'lp-zh-reading');
+    appendReading(readingRow, reading.citation, reading.spoken);
+    popupEl.appendChild(readingRow);
+    if (reading.tone_note) popupEl.appendChild(createEl('div', 'lp-popup-hint', reading.tone_note));
+
+    // (v2) Phrase-first: the reviewed chunk sits directly under the word.
+    const chunk = zh.chunk;
+    if (chunk && chunk.zh) {
+      const chunkBox = createEl('div', 'lp-zh-chunk');
+      chunkBox.appendChild(chineseEl('div', 'lp-zh-chunk-text', chunk.zh));
+      const chunkReading = createEl('div', 'lp-zh-reading');
+      appendReading(chunkReading, chunk.citation, chunk.spoken);
+      chunkBox.appendChild(chunkReading);
+      if (chunk.en) chunkBox.appendChild(createEl('div', 'lp-popup-example-translation', `“${chunk.en}”`));
+      popupEl.appendChild(chunkBox);
+    }
+
+    if (zh.contrast && zh.contrast.term) {
+      const contrast = createEl('div', 'lp-popup-hint lp-zh-contrast');
+      contrast.appendChild(chineseEl('span', '', zh.contrast.term));
+      contrast.appendChild(document.createTextNode(` = ${zh.contrast.gloss || ''}`));
+      popupEl.appendChild(contrast);
+    }
+
+    const measureWords = zh.measureWords || {};
+    const items = Array.isArray(measureWords.items) ? measureWords.items : [];
+    const preferred = measureWords.countable === true ? (items.find(item => item && item.preferred) || items[0]) : null;
+    if (preferred && preferred.hanzi) {
+      const line = createEl('div', 'lp-popup-hint lp-zh-measure');
+      line.appendChild(createEl('span', '', `${t('zhMeasureWordLabel', 'Measure word')}: `));
+      line.appendChild(chineseEl('span', 'lp-zh-term-small', preferred.hanzi));
+      line.appendChild(createEl('span', 'lp-zh-pinyin', ` ${pinyinText(preferred.pinyin)}`));
+      if (preferred.example) {
+        line.appendChild(document.createTextNode(' · '));
+        line.appendChild(chineseEl('span', '', preferred.example));
+      }
+      popupEl.appendChild(line);
+    }
+
+    if (zh.usageNote) popupEl.appendChild(createEl('div', 'lp-popup-hint lp-zh-usage', zh.usageNote));
+
+    const actions = createEl('div', 'lp-popup-actions');
+    const listenBtn = createEl('button', 'lp-popup-listen');
+    listenBtn.type = 'button';
+    const showUnavailable = (key, fallback) => {
+      setListenButtonContent(listenBtn, t(key, fallback));
+      listenBtn.disabled = true;
+    };
+    if (String(state.audioUrl || '').trim()) {
+      applyListenAudioState(listenBtn, state.termLanguage);
+    } else {
+      showUnavailable('zhNoReviewedAudio', 'No reviewed audio yet');
+    }
+    listenBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (listenBtn.disabled) return;
+      listenBtn.disabled = true;
+      const result = await playAudioFromSpan(span, zh.term, state.termLanguage);
+      if (result === 'audio') listenBtn.disabled = false;
+      else showUnavailable('zhAudioUnavailable', 'Audio unavailable');
+    });
+    actions.appendChild(listenBtn);
+
+    // "Wrong meaning?" only reports to the reviewer; it never swaps words.
+    const wrongBtn = createEl('button', 'lp-popup-listen');
+    wrongBtn.type = 'button';
+    setActionButtonContent(wrongBtn, 'warning-circle', t('wrongMeaning', 'Wrong meaning?'));
+    wrongBtn.addEventListener('click', (e) => {
+      if (!e.isTrusted) return;
+      e.stopPropagation();
+      const shownWordId = String(state.wordId || '');
+      sendDisambigFeedback(span, { candidateIds: [shownWordId], shownWordId, chosenWordId: shownWordId });
+      setActionButtonContent(wrongBtn, 'check-circle', t('flagged', 'Flagged'));
+      wrongBtn.disabled = true;
+    });
+    actions.appendChild(wrongBtn);
+    popupEl.appendChild(actions);
+
+    const writing = globalThis.LangslyWritingPractice
+      ? globalThis.LangslyWritingPractice.eligibleReference(state, { enabled: writingEnabled })
+      : null;
+    if (writing) {
+      const writingRow = createEl('div', 'lp-popup-actions lp-writing-entry');
+      const practiceBtn = createEl('button', 'lp-popup-listen', t('practiceWritingButton', 'Practice writing'));
+      practiceBtn.type = 'button';
+      practiceBtn.addEventListener('click', (e) => {
+        if (!e.isTrusted) return;
+        e.stopPropagation();
+        openPractice(span, anchor || span, writing, practiceBtn);
+      });
+      writingRow.appendChild(practiceBtn);
+      popupEl.appendChild(writingRow);
+    }
+
+    mountPopup();
+    positionPopup(anchor || span);
+  }
+
+
   /**
    * Show popup for a single vocabulary word span.
    */
   async function showWord(span, anchor = span) {
+    if (privateData(span).zh) return showChineseWord(span, anchor);
     hide();
     const expectedGeneration = popupGeneration;
 
