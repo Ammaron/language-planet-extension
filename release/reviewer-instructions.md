@@ -1,6 +1,6 @@
-# AMO reviewer instructions — 0.2.5
+# AMO reviewer instructions — 0.2.6
 
-Version 0.2.5 is the current source candidate. These instructions do not establish a signed artifact, store submission, publication, or installed-device acceptance.
+Version 0.2.6 is the current source candidate. These instructions do not establish a signed artifact, store submission, publication, or installed-device acceptance.
 
 ## Build
 
@@ -8,7 +8,7 @@ Use Node.js 24.13.1 and follow `BUILDING.md`. `npm ci` installs the pinned valid
 
 ## Account connection
 
-1. Install the signed 0.2.5 build.
+1. Install the signed 0.2.6 build.
 2. Open the toolbar popup and select **Connect account**.
 3. The add-on opens its full-tab connection screen and requests a short-lived device code.
 4. Select **Open Langsly**. Sign in on the Langsly website if required; the `/extension-connect` route is preserved through login.

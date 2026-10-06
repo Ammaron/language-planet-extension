@@ -42,6 +42,15 @@
         <button id="close-connect" type="button" class="primary" data-i18n="connectClose">Close</button>
       </div>
 
+      <div id="subscription-view" class="state-view hidden" role="alert">
+        <h2 data-i18n="subscriptionRequiredTitle">Vocab Pass needs an active subscription ($5/month)</h2>
+        <p data-i18n="subscriptionRequiredBody">Highlighting is paused. Subscribe on Langsly, then select Sync now.</p>
+        <div class="actions">
+          <button id="subscribe-connect" type="button" class="primary" data-i18n="subscribeOnLangsly">Subscribe on Langsly</button>
+          <button id="recheck-connect" type="button" class="secondary" data-i18n="syncNow">Sync now</button>
+        </div>
+      </div>
+
       <div id="error-view" class="state-view hidden" role="alert">
         <h2 data-i18n="connectProblemTitle">Connection needs attention</h2>
         <p id="error-message"></p>

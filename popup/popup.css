@@ -361,6 +361,47 @@ body {
   color: color-mix(in srgb, var(--lp-warning) 70%, var(--lp-text-primary));
 }
 
+.subscription-required {
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--lp-danger) 26%, transparent);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--lp-danger) 10%, var(--lp-surface));
+  color: var(--lp-text-primary);
+}
+
+.subscription-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.subscription-body {
+  margin: 6px 0 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--lp-text-secondary, var(--lp-text-primary));
+}
+
+.subscribe-btn {
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 13px;
+  border: 0;
+  border-radius: 13px;
+  background: linear-gradient(135deg, var(--lp-button-primary-bg), var(--lp-accent-hover));
+  color: var(--lp-button-primary-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.subscribe-btn:hover,
+.subscribe-btn:focus-visible {
+  transform: translateY(-1px);
+}
+
 .summary-band {
   display: grid;
   grid-template-columns: 1fr 1fr;

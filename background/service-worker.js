@@ -178,6 +178,7 @@ async function clearTokens() {
     'extensionDeviceAuthorization',
     'extensionSourceLanguage',
     'pageTextLanguage',
+    'subscriptionRequired',
       ...cacheKeys,
     ]);
   });
@@ -630,6 +631,10 @@ async function syncVocabulary() {
     await _setSessionStorage({ syncStatus: 'failed' }, generation);
     return;
   }
+  if (await isSubscriptionRequiredResponse(res)) {
+    await applySubscriptionRequired(generation);
+    return;
+  }
   if (!res.ok) {
     await _setSessionStorage({ syncStatus: 'failed' }, generation);
     return;
@@ -646,6 +651,7 @@ async function syncVocabulary() {
     extensionSourceLanguage: sourceLanguage,
     pageTextLanguage: dominantPageTextLanguage(data.words, sourceLanguage),
     syncStatus: 'success',
+    subscriptionRequired: false,
   }, generation);
   if (!stored) return;
 
@@ -656,6 +662,44 @@ async function syncVocabulary() {
       browser.tabs.sendMessage(tab.id, { type: 'VOCAB_UPDATED', words: data.words }).catch(() => {});
     }
   }
+}
+
+// ─── Vocab Pass subscription (HTTP 402 from the paywall) ─────
+const SUBSCRIPTION_REQUIRED_CODE = 'vocab_pass_subscription_required';
+
+async function isSubscriptionRequiredResponse(res) {
+  if (!res || res.status !== 402) return false;
+  try {
+    const body = await res.clone().json();
+    return Boolean(body && body.code === SUBSCRIPTION_REQUIRED_CODE);
+  } catch {
+    return false;
+  }
+}
+
+async function getSubscribeUrl() {
+  const { frontendUrl } = await getConfig();
+  return `${frontendUrl}/vocab-pass/subscribe`;
+}
+
+// Stop page processing and drop cached vocabulary (as logout does for words)
+// while keeping the account connected, so the next sync can recheck access.
+async function applySubscriptionRequired(generation) {
+  if (generation !== authGeneration) return;
+  const all = await browser.storage.local.get(null);
+  const cacheKeys = Object.keys(all).filter(key => (
+    key.startsWith('phrase_') || key.startsWith('disambig_') || key.startsWith('contextual_')
+  ));
+  await _withSessionMutation(async () => {
+    if (generation !== authGeneration) return;
+    await browser.storage.local.remove(['vocabWords', 'wordCount', 'matchableWordCount', ...cacheKeys]);
+    await browser.storage.local.set({ syncStatus: 'subscription_required', subscriptionRequired: true });
+  });
+  if (generation !== authGeneration) return;
+  const tabs = await browser.tabs.query({ url: ['http://*/*', 'https://*/*'] });
+  await Promise.allSettled(tabs
+    .filter((tab) => tab.id)
+    .map((tab) => browser.tabs.sendMessage(tab.id, { type: 'SUBSCRIPTION_REQUIRED' })));
 }
 
 // ─── Encounter Flush ─────────────────────────────
@@ -865,6 +909,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
         'activeThemeName',
         'themeTokens',
         'themeSyncStatus',
+        'subscriptionRequired',
       ]);
       if (stored.refreshToken && (!stored.authToken || !isAccessTokenFresh(stored.authToken))) {
         await ensureAccessToken();
@@ -885,8 +930,11 @@ browser.runtime.onMessage.addListener((message, sender) => {
         activeThemeName,
         themeTokens,
         themeSyncStatus,
+        subscriptionRequired,
       } = stored;
       return {
+        subscriptionRequired: Boolean(subscriptionRequired),
+        subscribeUrl: await getSubscribeUrl(),
         // Keep the account connected through offline/server failures when a
         // durable refresh credential still exists. Only explicit logout or a
         // confirmed 401/403 refresh rejection clears the session.

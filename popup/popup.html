@@ -53,6 +53,13 @@
       <!-- Status banner (offline/stale) -->
       <div id="status-banner" class="status-banner hidden"></div>
 
+      <!-- Vocab Pass subscription needed (HTTP 402 from sync) -->
+      <div id="subscription-required" class="subscription-required hidden" role="alert">
+        <p class="subscription-title" data-i18n="subscriptionRequiredTitle"></p>
+        <p class="subscription-body" data-i18n="subscriptionRequiredBody"></p>
+        <button type="button" id="subscribe-btn" class="subscribe-btn" data-i18n="subscribeOnLangsly"></button>
+      </div>
+
       <div class="summary-band">
         <div class="summary-panel">
           <span class="summary-label" data-i18n="wordsLoaded"></span>
