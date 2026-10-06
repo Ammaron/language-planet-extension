@@ -1,10 +1,10 @@
 {
   "extName": {
-    "message": "Langsly - Vocab Pass",
+    "message": "English Vocabulary Builder · Langsly Vocab Pass",
     "description": "Extension name shown in the browser and extension stores."
   },
   "extDescription": {
-    "message": "Practice Spanish and English vocabulary while you browse. Sync Langsly words, review in context, and pause sites anytime.",
+    "message": "Read Spanish websites and see the English words you're learning in Langsly. Tap a word for its meaning and audio.",
     "description": "Extension description shown in the browser and extension stores."
   },
   "popupTitle": {
@@ -375,7 +375,7 @@
   "sensitiveProtectionLocked": { "message": "Sensitive-page protection is always on for authentication, banking, payment, government, health, legal, password-field, browser-internal, and Langsly pages." },
   "connectPageTitle": { "message": "Connect Vocab Pass" },
   "connectBrowserTitle": { "message": "Connect your browser" },
-  "connectBrowserIntro": { "message": "Sign in to Langsly, then approve this Firefox connection. We will finish setup automatically." },
+  "connectBrowserIntro": { "message": "Sign in to Langsly, then approve this browser connection. We will finish setup automatically." },
   "connectPreparing": { "message": "Preparing a secure connection..." },
   "connectCodeLabel": { "message": "Your connection code" },
   "connectComputerInstructions": { "message": "On your other device, open this link and enter the code:" },

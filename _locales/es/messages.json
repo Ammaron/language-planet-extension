@@ -1,10 +1,10 @@
 {
   "extName": {
-    "message": "Langsly - Vocab Pass",
+    "message": "Aprende vocabulario en inglés · Langsly Vocab Pass",
     "description": "Nombre de la extensión que se muestra en el navegador y en las tiendas de extensiones."
   },
   "extDescription": {
-    "message": "Practica vocabulario de espanol e ingles al navegar. Sincroniza palabras de Langsly, repasa en contexto y pausa sitios.",
+    "message": "Lee sitios en español y descubre las palabras en inglés que aprendes en Langsly. Toca una para ver su significado y audio.",
     "description": "Descripción de la extensión que se muestra en el navegador y en las tiendas de extensiones."
   },
   "popupTitle": {
@@ -14,10 +14,10 @@
     "message": "Langsly Vocab Pass"
   },
   "popupHeroTitle": {
-    "message": "Repasa palabras de espanol e ingles en las paginas que lees."
+    "message": "Repasa palabras de español e inglés en las páginas que lees."
   },
   "popupHeroSubtitle": {
-    "message": "Inicia sesion para sincronizar vocabulario de Langsly, ajustar el nivel y mantener el repaso activo solo donde quieras."
+    "message": "Inicia sesión para sincronizar vocabulario de Langsly, ajustar el nivel y mantener el repaso activo solo donde quieras."
   },
   "emailLabel": {
     "message": "Correo electrónico"
@@ -47,13 +47,13 @@
     "message": "Abriendo inicio de sesión seguro..."
   },
   "googleLoginFailed": {
-    "message": "No se pudo iniciar sesion con Google."
+    "message": "No se pudo iniciar sesión con Google."
   },
   "googleLoginCancelled": {
-    "message": "Se cancelo el inicio de sesion con Google."
+    "message": "Se canceló el inicio de sesión con Google."
   },
   "googleLoginUnavailable": {
-    "message": "El inicio de sesion con Google no esta disponible en este navegador."
+    "message": "El inicio de sesión con Google no está disponible en este navegador."
   },
   "loginFormNote": {
     "message": "Una ventana segura de Langsly te devuelve a Vocab Pass automáticamente."
@@ -223,7 +223,7 @@
     "message": "Aprende mientras navegas."
   },
   "bringDashboardVocabulary": {
-    "message": "Lleva vocabulario de espanol e ingles desde tu panel a las paginas que ya lees."
+    "message": "Lleva vocabulario de español e inglés desde tu panel a las páginas que ya lees."
   },
   "onboardingFeatureWordsInContext": {
     "message": "Las palabras aparecen en contexto mientras lees."
@@ -375,7 +375,7 @@
   "sensitiveProtectionLocked": { "message": "La protección de páginas sensibles siempre está activa para autenticación, banca, pagos, gobierno, salud, asuntos legales, campos de contraseña, páginas internas y páginas de Langsly." },
   "connectPageTitle": { "message": "Conectar Vocab Pass" },
   "connectBrowserTitle": { "message": "Conecta tu navegador" },
-  "connectBrowserIntro": { "message": "Inicia sesión en Langsly y aprueba la conexión. Terminaremos la configuración automáticamente." },
+  "connectBrowserIntro": { "message": "Inicia sesión en Langsly y aprueba la conexión de este navegador. Terminaremos la configuración automáticamente." },
   "connectPreparing": { "message": "Preparando una conexión segura..." },
   "connectCodeLabel": { "message": "Tu código de conexión" },
   "connectComputerInstructions": { "message": "En tu otro dispositivo, abre este enlace e introduce el código:" },

@@ -166,7 +166,7 @@ function updateStatus(status) {
     ? status.matchableWordCount
     : 0;
   if (sourceLanguageEl) {
-    sourceLanguageEl.textContent = String(status.extensionSourceLanguage || 'en').toUpperCase();
+    sourceLanguageEl.textContent = String(status.pageTextLanguage || status.extensionSourceLanguage || 'en').toUpperCase();
   }
   if (matchableWordCountEl) {
     matchableWordCountEl.textContent = matchableWordCount;

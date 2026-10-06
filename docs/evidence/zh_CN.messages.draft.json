@@ -1,6 +1,6 @@
 {
-  "extName": "Langsly - Vocab Pass",
-  "extDescription": "浏览网页时练习西班牙语和英语词汇。同步 Langsly 词汇，在语境中复习，并可随时暂停指定网站。",
+  "extName": "英语词汇积累 · Langsly Vocab Pass",
+  "extDescription": "在西班牙语网站上阅读时，看到你在 Langsly 学过的英语单词。点一下单词，即可查看释义和发音。",
   "popupTitle": "Langsly 扩展程序",
   "popupBrandName": "Langsly Vocab Pass",
   "popupHeroTitle": "在阅读的网页上复习西班牙语和英语词汇。",
@@ -141,7 +141,7 @@
   "sensitiveProtectionLocked": "身份验证、银行、支付、政府、医疗、法律、密码输入、浏览器内部页面以及 Langsly 页面始终受到敏感页面保护。",
   "connectPageTitle": "连接 Vocab Pass",
   "connectBrowserTitle": "连接你的浏览器",
-  "connectBrowserIntro": "登录 Langsly，然后批准此 Firefox 连接。设置会自动完成。",
+  "connectBrowserIntro": "登录 Langsly，然后批准此浏览器的连接。我们会自动完成设置。",
   "connectPreparing": "正在准备安全连接…",
   "connectCodeLabel": "你的连接代码",
   "connectComputerInstructions": "请在另一台设备上打开此链接并输入代码：",

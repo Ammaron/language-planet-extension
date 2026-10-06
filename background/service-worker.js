@@ -177,6 +177,7 @@ async function clearTokens() {
     'hanziPracticeQueue',
     'extensionDeviceAuthorization',
     'extensionSourceLanguage',
+    'pageTextLanguage',
       ...cacheKeys,
     ]);
   });
@@ -214,6 +215,22 @@ function countMatchableWords(words) {
     if (Array.isArray(word.source_forms) && word.source_forms.some(form => String(form || '').trim())) return true;
     return false;
   }).length;
+}
+
+// The language of the page text the synced words can match, e.g. "es" when
+// Spanish triggers reveal English terms. Shown in the popup instead of the
+// request parameter, which does not describe the triggers.
+function dominantPageTextLanguage(words, fallback) {
+  const counts = new Map();
+  for (const word of Array.isArray(words) ? words : []) {
+    const code = normalizeLanguageCode(word && word.search_language);
+    if (code) counts.set(code, (counts.get(code) || 0) + 1);
+  }
+  let best = '';
+  for (const [code, count] of counts) {
+    if (!best || count > counts.get(best)) best = code;
+  }
+  return best || fallback;
 }
 
 function getApiErrorMessage(data, fallback) {
@@ -265,7 +282,7 @@ async function completeLoginWithTokens(data, isCurrent = () => true) {
       'vocabWords', 'lastSync', 'wordCount', 'matchableWordCount',
       'pendingEncounters', 'hanziPracticeQueue', 'rotation_salt', 'difficulty',
       'themePacks', 'activeThemeSlug', 'activeThemeName', 'themeTokens',
-      'themeSyncStatus', 'extensionSourceLanguage', ...cacheKeys,
+      'themeSyncStatus', 'extensionSourceLanguage', 'pageTextLanguage', ...cacheKeys,
     ]);
     await browser.storage.local.set({ authToken: data.access, refreshToken: data.refresh });
     return authGeneration;
@@ -627,6 +644,7 @@ async function syncVocabulary() {
     wordCount: data.count,
     matchableWordCount,
     extensionSourceLanguage: sourceLanguage,
+    pageTextLanguage: dominantPageTextLanguage(data.words, sourceLanguage),
     syncStatus: 'success',
   }, generation);
   if (!stored) return;
@@ -840,6 +858,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
         'difficulty',
         'syncStatus',
         'extensionSourceLanguage',
+    'pageTextLanguage',
         'matchableWordCount',
         'themePacks',
         'activeThemeSlug',
@@ -859,6 +878,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
         difficulty,
         syncStatus,
         extensionSourceLanguage,
+        pageTextLanguage,
         matchableWordCount,
         themePacks,
         activeThemeSlug,
@@ -876,6 +896,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
         difficulty: difficulty || 'normal',
         syncStatus: syncStatus || 'unknown',
         extensionSourceLanguage: extensionSourceLanguage || DEFAULT_EXTENSION_SOURCE_LANGUAGE,
+        pageTextLanguage: pageTextLanguage || extensionSourceLanguage || DEFAULT_EXTENSION_SOURCE_LANGUAGE,
         matchableWordCount: Number.isFinite(matchableWordCount) ? matchableWordCount : 0,
         themePacks: Array.isArray(themePacks) ? themePacks : [],
         activeThemeSlug: activeThemeSlug || 'system',
