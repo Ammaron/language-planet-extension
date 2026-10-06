@@ -1,0 +1,124 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import test from 'node:test';
+import vm from 'node:vm';
+
+const readText = relativePath => readFile(new URL(`../${relativePath}`, import.meta.url), 'utf8');
+
+function extractFunction(source, name) {
+  const start = source.indexOf(`async function ${name}(`);
+  assert.ok(start >= 0, `${name} missing`);
+  let depth = 0;
+  for (let index = source.indexOf('{', start); index < source.length; index += 1) {
+    if (source[index] === '{') depth += 1;
+    if (source[index] === '}') {
+      depth -= 1;
+      if (depth === 0) return source.slice(start, index + 1);
+    }
+  }
+  throw new Error(`${name} not closed`);
+}
+
+async function loadSubscriptionHelpers() {
+  const worker = await readText('background/service-worker.js');
+  const storage = {
+    authToken: 'access', vocabWords: [{ id: 'w1' }], wordCount: 1, matchableWordCount: 1,
+    phrase_a: 1, disambig_b: 2, contextual_c: 3, difficulty: 'easy',
+  };
+  const sent = [];
+  const context = {
+    authGeneration: 7,
+    SUBSCRIPTION_REQUIRED_CODE: 'vocab_pass_subscription_required',
+    _withSessionMutation: task => task(),
+    browser: {
+      storage: { local: {
+        get: async () => ({ ...storage }),
+        remove: async keys => { for (const key of keys) delete storage[key]; },
+        set: async values => { Object.assign(storage, values); },
+      } },
+      tabs: {
+        query: async () => [{ id: 1 }, { id: 2 }, {}],
+        sendMessage: async (id, message) => { sent.push([id, message.type]); },
+      },
+    },
+  };
+  vm.createContext(context);
+  vm.runInContext(`${extractFunction(worker, 'isSubscriptionRequiredResponse')}
+${extractFunction(worker, 'applySubscriptionRequired')}
+this.isSubscriptionRequiredResponse = isSubscriptionRequiredResponse;
+this.applySubscriptionRequired = applySubscriptionRequired;`, context);
+  return { context, storage, sent };
+}
+
+const response = (status, body) => ({ status, clone: () => ({ json: async () => body }) });
+
+test('only a 402 with the subscription code counts as subscription required', async () => {
+  const { context } = await loadSubscriptionHelpers();
+  assert.equal(await context.isSubscriptionRequiredResponse(response(402, { code: 'vocab_pass_subscription_required' })), true);
+  assert.equal(await context.isSubscriptionRequiredResponse(response(402, { code: 'other' })), false);
+  assert.equal(await context.isSubscriptionRequiredResponse(response(403, { code: 'vocab_pass_subscription_required' })), false);
+  assert.equal(await context.isSubscriptionRequiredResponse(null), false);
+});
+
+test('subscription required clears vocabulary and caches, keeps the session, and stops every page', async () => {
+  const { context, storage, sent } = await loadSubscriptionHelpers();
+  await context.applySubscriptionRequired(7);
+  for (const key of ['vocabWords', 'wordCount', 'matchableWordCount', 'phrase_a', 'disambig_b', 'contextual_c']) {
+    assert.equal(key in storage, false, `${key} should be cleared`);
+  }
+  assert.equal(storage.authToken, 'access');
+  assert.equal(storage.difficulty, 'easy');
+  assert.equal(storage.subscriptionRequired, true);
+  assert.equal(storage.syncStatus, 'subscription_required');
+  assert.deepEqual(sent, [[1, 'SUBSCRIPTION_REQUIRED'], [2, 'SUBSCRIPTION_REQUIRED']]);
+});
+
+test('a stale generation never applies the subscription state', async () => {
+  const { context, storage, sent } = await loadSubscriptionHelpers();
+  await context.applySubscriptionRequired(6);
+  assert.ok(storage.vocabWords);
+  assert.equal(sent.length, 0);
+});
+
+test('sync rechecks access and clears the flag after a successful sync; logout clears it', async () => {
+  const worker = await readText('background/service-worker.js');
+  const sync = worker.slice(worker.indexOf('async function syncVocabulary()'), worker.indexOf('// ─── Vocab Pass subscription'));
+  assert.match(sync, /isSubscriptionRequiredResponse\(res\)[\s\S]{0,80}applySubscriptionRequired\(generation\)/);
+  assert.match(sync, /subscriptionRequired: false/);
+  const clear = worker.slice(worker.indexOf('async function clearTokens()'), worker.indexOf('async function broadcastAuthCleared()'));
+  assert.match(clear, /'subscriptionRequired'/);
+  assert.match(worker, /subscribeUrl: await getSubscribeUrl\(\)/);
+  assert.match(worker, /\$\{frontendUrl\}\/vocab-pass\/subscribe/);
+});
+
+test('content script stops page work on SUBSCRIPTION_REQUIRED and restarts on VOCAB_UPDATED', async () => {
+  const content = await readText('content/content.js');
+  assert.match(content, /message\.type === 'SUBSCRIPTION_REQUIRED'[\s\S]{0,200}stopDocumentWork\(\);[\s\S]{0,60}lifecycleState = 'unavailable'/);
+  assert.match(content, /message\.type === 'VOCAB_UPDATED'/);
+});
+
+test('popup, connect and options screens show the subscribe state with a Subscribe on Langsly button', async () => {
+  for (const [html, js, button] of [
+    ['popup/popup.html', 'popup/popup.js', 'subscribe-btn'],
+    ['popup/connect.html', 'popup/connect.js', 'subscribe-connect'],
+    ['popup/options.html', 'popup/options.js', 'subscribe-btn'],
+  ]) {
+    const markup = await readText(html);
+    const script = await readText(js);
+    assert.match(markup, /data-i18n="subscriptionRequiredTitle"/, html);
+    assert.match(markup, new RegExp(`id="${button}"[^>]*data-i18n="subscribeOnLangsly"`), html);
+    assert.match(script, /subscriptionRequired/, js);
+    assert.match(script, /tabs\.create\(\{ url(?:: subscribeUrl)? \}\)/, js);
+  }
+});
+
+test('subscription copy exists in English and Spanish and escapes the dollar sign', async () => {
+  const en = JSON.parse(await readText('_locales/en/messages.json'));
+  const es = JSON.parse(await readText('_locales/es/messages.json'));
+  assert.equal(en.subscriptionRequiredTitle.message, 'Vocab Pass needs an active subscription ($$5/month)');
+  assert.equal(en.subscribeOnLangsly.message, 'Subscribe on Langsly');
+  for (const key of ['subscriptionRequiredTitle', 'subscriptionRequiredBody', 'subscribeOnLangsly', 'statusSubscriptionRequired']) {
+    assert.equal(typeof es[key].message, 'string', key);
+  }
+  assert.match(es.subscriptionRequiredTitle.message, /\$\$5/);
+});

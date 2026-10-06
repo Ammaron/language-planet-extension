@@ -685,6 +685,13 @@ browser.runtime.onMessage.addListener((message) => {
     return { success: true };
   }
 
+  if (message.type === 'SUBSCRIPTION_REQUIRED') {
+    // Vocab Pass access lapsed: restore the page and wait for VOCAB_UPDATED.
+    stopDocumentWork();
+    lifecycleState = 'unavailable';
+    return { success: true };
+  }
+
   if (message.type === 'SITE_ACCESS_CHANGED') {
     if (message.enabled) {
       lifecycleGeneration += 1;

@@ -202,5 +202,9 @@
   "aboutTitle": "关于",
   "openSourceLicenses": "开源许可",
   "licensesIntro": "Vocab Pass 包含以下开源软件和数据。每份声明均完整显示。",
-  "hanziDataProvenance": "笔画数据由 hanzi-writer-data 项目基于 Make Me a Hanzi（版权所有 2016 Shaunak Kishore）整理，而后者源自 Arphic PL KaitiM GB 和 UKai（版权所有 1999 Arphic Technology Co., Ltd.）。Vocab Pass 按原样提供这些字符文件。"
+  "hanziDataProvenance": "笔画数据由 hanzi-writer-data 项目基于 Make Me a Hanzi（版权所有 2016 Shaunak Kishore）整理，而后者源自 Arphic PL KaitiM GB 和 UKai（版权所有 1999 Arphic Technology Co., Ltd.）。Vocab Pass 按原样提供这些字符文件。",
+  "subscriptionRequiredTitle": "Vocab Pass 需要有效订阅（每月 $$5）",
+  "subscriptionRequiredBody": "高亮显示已暂停。请在 Langsly 上订阅，然后选择“立即同步”。",
+  "subscribeOnLangsly": "在 Langsly 上订阅",
+  "statusSubscriptionRequired": "需要订阅"
 }

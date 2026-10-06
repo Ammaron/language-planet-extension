@@ -438,5 +438,9 @@
   "aboutTitle": { "message": "Acerca de" },
   "openSourceLicenses": { "message": "Licencias de código abierto" },
   "licensesIntro": { "message": "Vocab Pass incluye el siguiente software y datos de código abierto. Cada aviso se muestra completo." },
-  "hanziDataProvenance": { "message": "Datos de trazos derivados por el proyecto hanzi-writer-data a partir de Make Me a Hanzi (copyright 2016 Shaunak Kishore), que deriva de Arphic PL KaitiM GB y UKai (copyright 1999 Arphic Technology Co., Ltd.). Vocab Pass incluye los archivos de caracteres sin modificar." }
+  "hanziDataProvenance": { "message": "Datos de trazos derivados por el proyecto hanzi-writer-data a partir de Make Me a Hanzi (copyright 2016 Shaunak Kishore), que deriva de Arphic PL KaitiM GB y UKai (copyright 1999 Arphic Technology Co., Ltd.). Vocab Pass incluye los archivos de caracteres sin modificar." },
+  "subscriptionRequiredTitle": { "message": "Vocab Pass necesita una suscripción activa ($$5/mes)", "description": "Heading shown when the Vocab Pass subscription is missing or ended." },
+  "subscriptionRequiredBody": { "message": "El resaltado está en pausa. Suscríbete en Langsly y luego selecciona Sincronizar ahora.", "description": "Explains that page highlighting stopped until the learner subscribes." },
+  "subscribeOnLangsly": { "message": "Suscribirme en Langsly", "description": "Button that opens the Langsly subscription page in a new tab." },
+  "statusSubscriptionRequired": { "message": "Se necesita suscripción", "description": "Connection status tooltip when the subscription is missing." }
 }
