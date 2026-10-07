@@ -2,8 +2,8 @@
   "locale": "zh-Hans",
   "extension_locale": "zh_CN",
   "status": "draft_unreviewed",
-  "source_sha256": "003b13767ce80e4c74d9f129f28f87b237df86a6ac3decefd15a3eaa5a2b27e7",
-  "draft_sha256": "d5950f0273c9d73338af0323101bdc9967732e2f6f4329dba07584274b5e97cd",
+  "source_sha256": "b75ef22c26ebdadb1de6acefe444f520fcaa2c9787ff163f61727b6e52cee3fe",
+  "draft_sha256": "e58b5a1aae679eb998c921069d95bc68aaa8f4622af35276fc06bcf60c97f69f",
   "source": "_locales/en/messages.json",
   "draft": "docs/evidence/zh_CN.messages.draft.json"
 }

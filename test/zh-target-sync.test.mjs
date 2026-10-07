@@ -39,6 +39,10 @@ function harness(response, cached = [SPANISH, zhRow()]) {
   });
   vm.runInContext(sourceLanguage, context, { filename: 'source-language.js' });
   vm.runInContext(worker.slice(worker.indexOf('let authGeneration = 0;'), worker.indexOf('function _getSessionSnapshot()')), context);
+  // The sync records the dominant page-text language (Vocab Pass billing merge).
+  vm.runInContext(worker.slice(worker.indexOf('function normalizeLanguageCode('), worker.indexOf('async function getExtensionSourceLanguage(')), context);
+  const dominant = worker.indexOf('function dominantPageTextLanguage(');
+  vm.runInContext(worker.slice(dominant, worker.indexOf('\n}', dominant) + 2), context);
   vm.runInContext(worker.slice(worker.indexOf('async function failVocabularySync('), worker.indexOf('// ─── Encounter Flush')), context);
   return { state, requests, broadcasts, sync: () => vm.runInContext('syncVocabulary()', context) };
 }
