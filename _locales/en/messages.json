@@ -276,29 +276,75 @@
   "formAudioUnavailable": {
     "message": "Audio unavailable for this form"
   },
-  "grammarRelatedForm": { "message": "Related form within taught scope" },
-  "grammarIntroducedForm": { "message": "Introduced form" },
-  "grammarFeature_masculine": { "message": "masculine" },
-  "grammarFeature_feminine": { "message": "feminine" },
-  "grammarFeature_common": { "message": "common" },
-  "grammarFeature_not_applicable": { "message": "not applicable" },
-  "grammarFeature_singular": { "message": "singular" },
-  "grammarFeature_plural": { "message": "plural" },
-  "grammarFeature_invariant": { "message": "invariant" },
-  "grammarFeature_present": { "message": "present" },
-  "grammarFeature_past": { "message": "past" },
-  "grammarFeature_imperfect": { "message": "imperfect" },
-  "grammarFeature_future": { "message": "future" },
-  "grammarFeature_conditional": { "message": "conditional" },
-  "grammarFeature_indicative": { "message": "indicative" },
-  "grammarFeature_subjunctive": { "message": "subjunctive" },
-  "grammarFeature_imperative": { "message": "imperative" },
-  "grammarFeature_infinitive": { "message": "infinitive" },
-  "grammarFeature_participle": { "message": "participle" },
-  "grammarFeature_gerund": { "message": "gerund" },
-  "grammarFeature_positive": { "message": "positive" },
-  "grammarFeature_comparative": { "message": "comparative" },
-  "grammarFeature_superlative": { "message": "superlative" },
+  "grammarRelatedForm": {
+    "message": "Related form within taught scope"
+  },
+  "grammarIntroducedForm": {
+    "message": "Introduced form"
+  },
+  "grammarFeature_masculine": {
+    "message": "masculine"
+  },
+  "grammarFeature_feminine": {
+    "message": "feminine"
+  },
+  "grammarFeature_common": {
+    "message": "common"
+  },
+  "grammarFeature_not_applicable": {
+    "message": "not applicable"
+  },
+  "grammarFeature_singular": {
+    "message": "singular"
+  },
+  "grammarFeature_plural": {
+    "message": "plural"
+  },
+  "grammarFeature_invariant": {
+    "message": "invariant"
+  },
+  "grammarFeature_present": {
+    "message": "present"
+  },
+  "grammarFeature_past": {
+    "message": "past"
+  },
+  "grammarFeature_imperfect": {
+    "message": "imperfect"
+  },
+  "grammarFeature_future": {
+    "message": "future"
+  },
+  "grammarFeature_conditional": {
+    "message": "conditional"
+  },
+  "grammarFeature_indicative": {
+    "message": "indicative"
+  },
+  "grammarFeature_subjunctive": {
+    "message": "subjunctive"
+  },
+  "grammarFeature_imperative": {
+    "message": "imperative"
+  },
+  "grammarFeature_infinitive": {
+    "message": "infinitive"
+  },
+  "grammarFeature_participle": {
+    "message": "participle"
+  },
+  "grammarFeature_gerund": {
+    "message": "gerund"
+  },
+  "grammarFeature_positive": {
+    "message": "positive"
+  },
+  "grammarFeature_comparative": {
+    "message": "comparative"
+  },
+  "grammarFeature_superlative": {
+    "message": "superlative"
+  },
   "listenVoiceSpanish": {
     "message": "Escuchar (voz)"
   },
@@ -306,13 +352,13 @@
     "message": "Listen (voice)"
   },
   "noPronunciationTitleSpanish": {
-    "message": "No hay audio de pronunciaci\u00f3n disponible; se usar\u00e1 la voz del navegador"
+    "message": "No hay audio de pronunciación disponible; se usará la voz del navegador"
   },
   "noPronunciationTitleDefault": {
     "message": "No pronunciation audio available; using browser voice"
   },
   "playPronunciationTitleSpanish": {
-    "message": "Reproducir audio de pronunciaci\u00f3n"
+    "message": "Reproducir audio de pronunciación"
   },
   "playPronunciationTitleDefault": {
     "message": "Play pronunciation audio"
@@ -367,80 +413,257 @@
   "translationRequestFailed": {
     "message": "Translation request failed"
   },
-  "connectLangslyAccount": { "message": "Connect Langsly account" },
-  "deviceLoginOpening": { "message": "Opening secure connection..." },
-  "accountConnectionFailed": { "message": "Could not connect your Langsly account." },
-  "deviceLoginContinueInTab": { "message": "Continue on Langsly. Setup finishes automatically after approval." },
-  "advancedSettings": { "message": "Advanced settings" },
-  "sensitiveProtectionLocked": { "message": "Sensitive-page protection is always on for authentication, banking, payment, government, health, legal, password-field, browser-internal, and Langsly pages." },
-  "connectPageTitle": { "message": "Connect Vocab Pass" },
-  "connectBrowserTitle": { "message": "Connect your browser" },
-  "connectBrowserIntro": { "message": "Sign in to Langsly, then approve this browser connection. We will finish setup automatically." },
-  "connectPreparing": { "message": "Preparing a secure connection..." },
-  "connectCodeLabel": { "message": "Your connection code" },
-  "connectComputerInstructions": { "message": "On your other device, open this link and enter the code:" },
-  "connectCopyUrl": { "message": "Copy link" },
-  "connectUrlCopied": { "message": "Link copied." },
-  "connectUrlCopyFallback": { "message": "Press and hold the link to copy it." },
-  "accountSettingsTitle": { "message": "Langsly account" },
-  "accountConnected": { "message": "Connected to Langsly." },
-  "accountNotConnected": { "message": "Not connected to Langsly." },
-  "connectWaiting": { "message": "Continue on Langsly to sign in and approve. Connection finishes automatically." },
-  "connectOpenApproval": { "message": "Continue on Langsly" },
-  "connectCancel": { "message": "Cancel" },
-  "connectSuccessTitle": { "message": "Vocab Pass is connected" },
-  "connectSuccessBody": { "message": "Your vocabulary and settings are syncing. You can close this tab." },
-  "connectClose": { "message": "Open Vocab Pass" },
-  "connectProblemTitle": { "message": "Connection needs attention" },
-  "connectRetry": { "message": "Try again" },
-  "connectPrivacyTitle": { "message": "Before you approve" },
-  "connectPrivacyBody": { "message": "Vocab Pass automatically checks visible text on non-sensitive sites, syncs vocabulary, records domains and trusted interactions, and may send matched phrases or bounded visible sentence context to Langsly and OpenRouter. It does not send complete pages, form values, hidden text, or full URLs." },
-  "connectPrivacyLink": { "message": "Read Langsly's privacy policy" },
+  "connectLangslyAccount": {
+    "message": "Connect Langsly account"
+  },
+  "deviceLoginOpening": {
+    "message": "Opening secure connection..."
+  },
+  "accountConnectionFailed": {
+    "message": "Could not connect your Langsly account."
+  },
+  "deviceLoginContinueInTab": {
+    "message": "Continue on Langsly. Setup finishes automatically after approval."
+  },
+  "advancedSettings": {
+    "message": "Advanced settings"
+  },
+  "sensitiveProtectionLocked": {
+    "message": "Sensitive-page protection is always on for authentication, banking, payment, government, health, legal, password-field, browser-internal, and Langsly pages."
+  },
+  "connectPageTitle": {
+    "message": "Connect Vocab Pass"
+  },
+  "connectBrowserTitle": {
+    "message": "Connect your browser"
+  },
+  "connectBrowserIntro": {
+    "message": "Sign in to Langsly, then approve this browser connection. We will finish setup automatically."
+  },
+  "connectPreparing": {
+    "message": "Preparing a secure connection..."
+  },
+  "connectCodeLabel": {
+    "message": "Your connection code"
+  },
+  "connectComputerInstructions": {
+    "message": "On your other device, open this link and enter the code:"
+  },
+  "connectCopyUrl": {
+    "message": "Copy link"
+  },
+  "connectUrlCopied": {
+    "message": "Link copied."
+  },
+  "connectUrlCopyFallback": {
+    "message": "Press and hold the link to copy it."
+  },
+  "accountSettingsTitle": {
+    "message": "Langsly account"
+  },
+  "accountConnected": {
+    "message": "Connected to Langsly."
+  },
+  "accountNotConnected": {
+    "message": "Not connected to Langsly."
+  },
+  "connectWaiting": {
+    "message": "Continue on Langsly to sign in and approve. Connection finishes automatically."
+  },
+  "connectOpenApproval": {
+    "message": "Continue on Langsly"
+  },
+  "connectCancel": {
+    "message": "Cancel"
+  },
+  "connectSuccessTitle": {
+    "message": "Vocab Pass is connected"
+  },
+  "connectSuccessBody": {
+    "message": "Your vocabulary and settings are syncing. You can close this tab."
+  },
+  "connectClose": {
+    "message": "Open Vocab Pass"
+  },
+  "connectProblemTitle": {
+    "message": "Connection needs attention"
+  },
+  "connectRetry": {
+    "message": "Try again"
+  },
+  "connectPrivacyTitle": {
+    "message": "Before you approve"
+  },
+  "connectPrivacyBody": {
+    "message": "Vocab Pass automatically checks visible text on non-sensitive sites, syncs vocabulary, records domains and trusted interactions, and may send matched phrases or bounded visible sentence context to Langsly and OpenRouter. It does not send complete pages, form values, hidden text, or full URLs."
+  },
+  "connectPrivacyLink": {
+    "message": "Read Langsly's privacy policy"
+  },
   "systemThemeName": {
     "message": "System"
   },
-  "connectOtherDevice": { "message": "Use another device" },
-  "connectExpired": { "message": "This connection expired. Restart to continue with your signed-in account." },
-  "connectDenied": { "message": "Connection declined. You can start again when you are ready." },
-  "connectOffline": { "message": "Connection interrupted. We will retry automatically." },
-  "connectContinue": { "message": "Continue connection" },
-  "connectRestart": { "message": "Restart connection" },
-  "accountPending": { "message": "Setup unfinished. Continue to sign in and approve." },
-  "practiceWritingButton": { "message": "Practice writing" },
-  "practiceWritingTitle": { "message": "Practice writing" },
-  "writingModeTrace": { "message": "Trace" },
-  "writingModeWatch": { "message": "Watch" },
-  "writingModeWrite": { "message": "Write" },
-  "writingBackToWord": { "message": "Back to word" },
-  "writingClose": { "message": "Close" },
-  "writingPrevCharacter": { "message": "Previous character" },
-  "writingNextCharacter": { "message": "Next character" },
-  "writingHint": { "message": "Hint" },
-  "writingShowMe": { "message": "Show me" },
-  "writingRestart": { "message": "Start again" },
-  "writingPlay": { "message": "Play" },
-  "writingNextStroke": { "message": "Next stroke" },
-  "writingLoading": { "message": "Loading strokes…" },
-  "writingUnavailable": { "message": "Stroke data is unavailable right now." },
-  "writingRetry": { "message": "Retry" },
-  "writingUnsupported": { "message": "There is no reviewed stroke data for this character yet." },
-  "writingTraceReady": { "message": "Trace each stroke in order over the outline." },
-  "writingWriteReady": { "message": "Write the character from memory, one stroke at a time." },
-  "writingWatchReady": { "message": "Play the strokes, or step through them one at a time." },
-  "writingMistake": { "message": "Not quite. Try that stroke again." },
-  "writingBackwards": { "message": "That stroke went the wrong way. Try it again in the shown direction." },
-  "writingStrokeCancelled": { "message": "That stroke was interrupted. Draw it again." },
-  "writingComplete": { "message": "Well done. Try another step or the next character." },
-  "writingOrderNote": { "message": "Stroke order and direction follow the standard mainland order. Practice only; it never changes lessons or scores." },
-  "writingPracticeSettingsTitle": { "message": "Character writing" },
-  "writingPracticeSetting": { "message": "Show \"Practice writing\" on eligible Chinese words" },
-  "writingPracticeSettingHelp": { "message": "An optional button in the word popup. It never opens by itself and never changes lessons or scores." },
-  "aboutTitle": { "message": "About" },
-  "openSourceLicenses": { "message": "Open-source licenses" },
-  "licensesIntro": { "message": "Vocab Pass includes the following open-source software and data. Each notice is shown in full." },
-  "hanziDataProvenance": { "message": "Stroke data derived by the hanzi-writer-data project from Make Me a Hanzi (copyright 2016 Shaunak Kishore), which is derived from Arphic PL KaitiM GB and UKai (copyright 1999 Arphic Technology Co., Ltd.). Vocab Pass ships the character files unmodified." },
-  "subscriptionRequiredTitle": { "message": "Vocab Pass needs an active subscription ($$5/month)", "description": "Heading shown when the Vocab Pass subscription is missing or ended." },
-  "subscriptionRequiredBody": { "message": "Highlighting is paused. Subscribe on Langsly, then select Sync now.", "description": "Explains that page highlighting stopped until the learner subscribes." },
-  "subscribeOnLangsly": { "message": "Subscribe on Langsly", "description": "Button that opens the Langsly subscription page in a new tab." },
-  "statusSubscriptionRequired": { "message": "Subscription needed", "description": "Connection status tooltip when the subscription is missing." }
+  "connectOtherDevice": {
+    "message": "Use another device"
+  },
+  "connectExpired": {
+    "message": "This connection expired. Restart to continue with your signed-in account."
+  },
+  "connectDenied": {
+    "message": "Connection declined. You can start again when you are ready."
+  },
+  "connectOffline": {
+    "message": "Connection interrupted. We will retry automatically."
+  },
+  "connectContinue": {
+    "message": "Continue connection"
+  },
+  "connectRestart": {
+    "message": "Restart connection"
+  },
+  "accountPending": {
+    "message": "Setup unfinished. Continue to sign in and approve."
+  },
+  "practiceWritingButton": {
+    "message": "Practice writing"
+  },
+  "practiceWritingTitle": {
+    "message": "Practice writing"
+  },
+  "writingModeTrace": {
+    "message": "Trace"
+  },
+  "writingModeWatch": {
+    "message": "Watch"
+  },
+  "writingModeWrite": {
+    "message": "Write"
+  },
+  "writingBackToWord": {
+    "message": "Back to word"
+  },
+  "writingClose": {
+    "message": "Close"
+  },
+  "writingPrevCharacter": {
+    "message": "Previous character"
+  },
+  "writingNextCharacter": {
+    "message": "Next character"
+  },
+  "writingHint": {
+    "message": "Hint"
+  },
+  "writingShowMe": {
+    "message": "Show me"
+  },
+  "writingRestart": {
+    "message": "Start again"
+  },
+  "writingPlay": {
+    "message": "Play"
+  },
+  "writingNextStroke": {
+    "message": "Next stroke"
+  },
+  "writingLoading": {
+    "message": "Loading strokes…"
+  },
+  "writingUnavailable": {
+    "message": "Stroke data is unavailable right now."
+  },
+  "writingRetry": {
+    "message": "Retry"
+  },
+  "writingUnsupported": {
+    "message": "There is no reviewed stroke data for this character yet."
+  },
+  "writingTraceReady": {
+    "message": "Trace each stroke in order over the outline."
+  },
+  "writingWriteReady": {
+    "message": "Write the character from memory, one stroke at a time."
+  },
+  "writingWatchReady": {
+    "message": "Play the strokes, or step through them one at a time."
+  },
+  "writingMistake": {
+    "message": "Not quite. Try that stroke again."
+  },
+  "writingBackwards": {
+    "message": "That stroke went the wrong way. Try it again in the shown direction."
+  },
+  "writingStrokeCancelled": {
+    "message": "That stroke was interrupted. Draw it again."
+  },
+  "writingComplete": {
+    "message": "Well done. Try another step or the next character."
+  },
+  "writingOrderNote": {
+    "message": "Stroke order and direction follow the standard mainland order. Practice only; it never changes lessons or scores."
+  },
+  "writingPracticeSettingsTitle": {
+    "message": "Character writing"
+  },
+  "writingPracticeSetting": {
+    "message": "Show \"Practice writing\" on eligible Chinese words"
+  },
+  "writingPracticeSettingHelp": {
+    "message": "An optional button in the word popup. It never opens by itself and never changes lessons or scores."
+  },
+  "aboutTitle": {
+    "message": "About"
+  },
+  "openSourceLicenses": {
+    "message": "Open-source licenses"
+  },
+  "licensesIntro": {
+    "message": "Vocab Pass includes the following open-source software and data. Each notice is shown in full."
+  },
+  "hanziDataProvenance": {
+    "message": "Stroke data derived by the hanzi-writer-data project from Make Me a Hanzi (copyright 2016 Shaunak Kishore), which is derived from Arphic PL KaitiM GB and UKai (copyright 1999 Arphic Technology Co., Ltd.). Vocab Pass ships the character files unmodified."
+  },
+  "zhSaidLabel": {
+    "message": "said"
+  },
+  "zhNoReviewedAudio": {
+    "message": "No reviewed audio yet"
+  },
+  "zhAudioUnavailable": {
+    "message": "Audio unavailable"
+  },
+  "zhMeasureWordLabel": {
+    "message": "Measure word"
+  },
+  "pinyinModeTitle": {
+    "message": "Pinyin above Chinese words"
+  },
+  "pinyinModeAuto": {
+    "message": "Fade as I learn (default)"
+  },
+  "pinyinModeAlways": {
+    "message": "Always show"
+  },
+  "pinyinModePopupOnly": {
+    "message": "Only in the word popup"
+  },
+  "pinyinModeHelp": {
+    "message": "Pinyin fades as you learn a word. Tapping a word twice in a week brings it back."
+  },
+  "subscriptionRequiredTitle": {
+    "message": "Vocab Pass needs an active subscription ($$5/month)",
+    "description": "Heading shown when the Vocab Pass subscription is missing or ended."
+  },
+  "subscriptionRequiredBody": {
+    "message": "Highlighting is paused. Subscribe on Langsly, then select Sync now.",
+    "description": "Explains that page highlighting stopped until the learner subscribes."
+  },
+  "subscribeOnLangsly": {
+    "message": "Subscribe on Langsly",
+    "description": "Button that opens the Langsly subscription page in a new tab."
+  },
+  "statusSubscriptionRequired": {
+    "message": "Subscription needed",
+    "description": "Connection status tooltip when the subscription is missing."
+  }
 }

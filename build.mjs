@@ -11,7 +11,8 @@ const firefoxDir = join(dist, 'firefox');
 const fixedDate = new Date('1980-01-01T00:00:00Z');
 
 const runtimeFiles = [
-  'vendor/browser-polyfill.min.js', 'shared/i18n.js', 'background/device-connection.js', 'content/connection-bridge.js', 'background/theme-utils.js', 'background/encounter-coordinator.js', 'background/service-worker.js',
+  'vendor/browser-polyfill.min.js', 'shared/i18n.js', 'shared/source-language.js',
+  'background/device-connection.js', 'content/connection-bridge.js', 'background/theme-utils.js', 'background/encounter-coordinator.js', 'background/service-worker.js',
   'background/hanzi-practice.js',
   'content/request-coordinator.js', 'content/grammar-rules.js', 'content/matcher.js', 'content/writing-practice.js', 'content/popup.js', 'content/content.js', 'content/content.css',
   'popup/popup.html', 'popup/popup.js', 'popup/popup.css',
@@ -106,7 +107,7 @@ await copyRuntime(chromeDir); await copyRuntime(firefoxDir);
 await writeFile(join(chromeDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 
 const firefoxManifest = structuredClone(manifest);
-firefoxManifest.background = { scripts: ['vendor/browser-polyfill.min.js', 'shared/i18n.js', 'background/theme-utils.js', 'background/encounter-coordinator.js', 'background/device-connection.js', 'background/hanzi-practice.js', 'background/service-worker.js'] };
+firefoxManifest.background = { scripts: ['vendor/browser-polyfill.min.js', 'shared/i18n.js', 'shared/source-language.js', 'background/theme-utils.js', 'background/encounter-coordinator.js', 'background/device-connection.js', 'background/hanzi-practice.js', 'background/service-worker.js'] };
 firefoxManifest.browser_specific_settings = {
   gecko: {
     id: 'vocabpass@languageplanet.app',

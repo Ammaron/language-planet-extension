@@ -14,11 +14,22 @@ class TrieNode {
 }
 
 class VocabMatcher {
+  // English words that count a following noun ("three books", "several books").
+  static QUANTITY_WORDS = new Set([
+    'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+    'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty',
+    'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety',
+    'hundred', 'thousand', 'million', 'billion', 'dozen',
+    'several', 'many', 'few', 'both', 'couple', 'pair', 'multiple', 'numerous',
+  ]);
+
   constructor(words, options = {}) {
     this.root = new TrieNode();
     this.wordMap = new Map(); // lowercaseKey -> VocabWord[]
     this.wordsById = new Map(words.map(word => [String(word.id), word]));
     this.rotationSalt = options.rotationSalt || '';
+    this.chineseSegmenter = typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function'
+      ? new Intl.Segmenter('zh-Hans', { granularity: 'word' }) : null;
     this.buildTrie(words);
     this.buildFailureLinks();
   }
@@ -30,13 +41,25 @@ class VocabMatcher {
 
     for (const word of words) {
       const keys = new Set();
+      if (this.isChineseTarget(word)) {
+        // Chinese targets: the reviewed profile triggers only (synced as
+        // source_forms). Never the gloss, never generated English forms.
+        const authored = (Array.isArray(word.source_forms) ? word.source_forms : [])
+          .map(form => this.normalizeKey(form)).filter(Boolean);
+        if (authored.some(form => this.isSlashSeparatedGloss(form))) continue;
+        for (const key of authored) this.insertWord(key, word);
+        continue;
+      }
       const explicit = Array.isArray(word.source_forms) ? word.source_forms : [];
       if (explicit.some(form => this.isSlashSeparatedGloss(form))) continue;
       const authored = explicit.map(form => this.normalizeKey(form)).filter(Boolean);
+      // Chinese page replacement requires reviewed exact Source Forms. Never
+      // turn a translated display gloss into a runtime page trigger.
+      if (this.isChineseSource(word) && authored.length === 0) continue;
       const effective = Array.isArray(word.effective_runtime_triggers)
         ? word.effective_runtime_triggers : null;
       if (effective || authored.length > 0) {
-        const triggers = effective || authored;
+        const triggers = this.isChineseSource(word) ? authored : (effective || authored);
         if (triggers.some(form => this.isSlashSeparatedGloss(form))) continue;
         for (const form of triggers) keys.add(this.normalizeKey(form));
       } else {
@@ -137,14 +160,30 @@ class VocabMatcher {
       }
     }
 
-    const resolved = this.postProcess(rawMatches, text);
+    const resolved = this.withoutCountedChineseNouns(this.postProcess(rawMatches, text), text);
     return this.groupAdjacentMatches(this.expandGrammarMatches(resolved, text), text);
+  }
+
+  // "three books" needs a measure word (三本书); an island would prime 三书.
+  // Skip a Chinese noun right after an English number or quantity word.
+  withoutCountedChineseNouns(matches, text) {
+    return matches.filter(match => {
+      if (!this.isChineseTarget(match.word)) return true;
+      if (String(match.word.part_of_speech || '').toLowerCase() !== 'noun') return true;
+      const before = text.slice(Math.max(0, match.start - 40), match.start).toLowerCase();
+      if (before.length > 0 && !/\s$/u.test(before)) return true;
+      const tokens = before.match(/[\p{L}\p{N}][\p{L}\p{N}'’,.-]*/gu) || [];
+      let previous = (tokens[tokens.length - 1] || '').replace(/[,.]+$/u, '');
+      if (previous === 'of' && tokens.length > 1) previous = tokens[tokens.length - 2];
+      return !(VocabMatcher.QUANTITY_WORDS.has(previous) || /^\d[\d,.]*$/u.test(previous));
+    });
   }
 
   expandGrammarMatches(matches, text) {
     const replaced = new Set();
     const expanded = [];
     for (const match of matches) {
+      if (this.isChineseTarget(match.word)) continue;
       if (match.word.validation_version !== 3 || !['noun', 'adjective'].includes(match.word.part_of_speech)) continue;
       const source = match.word.search_language;
       const prefix = text.slice(0, match.start);
@@ -173,7 +212,11 @@ class VocabMatcher {
   }
 
   postProcess(rawMatches, text) {
-    const bounded = rawMatches.filter(m => this.isWordBoundary(text, m.start, m.end - m.start, m.entry.key));
+    const needsChineseBoundaries = rawMatches.some(m => this.isChineseSource(m.entry.word));
+    const chineseBoundaries = needsChineseBoundaries ? this.getChineseBoundaries(text) : null;
+    const bounded = rawMatches.filter(m => this.isChineseSource(m.entry.word)
+      ? !!chineseBoundaries && chineseBoundaries.has(m.start) && chineseBoundaries.has(m.end)
+      : this.isWordBoundary(text, m.start, m.end - m.start, m.entry.key));
 
     // Prefer longer multi-word source keys over overlapping single words.
     bounded.sort((a, b) => (
@@ -223,6 +266,12 @@ class VocabMatcher {
     if (!isGlueGap) return { singles: matches, phrases: [] };
 
     const sourceLang = this.detectSourceLanguage(matches);
+    // Chinese occurrences have authored Source Forms and are validated one at
+    // a time. The generic English/Spanish glue-word phrase builder cannot
+    // establish that adjacent Chinese segments form a reviewed replacement.
+    if (sourceLang === 'zh') return { singles: matches, phrases: [] };
+    // Chinese targets are islands, never bridges: singles only, never composed.
+    if (matches.some(match => this.isChineseTarget(match.word))) return { singles: matches, phrases: [] };
 
     const groups = [];
     let currentGroup = [matches[0]];
@@ -285,6 +334,26 @@ class VocabMatcher {
       && String(word.part_of_speech || '').toLowerCase() === 'verb'
       && !/\s/.test(String(match.original || match.matchedForm || '').trim())
       && !/\s/.test(String(word.term || '').trim());
+  }
+
+  isChineseTarget(word) {
+    const code = String(word && word.term_language || '').toLowerCase().replace(/_/g, '-');
+    return code === 'zh' || code.startsWith('zh-');
+  }
+
+  isChineseSource(word) {
+    const code = String(word && word.search_language || '').toLowerCase().replace(/_/g, '-');
+    return code === 'zh' || code.startsWith('zh-');
+  }
+
+  getChineseBoundaries(text) {
+    if (!this.chineseSegmenter) return null;
+    const boundaries = new Set([0, text.length]);
+    for (const item of this.chineseSegmenter.segment(text)) {
+      boundaries.add(item.index);
+      boundaries.add(item.index + item.segment.length);
+    }
+    return boundaries;
   }
 
   isWordBoundary(text, start, length, key = '') {
@@ -413,6 +482,7 @@ class VocabMatcher {
   }
 
   _attachContextualRewrite(chosen, candidates, sentence, offset) {
+    if (this.isChineseTarget(chosen)) return;
     const sourceLanguage = String(chosen.search_language || '').toLowerCase();
     const targetTerm = String(chosen.term || '').trim();
     if (!sourceLanguage.startsWith('es')
@@ -471,7 +541,7 @@ class VocabMatcher {
 
   _extractSentence(text, position) {
     let start = position;
-    while (start > 0 && !/[.!?\n]/.test(text[start - 1])) {
+    while (start > 0 && !/[.!?。！？\n]/.test(text[start - 1])) {
       start--;
     }
     while (start < position && /\s/.test(text[start])) {
@@ -479,7 +549,7 @@ class VocabMatcher {
     }
 
     let end = position;
-    while (end < text.length && !/[.!?\n]/.test(text[end])) {
+    while (end < text.length && !/[.!?。！？\n]/.test(text[end])) {
       end++;
     }
     if (end < text.length) end++;

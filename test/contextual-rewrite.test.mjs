@@ -22,8 +22,10 @@ test('contextual rewrites share the bounded versioned validation path', () => {
 });
 
 test('contextual cache keys include pair, offset, and candidate IDs and clear on logout', () => {
-  assert.match(workerSource, /item\.source_language \|\| 'es'/);
-  assert.match(workerSource, /item\.target_language \|\| 'en'/);
+  // The pair is part of the key, with no Spanish default (zh-target plan: fix the defaults).
+  assert.match(workerSource, /item\.source_language \|\| ''/);
+  assert.match(workerSource, /item\.target_language \|\| ''/);
+  assert.doesNotMatch(workerSource, /item\.source_language \|\| 'es'/);
   assert.match(workerSource, /item\.match_offset \|\| 0/);
   assert.match(workerSource, /candidatesSorted/);
   assert.match(workerSource, /key\.startsWith\('contextual_'\)/);

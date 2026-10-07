@@ -199,6 +199,13 @@ function updateStatus(status) {
     statusBanner.className = 'status-banner warning';
     statusBanner.classList.remove('hidden');
   }
+  if (statusBanner && ['unsupported_locale', 'source_unavailable'].includes(status.syncStatus)) {
+    statusBanner.textContent = status.syncStatus === 'unsupported_locale'
+      ? t('sourceLanguageUnsupported', 'This page language is not supported. Choose a supported language in Langsly.')
+      : t('sourceLanguageUnavailable', 'Reviewed vocabulary is not yet available for this page language and course.');
+    statusBanner.className = 'status-banner warning';
+    statusBanner.classList.remove('hidden');
+  }
 
   // Vocab Pass needs an active subscription (sync answered 402).
   subscribeUrl = status.subscribeUrl || '';
@@ -227,7 +234,7 @@ function updateStatus(status) {
     } else if (status.syncStatus === 'subscription_required') {
       statusIndicator.className = 'status-dot error';
       statusIndicator.title = t('statusSubscriptionRequired', 'Subscription needed');
-    } else if (status.syncStatus === 'failed') {
+    } else if (['failed', 'unsupported_locale', 'source_unavailable'].includes(status.syncStatus)) {
       statusIndicator.className = 'status-dot error';
       statusIndicator.title = t('statusSyncFailed', 'Sync failed');
     } else {

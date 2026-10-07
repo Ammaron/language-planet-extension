@@ -13,7 +13,7 @@ function plain(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-function createMatcher(words, grammarOverrides = {}) {
+function createMatcher(words, grammarOverrides = {}, intl = Intl) {
   const sandbox = {
     window: {
       GrammarRules: {
@@ -33,12 +33,64 @@ function createMatcher(words, grammarOverrides = {}) {
     Array,
     Object,
     RegExp,
+    Intl: intl,
   };
 
   vm.runInNewContext(matcherSource, sandbox, { filename: 'matcher.js' });
   const VocabMatcher = sandbox.window.VocabMatcher;
   return new VocabMatcher(words, { rotationSalt: 'test-salt' });
 }
+
+test('Chinese page matches require segment boundaries and leave partial compounds unchanged', () => {
+  const words = [
+    { id: 'hello', term: 'hola', translation: '你好', search_language: 'zh', term_language: 'es', source_forms: ['你好'] },
+    { id: 'city', term: 'Shanghái', translation: '上海', search_language: 'zh', term_language: 'es', source_forms: ['上海'] },
+    { id: 'long', term: 'hola mundo', translation: '你好世界', search_language: 'zh', term_language: 'es', source_forms: ['你好世界'] },
+  ];
+  const engine = createMatcher(words);
+  assert.deepEqual(plain(engine.findMatches('你好，世界').singles.map(match => match.word.id)), ['hello']);
+  assert.deepEqual(plain(engine.findMatches('你好世界').singles.map(match => match.word.id)), ['long']);
+  assert.equal(engine.findMatches('上海市').singles.length, 0);
+  assert.equal(createMatcher(words, {}, {}).findMatches('你好').singles.length, 0);
+});
+
+test('Chinese page matching uses authored source forms across punctuation, not a display gloss', () => {
+  const engine = createMatcher([
+    { id: 'reviewed', term: 'hola', translation: '问候', search_language: 'zh', term_language: 'es', source_forms: ['你好'] },
+    { id: 'gloss-only', term: 'saludo', translation: '问候', search_language: 'zh', term_language: 'es', source_forms: [] },
+  ]);
+  assert.deepEqual(plain(engine.findMatches('（你好）！问候').singles.map(match => match.word.id)), ['reviewed']);
+  assert.equal(engine.findMatches('问候').singles.length, 0);
+  const mismatchedRuntime = createMatcher([{
+    id: 'reviewed', term: 'hola', translation: '你好', search_language: 'zh',
+    term_language: 'es', source_forms: ['你好'], effective_runtime_triggers: ['世界'],
+  }]);
+  assert.deepEqual(plain(mismatchedRuntime.findMatches('你好').singles.map(match => match.word.id)), ['reviewed']);
+  assert.equal(mismatchedRuntime.findMatches('世界').singles.length, 0);
+});
+
+test('Chinese adjacent source forms stay separate instead of forming an unreviewed phrase', () => {
+  const matcher = createMatcher([
+    { id: 'hello', term: 'hola', translation: '你好', search_language: 'zh', term_language: 'es', source_forms: ['你好'] },
+    { id: 'world', term: 'mundo', translation: '世界', search_language: 'zh', term_language: 'es', source_forms: ['世界'] },
+  ], { isGlueGap: () => true });
+  const result = matcher.findMatches('你好世界');
+  assert.deepEqual(plain(result.singles.map(match => match.original)), ['你好', '世界']);
+  assert.equal(result.phrases.length, 0);
+});
+
+test('Chinese sentence context stops at Chinese terminal punctuation', () => {
+  const matcher = createMatcher([]);
+  const text = '前面。请说你好，朋友！后面。';
+  assert.deepEqual(plain(matcher._extractSentence(text, text.indexOf('你好'))), {
+    sentence: '请说你好，朋友！',
+    offset: 2,
+  });
+  assert.deepEqual(plain(matcher._extractSentence(text, text.indexOf('后面'))), {
+    sentence: '后面。',
+    offset: 0,
+  });
+});
 
 test('v3 proposes a complete copular phrase without introducing content vocabulary', () => {
   const words = [
