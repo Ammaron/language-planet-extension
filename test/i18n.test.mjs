@@ -17,10 +17,10 @@ test('manifest uses Chrome i18n metadata and localized store copy', async () => 
   assert.equal(manifest.default_locale, 'en');
   assert.equal(manifest.name, '__MSG_extName__');
   assert.equal(manifest.description, '__MSG_extDescription__');
-  assert.equal(messages.extName.message, 'Langsly - Vocab Pass');
+  assert.equal(messages.extName.message, 'English Vocabulary Builder · Langsly Vocab Pass');
   assert.equal(
     messages.extDescription.message,
-    'Practice Spanish and English vocabulary while you browse. Sync Langsly words, review in context, and pause sites anytime.',
+    "Read Spanish websites and see the English words you're learning in Langsly. Tap a word for its meaning and audio.",
   );
   assert.ok(messages.extDescription.message.length <= 132);
 });
@@ -30,15 +30,15 @@ test('Spanish locale defines every English message key', async () => {
   const spanishMessages = await readJson('_locales/es/messages.json');
 
   assert.deepEqual(Object.keys(spanishMessages).sort(), Object.keys(englishMessages).sort());
-  assert.equal(spanishMessages.extName.message, 'Langsly - Vocab Pass');
+  assert.equal(spanishMessages.extName.message, 'Aprende vocabulario en inglés · Langsly Vocab Pass');
   assert.equal(
     spanishMessages.extDescription.message,
-    'Practica vocabulario de espanol e ingles al navegar. Sincroniza palabras de Langsly, repasa en contexto y pausa sitios.',
+    'Lee sitios en español y descubre las palabras en inglés que aprendes en Langsly. Toca una para ver su significado y audio.',
   );
   assert.ok(spanishMessages.extDescription.message.length <= 132);
   assert.equal(
     spanishMessages.popupHeroTitle.message,
-    'Repasa palabras de espanol e ingles en las paginas que lees.',
+    'Repasa palabras de español e inglés en las páginas que lees.',
   );
 });
 

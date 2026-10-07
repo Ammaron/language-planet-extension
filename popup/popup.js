@@ -19,6 +19,9 @@ const statusBanner = document.getElementById('status-banner');
 const themeRow = document.getElementById('theme-row');
 const themeSelect = document.getElementById('theme-select');
 const themeStatus = document.getElementById('theme-status');
+const subscriptionRequiredEl = document.getElementById('subscription-required');
+const subscribeBtn = document.getElementById('subscribe-btn');
+let subscribeUrl = '';
 const LEGACY_FRONTEND_URL = 'http://localhost:3000';
 const DEFAULT_FRONTEND_URL = 'https://langsly.com';
 
@@ -166,7 +169,7 @@ function updateStatus(status) {
     ? status.matchableWordCount
     : 0;
   if (sourceLanguageEl) {
-    sourceLanguageEl.textContent = String(status.extensionSourceLanguage || 'en').toUpperCase();
+    sourceLanguageEl.textContent = String(status.pageTextLanguage || status.extensionSourceLanguage || 'en').toUpperCase();
   }
   if (matchableWordCountEl) {
     matchableWordCountEl.textContent = matchableWordCount;
@@ -197,6 +200,12 @@ function updateStatus(status) {
     statusBanner.classList.remove('hidden');
   }
 
+  // Vocab Pass needs an active subscription (sync answered 402).
+  subscribeUrl = status.subscribeUrl || '';
+  if (subscriptionRequiredEl) {
+    subscriptionRequiredEl.classList.toggle('hidden', !status.subscriptionRequired);
+  }
+
   // Update difficulty buttons
   diffBtns.forEach(btn => {
     btn.classList.toggle('active', btn.dataset.level === (status.difficulty || 'normal'));
@@ -215,6 +224,9 @@ function updateStatus(status) {
         statusBanner.className = 'status-banner offline';
         statusBanner.classList.remove('hidden');
       }
+    } else if (status.syncStatus === 'subscription_required') {
+      statusIndicator.className = 'status-dot error';
+      statusIndicator.title = t('statusSubscriptionRequired', 'Subscription needed');
     } else if (status.syncStatus === 'failed') {
       statusIndicator.className = 'status-dot error';
       statusIndicator.title = t('statusSyncFailed', 'Sync failed');
@@ -324,6 +336,18 @@ siteToggle.addEventListener('change', async () => {
   }
 });
 
+// ─── Subscribe ───────────────────────────────
+if (subscribeBtn) {
+  subscribeBtn.addEventListener('click', async () => {
+    let url = subscribeUrl;
+    if (!url) {
+      const { frontendUrl } = await browser.storage.local.get('frontendUrl');
+      url = `${resolveFrontendUrl(frontendUrl)}/vocab-pass/subscribe`;
+    }
+    browser.tabs.create({ url });
+  });
+}
+
 // ─── Open Dashboard ──────────────────────────
 openVocabpass.addEventListener('click', async (e) => {
   e.preventDefault();
@@ -340,6 +364,7 @@ document.getElementById('login-open-settings').addEventListener('click', () => b
 browser.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
   if (changes.authToken?.newValue) void renderLoggedInState();
+  else if (changes.subscriptionRequired) void browser.runtime.sendMessage({ type: 'GET_STATUS' }).then(status => { if (status.isLoggedIn) updateStatus(status); });
   else if (changes.authToken || changes.extensionDeviceAuthorization) void browser.runtime.sendMessage({ type: 'GET_STATUS' }).then(status => { if (!status.isLoggedIn) showLogin(); });
 });
 

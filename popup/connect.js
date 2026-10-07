@@ -1,5 +1,5 @@
 /* global browser */
-const views = Object.fromEntries(['loading', 'pending', 'success', 'error'].map(name => [name, document.getElementById(`${name}-view`)]));
+const views = Object.fromEntries(['loading', 'pending', 'success', 'subscription', 'error'].map(name => [name, document.getElementById(`${name}-view`)]));
 const t = (key, fallback) => window.LangslyI18n?.t(key, fallback) || fallback;
 const send = (type, extra = {}) => browser.runtime.sendMessage({ type, ...extra });
 let state;
@@ -7,9 +7,15 @@ let busy = false;
 function show(name) {
   Object.entries(views).forEach(([key, node]) => node.classList.toggle('hidden', key !== name));
 }
+let subscribeUrl = '';
+async function showConnected() {
+  const account = await send('GET_STATUS');
+  subscribeUrl = account?.subscribeUrl || subscribeUrl;
+  show(account?.subscriptionRequired ? 'subscription' : 'success');
+}
 function render(next) {
   state = next;
-  if (state.status === 'connected') { show('success'); return; }
+  if (state.status === 'connected') { void showConnected(); return; }
   if (['expired', 'denied', 'idle', 'cancelled'].includes(state.status)) {
     document.getElementById('error-message').textContent = state.status === 'denied'
       ? t('connectDenied', 'Connection declined. You can start again when you are ready.')
@@ -55,11 +61,21 @@ document.getElementById('cancel-connect').addEventListener('click', () => void r
   await send('DEVICE_CONNECTION_CANCEL');
   window.location.href = browser.runtime.getURL('popup/options.html');
 }));
+document.getElementById('subscribe-connect').addEventListener('click', async () => {
+  if (!subscribeUrl) subscribeUrl = (await send('GET_STATUS'))?.subscribeUrl || 'https://langsly.com/vocab-pass/subscribe';
+  browser.tabs.create({ url: subscribeUrl });
+});
+document.getElementById('recheck-connect').addEventListener('click', () => void run(async () => {
+  show('loading');
+  await send('SYNC_NOW');
+  await showConnected();
+}));
 document.getElementById('close-connect').addEventListener('click', () => {
   window.location.href = browser.runtime.getURL('popup/popup.html');
 });
 browser.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && changes.extensionDeviceAuthorization) void send('DEVICE_CONNECTION_STATUS').then(render);
+  if (area === 'local' && changes.subscriptionRequired && state?.status === 'connected') void showConnected();
 });
 window.addEventListener('focus', () => void send('DEVICE_CONNECTION_STATUS').then(render));
 browser.storage.local.get('frontendUrl').then(({ frontendUrl }) => {

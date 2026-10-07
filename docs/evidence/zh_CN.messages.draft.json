@@ -1,6 +1,6 @@
 {
-  "extName": "Langsly - Vocab Pass",
-  "extDescription": "浏览网页时练习西班牙语和英语词汇。同步 Langsly 词汇，在语境中复习，并可随时暂停指定网站。",
+  "extName": "英语词汇积累 · Langsly Vocab Pass",
+  "extDescription": "在西班牙语网站上阅读时，看到你在 Langsly 学过的英语单词。点一下单词，即可查看释义和发音。",
   "popupTitle": "Langsly 扩展程序",
   "popupBrandName": "Langsly Vocab Pass",
   "popupHeroTitle": "在阅读的网页上复习西班牙语和英语词汇。",
@@ -141,7 +141,7 @@
   "sensitiveProtectionLocked": "身份验证、银行、支付、政府、医疗、法律、密码输入、浏览器内部页面以及 Langsly 页面始终受到敏感页面保护。",
   "connectPageTitle": "连接 Vocab Pass",
   "connectBrowserTitle": "连接你的浏览器",
-  "connectBrowserIntro": "登录 Langsly，然后批准此 Firefox 连接。设置会自动完成。",
+  "connectBrowserIntro": "登录 Langsly，然后批准此浏览器的连接。我们会自动完成设置。",
   "connectPreparing": "正在准备安全连接…",
   "connectCodeLabel": "你的连接代码",
   "connectComputerInstructions": "请在另一台设备上打开此链接并输入代码：",
@@ -202,5 +202,9 @@
   "aboutTitle": "关于",
   "openSourceLicenses": "开源许可",
   "licensesIntro": "Vocab Pass 包含以下开源软件和数据。每份声明均完整显示。",
-  "hanziDataProvenance": "笔画数据由 hanzi-writer-data 项目基于 Make Me a Hanzi（版权所有 2016 Shaunak Kishore）整理，而后者源自 Arphic PL KaitiM GB 和 UKai（版权所有 1999 Arphic Technology Co., Ltd.）。Vocab Pass 按原样提供这些字符文件。"
+  "hanziDataProvenance": "笔画数据由 hanzi-writer-data 项目基于 Make Me a Hanzi（版权所有 2016 Shaunak Kishore）整理，而后者源自 Arphic PL KaitiM GB 和 UKai（版权所有 1999 Arphic Technology Co., Ltd.）。Vocab Pass 按原样提供这些字符文件。",
+  "subscriptionRequiredTitle": "Vocab Pass 需要有效订阅（每月 $$5）",
+  "subscriptionRequiredBody": "高亮显示已暂停。请在 Langsly 上订阅，然后选择“立即同步”。",
+  "subscribeOnLangsly": "在 Langsly 上订阅",
+  "statusSubscriptionRequired": "需要订阅"
 }

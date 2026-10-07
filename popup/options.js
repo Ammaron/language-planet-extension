@@ -20,6 +20,10 @@ const saveStatus = document.getElementById('save-status');
 const accountStatus = document.getElementById('account-status');
 const accountConnect = document.getElementById('account-connect');
 const accountLogout = document.getElementById('account-logout');
+const subscriptionRequired = document.getElementById('subscription-required');
+const subscribeBtn = document.getElementById('subscribe-btn');
+const subscriptionRecheck = document.getElementById('subscription-recheck');
+let subscribeUrl = '';
 
 async function renderAccountState() {
   const status = await browser.runtime.sendMessage({ type: 'GET_STATUS' });
@@ -34,7 +38,23 @@ async function renderAccountState() {
   accountConnect.textContent = expired ? t('connectRestart', 'Restart connection') : unfinished ? t('connectContinue', 'Continue connection') : t('connectLangslyAccount', 'Connect Langsly account');
   accountConnect.classList.toggle('hidden', isLoggedIn);
   accountLogout.classList.toggle('hidden', !isLoggedIn);
+  subscribeUrl = (status && status.subscribeUrl) || '';
+  subscriptionRequired.classList.toggle('hidden', !(isLoggedIn && status.subscriptionRequired));
 }
+
+subscribeBtn.addEventListener('click', () => {
+  if (subscribeUrl) browser.tabs.create({ url: subscribeUrl });
+});
+
+subscriptionRecheck.addEventListener('click', async () => {
+  subscriptionRecheck.disabled = true;
+  try {
+    await browser.runtime.sendMessage({ type: 'SYNC_NOW' });
+    await renderAccountState();
+  } finally {
+    subscriptionRecheck.disabled = false;
+  }
+});
 
 function applyPreferenceValues({
   syncInterval = DEFAULTS.syncInterval,
@@ -108,7 +128,7 @@ saveBtn.addEventListener('click', async () => {
 loadSettings();
 
 browser.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && (changes.authToken || changes.extensionDeviceAuthorization)) void renderAccountState();
+  if (area === 'local' && (changes.authToken || changes.extensionDeviceAuthorization || changes.subscriptionRequired)) void renderAccountState();
 });
 
 window.addEventListener('focus', () => void renderAccountState());

@@ -177,6 +177,8 @@ async function clearTokens() {
     'hanziPracticeQueue',
     'extensionDeviceAuthorization',
     'extensionSourceLanguage',
+    'pageTextLanguage',
+    'subscriptionRequired',
       ...cacheKeys,
     ]);
   });
@@ -214,6 +216,22 @@ function countMatchableWords(words) {
     if (Array.isArray(word.source_forms) && word.source_forms.some(form => String(form || '').trim())) return true;
     return false;
   }).length;
+}
+
+// The language of the page text the synced words can match, e.g. "es" when
+// Spanish triggers reveal English terms. Shown in the popup instead of the
+// request parameter, which does not describe the triggers.
+function dominantPageTextLanguage(words, fallback) {
+  const counts = new Map();
+  for (const word of Array.isArray(words) ? words : []) {
+    const code = normalizeLanguageCode(word && word.search_language);
+    if (code) counts.set(code, (counts.get(code) || 0) + 1);
+  }
+  let best = '';
+  for (const [code, count] of counts) {
+    if (!best || count > counts.get(best)) best = code;
+  }
+  return best || fallback;
 }
 
 function getApiErrorMessage(data, fallback) {
@@ -265,7 +283,7 @@ async function completeLoginWithTokens(data, isCurrent = () => true) {
       'vocabWords', 'lastSync', 'wordCount', 'matchableWordCount',
       'pendingEncounters', 'hanziPracticeQueue', 'rotation_salt', 'difficulty',
       'themePacks', 'activeThemeSlug', 'activeThemeName', 'themeTokens',
-      'themeSyncStatus', 'extensionSourceLanguage', ...cacheKeys,
+      'themeSyncStatus', 'extensionSourceLanguage', 'pageTextLanguage', ...cacheKeys,
     ]);
     await browser.storage.local.set({ authToken: data.access, refreshToken: data.refresh });
     return authGeneration;
@@ -613,6 +631,10 @@ async function syncVocabulary() {
     await _setSessionStorage({ syncStatus: 'failed' }, generation);
     return;
   }
+  if (await isSubscriptionRequiredResponse(res)) {
+    await applySubscriptionRequired(generation);
+    return;
+  }
   if (!res.ok) {
     await _setSessionStorage({ syncStatus: 'failed' }, generation);
     return;
@@ -627,7 +649,9 @@ async function syncVocabulary() {
     wordCount: data.count,
     matchableWordCount,
     extensionSourceLanguage: sourceLanguage,
+    pageTextLanguage: dominantPageTextLanguage(data.words, sourceLanguage),
     syncStatus: 'success',
+    subscriptionRequired: false,
   }, generation);
   if (!stored) return;
 
@@ -638,6 +662,44 @@ async function syncVocabulary() {
       browser.tabs.sendMessage(tab.id, { type: 'VOCAB_UPDATED', words: data.words }).catch(() => {});
     }
   }
+}
+
+// ─── Vocab Pass subscription (HTTP 402 from the paywall) ─────
+const SUBSCRIPTION_REQUIRED_CODE = 'vocab_pass_subscription_required';
+
+async function isSubscriptionRequiredResponse(res) {
+  if (!res || res.status !== 402) return false;
+  try {
+    const body = await res.clone().json();
+    return Boolean(body && body.code === SUBSCRIPTION_REQUIRED_CODE);
+  } catch {
+    return false;
+  }
+}
+
+async function getSubscribeUrl() {
+  const { frontendUrl } = await getConfig();
+  return `${frontendUrl}/vocab-pass/subscribe`;
+}
+
+// Stop page processing and drop cached vocabulary (as logout does for words)
+// while keeping the account connected, so the next sync can recheck access.
+async function applySubscriptionRequired(generation) {
+  if (generation !== authGeneration) return;
+  const all = await browser.storage.local.get(null);
+  const cacheKeys = Object.keys(all).filter(key => (
+    key.startsWith('phrase_') || key.startsWith('disambig_') || key.startsWith('contextual_')
+  ));
+  await _withSessionMutation(async () => {
+    if (generation !== authGeneration) return;
+    await browser.storage.local.remove(['vocabWords', 'wordCount', 'matchableWordCount', ...cacheKeys]);
+    await browser.storage.local.set({ syncStatus: 'subscription_required', subscriptionRequired: true });
+  });
+  if (generation !== authGeneration) return;
+  const tabs = await browser.tabs.query({ url: ['http://*/*', 'https://*/*'] });
+  await Promise.allSettled(tabs
+    .filter((tab) => tab.id)
+    .map((tab) => browser.tabs.sendMessage(tab.id, { type: 'SUBSCRIPTION_REQUIRED' })));
 }
 
 // ─── Encounter Flush ─────────────────────────────
@@ -840,12 +902,14 @@ browser.runtime.onMessage.addListener((message, sender) => {
         'difficulty',
         'syncStatus',
         'extensionSourceLanguage',
+    'pageTextLanguage',
         'matchableWordCount',
         'themePacks',
         'activeThemeSlug',
         'activeThemeName',
         'themeTokens',
         'themeSyncStatus',
+        'subscriptionRequired',
       ]);
       if (stored.refreshToken && (!stored.authToken || !isAccessTokenFresh(stored.authToken))) {
         await ensureAccessToken();
@@ -859,14 +923,18 @@ browser.runtime.onMessage.addListener((message, sender) => {
         difficulty,
         syncStatus,
         extensionSourceLanguage,
+        pageTextLanguage,
         matchableWordCount,
         themePacks,
         activeThemeSlug,
         activeThemeName,
         themeTokens,
         themeSyncStatus,
+        subscriptionRequired,
       } = stored;
       return {
+        subscriptionRequired: Boolean(subscriptionRequired),
+        subscribeUrl: await getSubscribeUrl(),
         // Keep the account connected through offline/server failures when a
         // durable refresh credential still exists. Only explicit logout or a
         // confirmed 401/403 refresh rejection clears the session.
@@ -876,6 +944,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
         difficulty: difficulty || 'normal',
         syncStatus: syncStatus || 'unknown',
         extensionSourceLanguage: extensionSourceLanguage || DEFAULT_EXTENSION_SOURCE_LANGUAGE,
+        pageTextLanguage: pageTextLanguage || extensionSourceLanguage || DEFAULT_EXTENSION_SOURCE_LANGUAGE,
         matchableWordCount: Number.isFinite(matchableWordCount) ? matchableWordCount : 0,
         themePacks: Array.isArray(themePacks) ? themePacks : [],
         activeThemeSlug: activeThemeSlug || 'system',

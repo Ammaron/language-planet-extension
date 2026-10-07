@@ -101,6 +101,10 @@ body {
 
 .account-status { margin-bottom: 12px; line-height: 1.5; color: #374151; }
 .options-section .primary-btn { width: 100%; }
+.subscription-required { margin-top: 14px; padding: 14px; border: 1px solid #fca5a5; border-radius: 10px; background: #fef2f2; color: #111827; }
+.subscription-required .subscription-title { margin: 0 0 6px; font-weight: 800; }
+.subscription-required p { line-height: 1.5; }
+.subscription-required .secondary-btn { margin-top: 8px; width: 100%; }
 .options-section .secondary-btn { min-height: 44px; }
 
 .slider-row span {
