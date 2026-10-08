@@ -1531,13 +1531,21 @@ async function _evictContextualCacheIfNeeded(expectedGeneration = authGeneration
 }
 
 // ─── Install / Startup ──────────────────────────
-browser.runtime.onInstalled.addListener((details) => {
-  browser.storage.local.set({ pendingEncounters: [], difficulty: 'normal', syncStatus: 'unknown' });
+const INSTALL_DEFAULTS = { pendingEncounters: [], difficulty: 'normal', syncStatus: 'unknown' };
 
+// Updates and browser updates keep queued encounters and the learner's difficulty;
+// defaults are only written on first install, and only for keys that are missing.
+async function handleInstalled(details) {
+  if (details?.reason !== 'install') return;
+  const existing = await browser.storage.local.get(Object.keys(INSTALL_DEFAULTS));
+  const missing = Object.fromEntries(Object.entries(INSTALL_DEFAULTS).filter(([key]) => existing[key] === undefined));
+  if (Object.keys(missing).length) await browser.storage.local.set(missing);
   // Open onboarding page on first install
-  if (details.reason === 'install') {
-    browser.tabs.create({ url: browser.runtime.getURL('popup/onboarding.html') });
-  }
+  await browser.tabs.create({ url: browser.runtime.getURL('popup/onboarding.html') });
+}
+
+browser.runtime.onInstalled.addListener((details) => {
+  handleInstalled(details).catch(error => console.warn('[Langsly] install setup failed', error));
 });
 
 browser.runtime.onStartup.addListener(() => {
