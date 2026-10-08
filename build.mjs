@@ -107,6 +107,8 @@ await copyRuntime(chromeDir); await copyRuntime(firefoxDir);
 await writeFile(join(chromeDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 
 const firefoxManifest = structuredClone(manifest);
+// Chrome-only key; Firefox's floor is gecko.strict_min_version below.
+delete firefoxManifest.minimum_chrome_version;
 firefoxManifest.background = { scripts: ['vendor/browser-polyfill.min.js', 'shared/i18n.js', 'shared/source-language.js', 'background/theme-utils.js', 'background/encounter-coordinator.js', 'background/device-connection.js', 'background/hanzi-practice.js', 'background/service-worker.js'] };
 firefoxManifest.browser_specific_settings = {
   gecko: {
@@ -124,7 +126,7 @@ await createZip(firefoxDir, join(dist, `langsly-vocab-pass-firefox-amo-${version
 
 const sourceDir = join(dist, 'amo-source');
 await mkdir(sourceDir, { recursive: true });
-const sourceFiles = [...new Set([...runtimeFiles, ...hanziVendorFiles, 'vendor/.gitattributes', 'release/hanzi-writer-vendor.mjs', 'manifest.json', 'build.mjs', 'build.sh', 'build.ps1', 'build.cmd', 'BUILDING.md', 'THIRD_PARTY_NOTICES.md', 'package.json', 'package-lock.json', 'vendor/browser-polyfill.js', 'vendor/LICENSE-webextension-polyfill'])];
+const sourceFiles = [...new Set([...runtimeFiles, ...hanziVendorFiles, '.gitattributes', 'vendor/.gitattributes', 'release/hanzi-writer-vendor.mjs', 'manifest.json', 'build.mjs', 'build.sh', 'build.ps1', 'build.cmd', 'BUILDING.md', 'THIRD_PARTY_NOTICES.md', 'package.json', 'package-lock.json', 'vendor/browser-polyfill.js', 'vendor/LICENSE-webextension-polyfill'])];
 // Review drafts are test inputs in the AMO source archive, never runtime assets.
 sourceFiles.push('docs/evidence/zh_CN.messages.draft.json', 'docs/evidence/zh_CN.messages.draft.meta.json');
 for (const file of sourceFiles) await copy(file, sourceDir);
