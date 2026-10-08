@@ -61,7 +61,7 @@ test('service worker renews extension sessions and preserves them through transi
   assert.doesNotMatch(serviceWorker, /\[400, 401, 403\]\.includes\(res\.status\)/);
   assert.match(serviceWorker, /function isAccessTokenFresh\(token, now = Date\.now\(\)\)/);
   assert.match(serviceWorker, /isLoggedIn: !!\(authToken \|\| refreshToken\)/);
-  assert.match(serviceWorker, /ensureAccessToken\(\)\.catch\(\(\) => \{\}\)/);
+  assert.match(serviceWorker, /ensureAccessToken\(\)\.catch\(error => console\.warn\(/);
   assert.doesNotMatch(serviceWorker, /if \(!res\.ok\) \{\s*if \(generation === authGeneration\) await clearSession\(\)/);
 });
 

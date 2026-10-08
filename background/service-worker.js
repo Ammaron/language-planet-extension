@@ -412,7 +412,8 @@ async function _refreshAccessToken({ refresh, generation }) {
     if (generation !== authGeneration) return null;
     if (!await setTokens(data.access, data.refresh || refresh, generation)) return null;
     return data.access;
-  } catch {
+  } catch (error) {
+    if (!controller.signal.aborted) console.warn('[Langsly] token refresh failed', error);
     return null;
   } finally {
     activeAuthControllers.delete(controller);
@@ -440,7 +441,8 @@ async function authFetch(url, options = {}) {
   let res;
   try {
     res = await fetch(url, { ...options, headers, signal: controller.signal });
-  } catch {
+  } catch (error) {
+    if (!controller.signal.aborted) console.warn('[Langsly] API request failed', error);
     if (generation === authGeneration && !controller.signal.aborted) {
       await _setSessionStorage({ syncStatus: 'offline' }, generation);
     }
@@ -459,7 +461,8 @@ async function authFetch(url, options = {}) {
     activeAuthControllers.add(retryController);
     try {
       res = await fetch(url, { ...options, headers, signal: retryController.signal });
-    } catch {
+    } catch (error) {
+      if (!retryController.signal.aborted) console.warn('[Langsly] API retry after refresh failed', error);
       return null;
     } finally {
       activeAuthControllers.delete(retryController);
@@ -725,7 +728,8 @@ async function syncVocabulary() {
       await failVocabularySync(sourceLanguage, generation, sourceRevision, syncRevision);
       return;
     }
-  } catch {
+  } catch (error) {
+    console.warn('[Langsly] vocabulary sync failed', error);
     await failVocabularySync(sourceLanguage, generation, sourceRevision, syncRevision);
     return;
   }
@@ -861,7 +865,7 @@ async function setupAlarms() {
 }
 
 setupAlarms();
-migrateLegacyConfig().catch(() => {});
+migrateLegacyConfig().catch(error => console.warn('[Langsly] config migration failed', error));
 
 browser.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'device-connection') void deviceConnection.resume();
@@ -1550,7 +1554,7 @@ browser.runtime.onInstalled.addListener((details) => {
 
 browser.runtime.onStartup.addListener(() => {
   _ensureRotationSalt();
-  ensureAccessToken().catch(() => {});
+  ensureAccessToken().catch(error => console.warn('[Langsly] startup token check failed', error));
   syncVocabulary();
   syncThemes();
   void deviceConnection.resume();
