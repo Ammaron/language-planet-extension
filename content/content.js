@@ -353,10 +353,11 @@ function init() {
   if (['disabled', 'unavailable', 'logged-out'].includes(lifecycleState)) return null;
   const generation = lifecycleGeneration;
   lifecycleState = 'initializing';
-  initPromise = runInit(generation).finally(() => {
-    if (generation === lifecycleGeneration) initPromise = null;
+  const promise = runInit(generation).finally(() => {
+    if (initPromise === promise) initPromise = null;
   });
-  return initPromise;
+  initPromise = promise;
+  return promise;
 }
 
 async function runInit(generation) {
@@ -383,7 +384,7 @@ async function runInit(generation) {
   const { vocabWords, rotation_salt } = await browser.storage.local.get(['vocabWords', 'rotation_salt']);
   if (generation !== lifecycleGeneration) return;
   if (!vocabWords || vocabWords.length === 0) {
-    lifecycleState = 'unavailable';
+    enterUnavailable();
     return;
   }
   rotationSalt = rotation_salt || '';
@@ -408,6 +409,7 @@ async function runInit(generation) {
   detectTheme();
   processDocument();
   observeMutations();
+  startUrlWatch();
 
   // Flush encounters on page unload
   window.removeEventListener('beforeunload', flushEncounterBuffer);
@@ -899,13 +901,14 @@ browser.runtime.onMessage.addListener((message) => {
   if (message.type === 'SUBSCRIPTION_REQUIRED') {
     // Vocab Pass access lapsed: restore the page and wait for VOCAB_UPDATED.
     stopDocumentWork();
-    lifecycleState = 'unavailable';
+    enterUnavailable();
     return { success: true };
   }
 
   if (message.type === 'SITE_ACCESS_CHANGED') {
     if (message.enabled) {
       lifecycleGeneration += 1;
+      initPromise = null;
       lifecycleState = 'idle';
       startSafetyController();
       void init();
@@ -927,6 +930,7 @@ browser.runtime.onMessage.addListener((message) => {
         processDocument();
       } else {
         lifecycleGeneration += 1;
+        initPromise = null;
         lifecycleState = 'idle';
         startSafetyController();
         void init();
@@ -964,6 +968,7 @@ function stopDocumentWork({ loggedOut = false } = {}) {
   whitelistedDomains = [];
   if (contentObserver) contentObserver.disconnect();
   contentObserver = null;
+  stopUrlWatch();
   if (mutationDebounceTimer) clearTimeout(mutationDebounceTimer);
   mutationDebounceTimer = null;
   pendingMutationNodes = [];
@@ -993,13 +998,16 @@ function deactivateForSensitivePage() {
 
 let safetyTimer = null;
 let safetyControllerActive = false;
-const originalHistoryMethods = new Map();
+let lastSafetyHref = window.location.href;
+let urlWatchTimer = null;
+const URL_WATCH_INTERVAL_MS = 1000;
 async function evaluateSafety() {
   const excluded = await shouldExcludePage();
   if (excluded && extensionActive) deactivateForSensitivePage();
   if (!excluded && !extensionActive && !document.hidden) await init();
 }
 function scheduleSafetyCheck() {
+  lastSafetyHref = window.location.href;
   if (_pageRequiresImmediateExclusion()) {
     if (extensionActive) deactivateForSensitivePage();
     return;
@@ -1010,6 +1018,24 @@ function scheduleSafetyCheck() {
     void evaluateSafety();
   }, 200);
 }
+
+// Content scripts run in an isolated world, so patching history.pushState here
+// never sees the page's own SPA navigations. Instead: the Navigation API where
+// available, the safety MutationObserver, and a low-frequency URL check while active.
+function checkUrlChange() {
+  if (window.location.href !== lastSafetyHref) scheduleSafetyCheck();
+}
+function startUrlWatch() {
+  if (urlWatchTimer) return;
+  lastSafetyHref = window.location.href;
+  urlWatchTimer = setInterval(checkUrlChange, URL_WATCH_INTERVAL_MS);
+}
+function stopUrlWatch() {
+  if (urlWatchTimer) clearInterval(urlWatchTimer);
+  urlWatchTimer = null;
+}
+const pageNavigation = typeof window.navigation === 'object' && window.navigation
+  && typeof window.navigation.addEventListener === 'function' ? window.navigation : null;
 
 const safetyObserver = new MutationObserver(scheduleSafetyCheck);
 function handleVisibilityChange() {
@@ -1030,15 +1056,7 @@ const startSafetyController = () => {
   window.addEventListener('popstate', scheduleSafetyCheck);
   window.addEventListener('hashchange', scheduleSafetyCheck);
   document.addEventListener('visibilitychange', handleVisibilityChange);
-  for (const method of ['pushState', 'replaceState']) {
-    const original = history[method];
-    originalHistoryMethods.set(method, original);
-    history[method] = function (...args) {
-      const result = original.apply(this, args);
-      scheduleSafetyCheck();
-      return result;
-    };
-  }
+  if (pageNavigation) pageNavigation.addEventListener('currententrychange', scheduleSafetyCheck);
   void evaluateSafety();
 };
 
@@ -1048,12 +1066,35 @@ function stopSafetyController() {
   safetyObserver.disconnect();
   clearTimeout(safetyTimer);
   safetyTimer = null;
+  stopUrlWatch();
   window.removeEventListener('popstate', scheduleSafetyCheck);
   window.removeEventListener('hashchange', scheduleSafetyCheck);
   document.removeEventListener('visibilitychange', handleVisibilityChange);
-  for (const [method, original] of originalHistoryMethods) history[method] = original;
-  originalHistoryMethods.clear();
+  if (pageNavigation) pageNavigation.removeEventListener('currententrychange', scheduleSafetyCheck);
 }
+
+// With no usable vocabulary (none synced, signed out, or Vocab Pass lapsed) there is
+// nothing to do on the page, so stop watching it until storage says that changed.
+function enterUnavailable() {
+  lifecycleState = 'unavailable';
+  stopSafetyController();
+}
+
+const RESUME_STORAGE_KEYS = ['vocabWords', 'subscriptionRequired'];
+browser.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== 'local' || !RESUME_STORAGE_KEYS.some(key => key in changes)) return;
+  if (!['unavailable', 'logged-out'].includes(lifecycleState) || extensionActive) return;
+  if ('vocabWords' in changes) {
+    const words = changes.vocabWords.newValue;
+    if (!Array.isArray(words) || words.length === 0) return;
+  } else if (changes.subscriptionRequired.newValue !== false) {
+    return;
+  }
+  lifecycleGeneration += 1;
+  initPromise = null;
+  lifecycleState = 'idle';
+  startSafetyController();
+});
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startSafetyController, { once: true });
 else startSafetyController();

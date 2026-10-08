@@ -93,7 +93,8 @@ test('sync rechecks access and clears the flag after a successful sync; logout c
 
 test('content script stops page work on SUBSCRIPTION_REQUIRED and restarts on VOCAB_UPDATED', async () => {
   const content = await readText('content/content.js');
-  assert.match(content, /message\.type === 'SUBSCRIPTION_REQUIRED'[\s\S]{0,200}stopDocumentWork\(\);[\s\S]{0,60}lifecycleState = 'unavailable'/);
+  assert.match(content, /message\.type === 'SUBSCRIPTION_REQUIRED'[\s\S]{0,200}stopDocumentWork\(\);[\s\S]{0,60}enterUnavailable\(\)/);
+  assert.match(content, /function enterUnavailable\(\) \{\s*lifecycleState = 'unavailable';\s*stopSafetyController\(\);/);
   assert.match(content, /message\.type === 'VOCAB_UPDATED'/);
 });
 
