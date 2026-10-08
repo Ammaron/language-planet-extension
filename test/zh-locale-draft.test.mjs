@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
+import { textDigest } from '../release/chinese-locale-review.mjs';
 import { readFileSync } from 'node:fs';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url));
@@ -9,7 +9,7 @@ const draftBytes = read('../docs/evidence/zh_CN.messages.draft.json');
 const source = JSON.parse(sourceBytes.toString('utf8'));
 const draft = JSON.parse(draftBytes.toString('utf8'));
 const meta = JSON.parse(read('../docs/evidence/zh_CN.messages.draft.meta.json').toString('utf8'));
-const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
+const hash = textDigest;
 const placeholders = (value) => [...value.matchAll(/\$[A-Z][A-Z0-9_]*\$/g)].map(([token]) => token).sort();
 const protectedNames = ['Langsly', 'LANGSLY', 'Vocab Pass', 'Word Racing', 'Word Fight', 'Google', 'Firefox', 'OpenRouter'];
 const allowedUnchanged = new Set(['extName', 'popupBrandName', 'emailPlaceholder', 'apiBasePlaceholder', 'frontendPlaceholder']);
