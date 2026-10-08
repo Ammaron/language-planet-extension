@@ -49,3 +49,19 @@ test('extension and browser updates keep queued encounters, difficulty and sync 
     assert.equal(opened.length, 0, reason);
   }
 });
+
+test('uninstall opens the Langsly feedback page without account data', async () => {
+  const worker = await readFile(new URL('../background/service-worker.js', import.meta.url), 'utf8');
+  const start = worker.indexOf('const UNINSTALL_FEEDBACK_PATH');
+  const end = worker.indexOf('// Runs whenever the background event page');
+  const urls = [];
+  const context = {
+    getConfig: async () => ({ frontendUrl: 'https://langsly.com', apiBase: 'https://api.langsly.com/api' }),
+    browser: { runtime: { setUninstallURL: async url => { urls.push(url); } } },
+  };
+  vm.createContext(context);
+  vm.runInContext(`${worker.slice(start, end)}\nthis.setUninstallFeedbackUrl = setUninstallFeedbackUrl;`, context);
+  await context.setUninstallFeedbackUrl();
+  assert.deepEqual(urls, ['https://langsly.com/extension/uninstalled']);
+  assert.match(worker.slice(end), /setUninstallFeedbackUrl\(\)\.catch/);
+});

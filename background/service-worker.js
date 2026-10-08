@@ -1556,5 +1556,15 @@ browser.runtime.onStartup.addListener(() => {
   void deviceConnection.resume();
 });
 
+// Opened by the browser after uninstall so people can say why they left.
+// No account or usage data is attached to the URL.
+const UNINSTALL_FEEDBACK_PATH = '/extension/uninstalled';
+async function setUninstallFeedbackUrl() {
+  if (typeof browser.runtime.setUninstallURL !== 'function') return;
+  const { frontendUrl } = await getConfig();
+  await browser.runtime.setUninstallURL(`${frontendUrl}${UNINSTALL_FEEDBACK_PATH}`);
+}
+
 // Runs whenever the background event page/service worker is recreated.
 void deviceConnection.resume();
+setUninstallFeedbackUrl().catch(error => console.warn('[Langsly] uninstall URL not set', error));
