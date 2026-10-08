@@ -13,6 +13,14 @@ const SENSITIVE_PATTERNS = [
   /\.(gov|gob)(\.[a-z]{2})?$/i,
 ];
 
+// A configured domain covers itself and its subdomains only: "bank.com" matches
+// "bank.com" and "www.bank.com", never "notbank.com" or "bank.com.evil.test".
+function hostMatchesDomain(host, domain) {
+  const h = String(host || '').trim().toLowerCase().replace(/\.$/, '');
+  const d = String(domain || '').trim().toLowerCase().replace(/^\*?\./, '').replace(/\.$/, '');
+  return Boolean(h && d) && (h === d || h.endsWith(`.${d}`));
+}
+
 function _pageHasPasswordFields() {
   return document.querySelectorAll('input[type="password"]').length > 0;
 }
@@ -33,7 +41,7 @@ async function shouldExcludePage() {
   // User-configurable blocklist
   const { sensitiveBlocklist = [] } = await browser.storage.local.get('sensitiveBlocklist');
   const host = window.location.hostname.toLowerCase();
-  if (sensitiveBlocklist.some(pattern => host.includes(String(pattern).toLowerCase()))) return true;
+  if (sensitiveBlocklist.some(pattern => hostMatchesDomain(host, pattern))) return true;
   return false;
 }
 
@@ -386,7 +394,7 @@ async function runInit(generation) {
   if (generation !== lifecycleGeneration) return;
   if (response && response.domains) {
     whitelistedDomains = response.domains;
-    if (whitelistedDomains.some(d => domain.includes(d) || d.includes(domain))) {
+    if (whitelistedDomains.some(d => hostMatchesDomain(domain, d))) {
       lifecycleState = 'disabled';
       return;
     }

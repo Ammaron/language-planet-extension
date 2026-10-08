@@ -154,7 +154,12 @@ async function init() {
       // Check if domain is whitelisted (whitelisted = extension disabled there)
       const response = await browser.runtime.sendMessage({ type: 'GET_WHITELIST' });
       if (response && response.domains) {
-        const isWhitelisted = response.domains.some(d => domain.includes(d) || d.includes(domain));
+        // Same rule as the content script: the entry itself or one of its subdomains.
+        const host = domain.toLowerCase();
+        const isWhitelisted = response.domains.some((d) => {
+          const entry = String(d || '').toLowerCase();
+          return Boolean(entry) && (host === entry || host.endsWith(`.${entry}`));
+        });
         siteToggle.checked = !isWhitelisted;
       }
     } catch {
