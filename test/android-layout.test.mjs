@@ -45,6 +45,6 @@ test('closed-shadow stylesheet is the only web-accessible runtime resource', asy
   const manifest = JSON.parse(await read('manifest.json'));
   assert.deepEqual(manifest.web_accessible_resources, [{
     resources: ['content/content.css'],
-    matches: ['<all_urls>'],
+    matches: ['http://*/*', 'https://*/*'],
   }]);
 });

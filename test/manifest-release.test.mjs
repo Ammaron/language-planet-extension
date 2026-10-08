@@ -15,7 +15,17 @@ test('generated Firefox manifest combines desktop and Android requirements', asy
   // it grants no hosts beyond the existing host_permissions.
   assert.deepEqual(manifest.permissions.sort(), ['alarms', 'scripting', 'storage']);
   assert.ok(manifest.background.scripts.includes('background/hanzi-practice.js'));
-  assert.equal(manifest.host_permissions[0], '<all_urls>');
+  // Pages only (no file:, ftp: or other schemes): executeScript needs host access to the
+  // page where the learner opens writing practice, which content-script matches do not grant.
+  assert.deepEqual(manifest.host_permissions, ['http://*/*', 'https://*/*']);
+  assert.deepEqual(manifest.content_scripts[0].matches, ['http://*/*', 'https://*/*']);
+  assert.equal('minimum_chrome_version' in manifest, false);
+});
+
+test('generated Chrome manifest requires Chrome 111 for CSS color-mix()', async () => {
+  const manifest = JSON.parse(await readFile(new URL('../dist/chrome/manifest.json', import.meta.url), 'utf8'));
+  assert.equal(manifest.minimum_chrome_version, '111');
+  assert.deepEqual(manifest.host_permissions, ['http://*/*', 'https://*/*']);
 });
 
 test('built packages carry the pinned writer, pilot data and full notices', async () => {
@@ -35,7 +45,7 @@ test('generated Chrome and Firefox manifests expose only the closed-shadow style
     const manifest = JSON.parse(await readFile(new URL(`../dist/${target}/manifest.json`, import.meta.url), 'utf8'));
     assert.deepEqual(manifest.web_accessible_resources, [{
       resources: ['content/content.css'],
-      matches: ['<all_urls>'],
+      matches: ['http://*/*', 'https://*/*'],
     }]);
   }
 });

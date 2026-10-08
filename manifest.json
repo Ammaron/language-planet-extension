@@ -4,13 +4,15 @@
   "version": "0.2.7",
   "description": "__MSG_extDescription__",
   "default_locale": "en",
+  "minimum_chrome_version": "111",
   "permissions": [
     "storage",
     "alarms",
     "scripting"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "http://*/*",
+    "https://*/*"
   ],
   "background": {
     "service_worker": "background/service-worker.js"
@@ -18,7 +20,8 @@
   "content_scripts": [
     {
       "matches": [
-        "<all_urls>"
+        "http://*/*",
+        "https://*/*"
       ],
       "js": [
         "vendor/browser-polyfill.min.js",
@@ -53,7 +56,8 @@
         "content/content.css"
       ],
       "matches": [
-        "<all_urls>"
+        "http://*/*",
+        "https://*/*"
       ]
     }
   ],
