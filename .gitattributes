@@ -1,0 +1,5 @@
+# Review gates hash these files (release/chinese-locale-review.mjs); keep them LF in
+# every checkout so Windows autocrlf cannot change the bytes that were reviewed.
+_locales/**/*.json text eol=lf
+docs/evidence/*.json text eol=lf
+release/*.json text eol=lf
