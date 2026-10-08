@@ -4,7 +4,7 @@
     "description": "Nombre de la extensión que se muestra en el navegador y en las tiendas de extensiones."
   },
   "extDescription": {
-    "message": "Lee sitios en español y descubre las palabras en inglés que aprendes en Langsly. Toca una para ver su significado y audio.",
+    "message": "Ve en sitios en español las palabras en inglés de Langsly. Toca para ver significado y audio. Requiere suscripción a Vocab Pass.",
     "description": "Descripción de la extensión que se muestra en el navegador y en las tiendas de extensiones."
   },
   "popupTitle": {

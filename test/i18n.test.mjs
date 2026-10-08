@@ -20,7 +20,7 @@ test('manifest uses Chrome i18n metadata and localized store copy', async () => 
   assert.equal(messages.extName.message, 'English Vocabulary Builder · Langsly Vocab Pass');
   assert.equal(
     messages.extDescription.message,
-    "Read Spanish websites and see the English words you're learning in Langsly. Tap a word for its meaning and audio.",
+    "See the English words you learn in Langsly on Spanish websites. Tap for meaning and audio. Requires a Vocab Pass subscription.",
   );
   assert.ok(messages.extDescription.message.length <= 132);
 });
@@ -33,7 +33,7 @@ test('Spanish locale defines every English message key', async () => {
   assert.equal(spanishMessages.extName.message, 'Aprende vocabulario en inglés · Langsly Vocab Pass');
   assert.equal(
     spanishMessages.extDescription.message,
-    'Lee sitios en español y descubre las palabras en inglés que aprendes en Langsly. Toca una para ver su significado y audio.',
+    'Ve en sitios en español las palabras en inglés de Langsly. Toca para ver significado y audio. Requiere suscripción a Vocab Pass.',
   );
   assert.ok(spanishMessages.extDescription.message.length <= 132);
   assert.equal(

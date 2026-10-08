@@ -4,9 +4,11 @@ Version 0.2.6 is the current source candidate. These instructions do not establi
 
 ## Summary
 
-Learn from the websites you already read. Langsly Vocab Pass highlights words and phrases from your synchronized Langsly vocabulary, provides contextual meaning and audio, and records trusted learning interactions.
+Learn from the websites you already read. Langsly Vocab Pass highlights words and phrases from your synchronized Langsly vocabulary, provides contextual meaning and audio, and records trusted learning interactions. Requires a Vocab Pass subscription.
 
 ## Description
+
+Requires a Langsly account with an active Vocab Pass subscription ($5/month, managed on langsly.com). Without one, the add-on shows a Subscribe on Langsly prompt and does not change any page.
 
 Vocab Pass connects to your Langsly account through a short-lived device code. Once connected, it synchronizes your vocabulary, difficulty, and theme, then highlights learned terms on supported websites. Tap a highlight for translation, phrase meaning, contextual disambiguation, audio, and feedback controls. Site controls let you pause or block Vocab Pass, and an offline cache preserves recently synchronized vocabulary.
 

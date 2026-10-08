@@ -19,6 +19,8 @@ The extension never authorizes automatically. The extension tab polls only while
 
 ## Feature review
 
+The reviewer account has an active Vocab Pass subscription. If the popup shows **Vocab Pass needs an active subscription**, the subscription on the reviewer account has lapsed; contact the submission owner through the reviewer notes rather than subscribing.
+
 On a non-sensitive article page, verify word and phrase highlighting, contextual disambiguation, audio/speech fallback, theme and difficulty controls, site disable/re-enable, and offline cached vocabulary. Then visit a login form containing a password field and representative banking, payment, government, health, and legal URLs; the add-on must not load vocabulary, change the DOM, or send page-derived requests there. Repeat after a same-page navigation.
 
 ## Test account
@@ -28,6 +30,8 @@ Provide the AMO reviewer account through Mozilla's private reviewer-notes creden
 Submission owner checklist:
 
 - Create a dedicated active reviewer account with representative synchronized vocabulary.
+- Give that account an active or complimentary (comped) Vocab Pass subscription that stays active for the whole review window. Without it, sync returns HTTP 402 and the add-on only shows the **Subscribe on Langsly** state, so reviewers cannot exercise any page features.
+- Confirm in a private window that the account syncs vocabulary in the extension (not the subscribe state) immediately before submitting.
 - Verify the credentials in a private browser window.
 - Enter them only in AMO's non-public reviewer field.
 - Revoke or rotate the account after review according to Langsly's release policy.
