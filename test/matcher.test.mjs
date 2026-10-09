@@ -381,3 +381,25 @@ test('an unaccented trigger never turns the Spanish article "el" into "he"', () 
   ]);
   assert.deepEqual(plain(accented.findMatches('Él camina. El gato duerme.').singles.map(match => match.original)), ['Él']);
 });
+
+test('unaccented él/tú match only before a verb that cannot be a noun', () => {
+  const engine = createMatcher([
+    { id: 'he', term: 'He', translation: 'Él', search_language: 'es', term_language: 'en', part_of_speech: 'pronoun',
+      source_forms: ['el'], effective_runtime_triggers: ['el'] },
+    { id: 'you', term: 'You', translation: 'Tú', search_language: 'es', term_language: 'en', part_of_speech: 'pronoun', source_forms: ['tú'] },
+    { id: 'the', term: 'the', translation: 'el', search_language: 'es', term_language: 'en', part_of_speech: 'article', source_forms: ['el'] },
+  ]);
+  const found = text => plain(engine.findMatches(text).singles.map(match => `${match.original}:${match.word.id}`));
+  assert.deepEqual(found('el es mi amigo'), ['el:he']);
+  assert.deepEqual(found('Creo que el tiene hambre.'), ['el:he']);
+  assert.deepEqual(found('Él camina.'), ['Él:he']);
+  assert.deepEqual(found('El gato camina.'), ['El:the']);
+  assert.deepEqual(found('el agua'), ['el:the']);
+  assert.deepEqual(found('tu eres genial'), ['tu:you']);
+  assert.deepEqual(found('tu casa'), []);
+  assert.deepEqual(found('Tú tienes razón'), ['Tú:you']);
+  const heOnly = createMatcher([
+    { id: 'he', term: 'He', translation: 'Él', search_language: 'es', term_language: 'en', part_of_speech: 'pronoun', source_forms: ['el'] },
+  ]);
+  assert.deepEqual(plain(heOnly.findMatches('El gato. el libro. el').singles), []);
+});

@@ -26,6 +26,7 @@ class VocabMatcher {
   constructor(words, options = {}) {
     this.root = new TrieNode();
     this.wordMap = new Map(); // lowercaseKey -> VocabWord[]
+    this.verbGuardedKeys = new Set(); // `${wordId}|${key}` needing a following verb
     this.wordsById = new Map(words.map(word => [String(word.id), word]));
     this.rotationSalt = options.rotationSalt || '';
     this.chineseSegmenter = typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function'
@@ -62,7 +63,10 @@ class VocabMatcher {
         const triggers = this.isChineseSource(word) ? authored : (effective || authored);
         if (triggers.some(form => this.isSlashSeparatedGloss(form))) continue;
         for (const form of triggers) {
-          if (!this.dropsDiacriticalAccent(word, form)) keys.add(this.normalizeKey(form));
+          // An accent-stripped trigger ("el" for "Él") stands for the accented
+          // word; addUnaccentedPronoun re-adds the bare form behind a verb guard.
+          keys.add(this.dropsDiacriticalAccent(word, form)
+            ? this.normalizeKey(word.translation).normalize('NFC') : this.normalizeKey(form));
         }
       } else {
         // A display gloss such as "Es / Está" is never a page trigger.
@@ -72,6 +76,7 @@ class VocabMatcher {
           if (!this.isSlashSeparatedGloss(form)) keys.add(this.normalizeKey(form));
         }
       }
+      this.addUnaccentedPronoun(word, keys);
       for (const key of keys) {
         if (key) this.insertWord(key, word);
       }
@@ -82,6 +87,35 @@ class VocabMatcher {
   // tú / tu, sí / si, sé / se, té / te, mí / mi, más / mas, dé / de.
   // An unaccented trigger for an accented word would swap every article.
   static SPANISH_DIACRITICAL_PAIRS = new Set(['el', 'tu', 'si', 'se', 'te', 'mi', 'mas', 'de', 'aun', 'solo']);
+
+  // People often type él/tú without the accent. The bare word is still "the"
+  // or "your" unless a verb that can't be a noun follows: "el es mi amigo",
+  // "tu tienes razón" — never "el gato", "el agua", "tu casa".
+  static UNACCENTED_PRONOUN_VERBS = {
+    el: new Set(['es', 'está', 'esta', 'era', 'fue', 'estaba', 'tiene', 'tenía', 'tenia', 'va', 'iba',
+      'dice', 'dijo', 'hace', 'hizo', 'quiere', 'quería', 'queria', 'puede', 'pudo', 'sabe', 'sabía', 'sabia',
+      'vive', 'trabaja', 'habla', 'come', 'necesita', 'piensa', 'cree', 'vino', 'viene', 'llega', 'llegó', 'llego']),
+    tu: new Set(['eres', 'estás', 'estas', 'eras', 'fuiste', 'estabas', 'tienes', 'tenías', 'tenias', 'vas', 'ibas',
+      'dices', 'dijiste', 'haces', 'hiciste', 'quieres', 'puedes', 'sabes', 'vives', 'trabajas', 'hablas',
+      'comes', 'necesitas', 'piensas', 'crees', 'vienes', 'llegas']),
+  };
+
+  addUnaccentedPronoun(word, keys) {
+    if (!String(word.search_language || '').toLowerCase().startsWith('es')) return;
+    for (const key of [...keys]) {
+      const bare = key.normalize('NFD').replace(/[̀-ͯ]/g, '');
+      if (bare === key || !VocabMatcher.UNACCENTED_PRONOUN_VERBS[bare]) continue;
+      keys.add(bare);
+      this.verbGuardedKeys.add(`${word.id}|${bare}`);
+    }
+  }
+
+  // A verb-guarded trigger ("el" for él) only counts before a listed verb.
+  passesVerbGuard(word, key, text, end) {
+    if (!this.verbGuardedKeys.has(`${word.id}|${key}`)) return true;
+    const next = (text.slice(end, end + 24).match(/^\s+([\p{L}]+)/u) || [])[1];
+    return !!next && VocabMatcher.UNACCENTED_PRONOUN_VERBS[key].has(next.toLowerCase());
+  }
 
   dropsDiacriticalAccent(word, form) {
     if (!String(word.search_language || '').toLowerCase().startsWith('es')) return false;
@@ -233,7 +267,8 @@ class VocabMatcher {
     const bounded = rawMatches.filter(m => (this.isChineseSource(m.entry.word)
       ? !!chineseBoundaries && chineseBoundaries.has(m.start) && chineseBoundaries.has(m.end)
       : this.isWordBoundary(text, m.start, m.end - m.start, m.entry.key))
-      && !this.isFormulaUsedInsideSentence(text, m));
+      && !this.isFormulaUsedInsideSentence(text, m)
+      && this.passesVerbGuard(m.entry.word, m.entry.key, text, m.end));
 
     // Prefer longer multi-word source keys over overlapping single words.
     bounded.sort((a, b) => (
@@ -253,7 +288,8 @@ class VocabMatcher {
       if (overlap) continue;
 
       const key = match.entry.key;
-      const candidates = this.wordMap.get(key);
+      const candidates = (this.wordMap.get(key) || [])
+        .filter(candidate => this.passesVerbGuard(candidate, key, text, match.end));
       const resolved = this.disambiguate(candidates, text, match.start);
       if (!resolved) continue;
 
