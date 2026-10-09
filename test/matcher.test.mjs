@@ -346,3 +346,38 @@ test('authored whole-sentence source forms retain longest-match authority', () =
   assert.equal(result.singles[0].word.id, 'authored-phrase');
   assert.equal(result.singles[0].word._needsContextualRewrite, undefined);
 });
+
+test('greeting and farewell formulas stay English inside a larger phrase', () => {
+  const engine = createMatcher([
+    { id: 'night', term: 'Buenas noches', translation: 'Good night', search_language: 'en', term_language: 'es', part_of_speech: 'phrase', source_forms: ['good night'] },
+    { id: 'see', term: 'Nos vemos', translation: 'See you', search_language: 'en', term_language: 'es', part_of_speech: 'phrase', source_forms: ['see you'] },
+  ]);
+  const ids = text => plain(engine.findMatches(text).singles.map(match => match.word.id));
+  assert.deepEqual(ids("I try to get a good night's sleep the night before a test."), []);
+  assert.deepEqual(ids('I’m excited to see you building your wallet!'), []);
+  assert.deepEqual(ids('I will see you there.'), []);
+  assert.deepEqual(ids('Good night, everyone!'), ['night']);
+  assert.deepEqual(ids('Thanks for coming. See you tomorrow!'), ['see']);
+  assert.deepEqual(ids('Okay, see you!'), ['see']);
+});
+
+test('single-word vocab with no part of speech is not treated as a formula', () => {
+  const engine = createMatcher([
+    { id: 'cat', term: 'gato', translation: 'cat', search_language: 'en', term_language: 'es', source_forms: ['cat'] },
+  ]);
+  assert.deepEqual(plain(engine.findMatches('I saw a cat.').singles.map(match => match.word.id)), ['cat']);
+});
+
+test('an unaccented trigger never turns the Spanish article "el" into "he"', () => {
+  const engine = createMatcher([
+    { id: 'he', term: 'He', translation: 'Él', search_language: 'es', term_language: 'en', part_of_speech: 'pronoun',
+      source_forms: ['el'], effective_runtime_triggers: ['el'] },
+    { id: 'cat', term: 'cat', translation: 'gato', search_language: 'es', term_language: 'en', part_of_speech: 'noun', source_forms: ['gato'] },
+  ]);
+  const ids = text => plain(engine.findMatches(text).singles.map(match => match.word.id));
+  assert.deepEqual(ids('El gato caminó.'), ['cat']);
+  const accented = createMatcher([
+    { id: 'he', term: 'He', translation: 'Él', search_language: 'es', term_language: 'en', part_of_speech: 'pronoun', source_forms: ['él'] },
+  ]);
+  assert.deepEqual(plain(accented.findMatches('Él camina. El gato duerme.').singles.map(match => match.original)), ['Él']);
+});

@@ -61,7 +61,9 @@ class VocabMatcher {
       if (effective || authored.length > 0) {
         const triggers = this.isChineseSource(word) ? authored : (effective || authored);
         if (triggers.some(form => this.isSlashSeparatedGloss(form))) continue;
-        for (const form of triggers) keys.add(this.normalizeKey(form));
+        for (const form of triggers) {
+          if (!this.dropsDiacriticalAccent(word, form)) keys.add(this.normalizeKey(form));
+        }
       } else {
         // A display gloss such as "Es / Está" is never a page trigger.
         if (this.isSlashSeparatedGloss(word.translation)) continue;
@@ -74,6 +76,20 @@ class VocabMatcher {
         if (key) this.insertWord(key, word);
       }
     }
+  }
+
+  // In Spanish the accent alone separates these words: él (he) / el (the),
+  // tú / tu, sí / si, sé / se, té / te, mí / mi, más / mas, dé / de.
+  // An unaccented trigger for an accented word would swap every article.
+  static SPANISH_DIACRITICAL_PAIRS = new Set(['el', 'tu', 'si', 'se', 'te', 'mi', 'mas', 'de', 'aun', 'solo']);
+
+  dropsDiacriticalAccent(word, form) {
+    if (!String(word.search_language || '').toLowerCase().startsWith('es')) return false;
+    const key = this.normalizeKey(form);
+    if (!VocabMatcher.SPANISH_DIACRITICAL_PAIRS.has(key)) return false;
+    const translation = this.normalizeKey(word.translation).normalize('NFC');
+    return translation !== key
+      && translation.normalize('NFD').replace(/[̀-ͯ]/g, '') === key;
   }
 
   insertWord(key, word) {
@@ -214,9 +230,10 @@ class VocabMatcher {
   postProcess(rawMatches, text) {
     const needsChineseBoundaries = rawMatches.some(m => this.isChineseSource(m.entry.word));
     const chineseBoundaries = needsChineseBoundaries ? this.getChineseBoundaries(text) : null;
-    const bounded = rawMatches.filter(m => this.isChineseSource(m.entry.word)
+    const bounded = rawMatches.filter(m => (this.isChineseSource(m.entry.word)
       ? !!chineseBoundaries && chineseBoundaries.has(m.start) && chineseBoundaries.has(m.end)
-      : this.isWordBoundary(text, m.start, m.end - m.start, m.entry.key));
+      : this.isWordBoundary(text, m.start, m.end - m.start, m.entry.key))
+      && !this.isFormulaUsedInsideSentence(text, m));
 
     // Prefer longer multi-word source keys over overlapping single words.
     bounded.sort((a, b) => (
@@ -252,6 +269,34 @@ class VocabMatcher {
     }
 
     return result.sort((a, b) => a.start - b.start);
+  }
+
+  // Greetings and farewells ("good night" → buenas noches, "see you" → nos
+  // vemos) are formulas. Inside a sentence the same words are a noun phrase
+  // ("a good night's sleep") or a verb phrase ("excited to see you"), and the
+  // formula's translation is wrong there.
+  static FORMULA_LEADS = {
+    en: new Set(['a', 'an', 'the', 'this', 'that', 'every', 'one', 'to', 'not', 'never',
+      'can', 'could', 'will', 'would', 'shall', 'should', 'may', 'might', 'must',
+      'gonna', 'wanna', 'want', 'did', 'didn\'t', 'can\'t', 'won\'t', 'couldn\'t', 'wouldn\'t']),
+    es: new Set(['un', 'una', 'unos', 'unas', 'el', 'la', 'los', 'las', 'que', 'de', 'para', 'no']),
+  };
+
+  isFormula(word, key) {
+    const pos = String(word && word.part_of_speech || '').toLowerCase();
+    if (pos === 'interjection' || pos === 'phrase') return true;
+    return !pos && this.countKeyWords(key) > 1;
+  }
+
+  isFormulaUsedInsideSentence(text, match) {
+    const word = match.entry.word;
+    if (this.isChineseSource(word) || this.isChineseTarget(word)) return false;
+    if (!this.isFormula(word, match.entry.key)) return false;
+    if (/^['’]s(?![\p{L}\p{N}])/u.test(text.slice(match.end, match.end + 3))) return true;
+    const source = String(word.search_language || 'en').toLowerCase().startsWith('es') ? 'es' : 'en';
+    const before = text.slice(Math.max(0, match.start - 24), match.start);
+    const previous = (before.match(/([\p{L}'’]+)\s+$/u) || [])[1];
+    return !!previous && VocabMatcher.FORMULA_LEADS[source].has(previous.toLowerCase().replace(/’/g, '\''));
   }
 
   countKeyWords(key) {
