@@ -36,9 +36,9 @@ const DEFAULTS = { apiBase: 'https://api.langsly.com/api', frontendUrl: 'https:/
 const MAX_EXTENSION_AUDIO_FETCH_BYTES = 8 * 1024 * 1024;
 const DEFAULT_EXTENSION_SOURCE_LANGUAGE = 'en';
 const AUTO_BUDGET_WINDOW_MS = 60 * 1000;
-const automaticBudgetBuckets = new Map();
 const activeAuthControllers = new Set();
 let authGeneration = 0;
+const automaticBudgetBuckets = new Map();
 let sourceGeneration = 0;
 let vocabularySyncGeneration = 0;
 let encounterCoordinator = null;
@@ -186,6 +186,8 @@ async function clearTokens() {
     'extensionSourceLanguage',
     'pageTextLanguage',
     'subscriptionRequired',
+    'vocabPassPlan',
+    'accountEmail',
       ...cacheKeys,
     ]);
   });
@@ -583,10 +585,21 @@ async function syncThemes() {
   const { access } = await getTokens();
   if (!access) return getStoredThemeState();
   const { apiBase } = await getConfig();
-  const [userRes, themesRes] = await Promise.all([
+  const [userRes, themesRes, planRes] = await Promise.all([
     authFetch(`${apiBase}/users/current/`),
     authFetch(`${apiBase}/users/themes/`),
+    // Plan status is shown in Settings; a failure here never blocks themes.
+    authFetch(`${apiBase}/users/billing/vocab-pass/`).catch(() => null),
   ]);
+
+  if (planRes && planRes.ok && generation === authGeneration) {
+    try {
+      const plan = await planRes.json();
+      await _setSessionStorage({ vocabPassPlan: normalizePlan(plan) }, generation);
+    } catch {
+      // Keep whatever plan status was stored last.
+    }
+  }
 
   if (!userRes || !themesRes || !userRes.ok || !themesRes.ok) {
     const currentState = await getStoredThemeState();
@@ -597,6 +610,8 @@ async function syncThemes() {
   const currentUser = await userRes.json();
   const themePacks = await themesRes.json();
   if (generation !== authGeneration) return getStoredThemeState();
+  const accountEmail = currentUser && typeof currentUser.email === 'string' ? currentUser.email : '';
+  await _setSessionStorage({ accountEmail }, generation);
   const activeTheme = LangslyTheme.resolveActiveTheme({
     currentUser,
     themePacks,
@@ -684,6 +699,19 @@ function readyVocabularyRows(words, data) {
     || (zhTargetEnabled && source.isReadyChineseTargetRow(word)));
 }
 
+// Key-order independent: browser.storage hands objects back with sorted keys.
+function _stableJson(value) {
+  return JSON.stringify(value, (key, entry) => (entry && typeof entry === 'object' && !Array.isArray(entry)
+    ? Object.fromEntries(Object.keys(entry).sort().map(name => [name, entry[name]]))
+    : entry));
+}
+
+function _resetAutomaticBudget(type) {
+  for (const key of [...automaticBudgetBuckets.keys()]) {
+    if (key.endsWith(`:${type}`)) automaticBudgetBuckets.delete(key);
+  }
+}
+
 async function syncVocabulary() {
   const generation = authGeneration;
   const sourceRevision = sourceGeneration;
@@ -736,6 +764,8 @@ async function syncVocabulary() {
     : data.source_language_ready !== false;
   const words = sourceReady && Array.isArray(data.words) ? readyVocabularyRows(data.words, data) : [];
   const matchableWordCount = countMatchableWords(words);
+  const { vocabWords: previousWords } = await browser.storage.local.get('vocabWords');
+  const vocabularyChanged = _stableJson(previousWords || []) !== _stableJson(words);
   const stored = await _setSessionStorage({
     vocabWords: words,
     lastSync: sourceReady ? new Date().toISOString() : null,
@@ -747,6 +777,10 @@ async function syncVocabulary() {
     subscriptionRequired: false,
   }, generation, sourceRevision, syncRevision);
   if (!stored) return;
+  // Changed words make every page start over; let them validate again right
+  // away instead of waiting out the previous scan's budget. Pages cannot
+  // trigger a sync, so this does not loosen the per-page abuse limit.
+  if (vocabularyChanged) _resetAutomaticBudget('disambiguate');
 
   if (sourceRevision === sourceGeneration && syncRevision === vocabularySyncGeneration) {
     await broadcastVocabulary(words, () => generation === authGeneration
@@ -756,6 +790,20 @@ async function syncVocabulary() {
 
 // ─── Vocab Pass subscription (HTTP 402 from the paywall) ─────
 const SUBSCRIPTION_REQUIRED_CODE = 'vocab_pass_subscription_required';
+
+// The subset of /users/billing/vocab-pass/ that Settings shows. Nothing here
+// is a secret, but keep it small so a stale copy cannot mislead.
+function normalizePlan(payload) {
+  const source = payload && typeof payload === 'object' ? payload : {};
+  return {
+    hasAccess: Boolean(source.has_access),
+    status: typeof source.status === 'string' ? source.status : null,
+    source: typeof source.source === 'string' ? source.source : null,
+    currentPeriodEnd: typeof source.current_period_end === 'string' ? source.current_period_end : null,
+    cancelAtPeriodEnd: Boolean(source.cancel_at_period_end),
+    priceDisplay: typeof source.price_display === 'string' ? source.price_display : '',
+  };
+}
 
 async function isSubscriptionRequiredResponse(res) {
   if (!res || res.status !== 402) return false;
@@ -1024,6 +1072,8 @@ browser.runtime.onMessage.addListener((message, sender) => {
         'themeTokens',
         'themeSyncStatus',
         'subscriptionRequired',
+        'vocabPassPlan',
+        'accountEmail',
       ]);
       if (stored.refreshToken && (!stored.authToken || !isAccessTokenFresh(stored.authToken))) {
         await ensureAccessToken();
@@ -1045,10 +1095,14 @@ browser.runtime.onMessage.addListener((message, sender) => {
         themeTokens,
         themeSyncStatus,
         subscriptionRequired,
+        vocabPassPlan,
+        accountEmail,
       } = stored;
       return {
         subscriptionRequired: Boolean(subscriptionRequired),
         subscribeUrl: await getSubscribeUrl(),
+        plan: vocabPassPlan && typeof vocabPassPlan === 'object' ? vocabPassPlan : null,
+        accountEmail: typeof accountEmail === 'string' ? accountEmail : '',
         // Keep the account connected through offline/server failures when a
         // durable refresh credential still exists. Only explicit logout or a
         // confirmed 401/403 refresh rejection clears the session.

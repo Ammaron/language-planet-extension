@@ -4,84 +4,133 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title data-i18n="optionsTitle"></title>
+  <link rel="stylesheet" href="theme.css">
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
   <div id="options-app">
-    <div class="options-header">
-      <img src="../icons/langsly-icon.png" alt="" class="logo">
-      <h1 data-i18n="optionsTitle"></h1>
-    </div>
-
-    <div class="options-section">
-      <h2 data-i18n="accountSettingsTitle">Langsly account</h2>
-      <p id="account-status" class="account-status" role="status"></p>
-      <button id="account-connect" class="primary-btn hidden" type="button" data-i18n="connectLangslyAccount">Connect Langsly account</button>
-      <button id="account-logout" class="secondary-btn hidden" type="button" data-i18n="logoutButton">Log out</button>
-      <div id="subscription-required" class="subscription-required hidden" role="alert">
-        <p class="subscription-title" data-i18n="subscriptionRequiredTitle">Vocab Pass needs an active subscription ($5/month)</p>
-        <p data-i18n="subscriptionRequiredBody">Highlighting is paused. Subscribe on Langsly, then select Sync now.</p>
-        <button id="subscribe-btn" class="primary-btn" type="button" data-i18n="subscribeOnLangsly">Subscribe on Langsly</button>
-        <button id="subscription-recheck" class="secondary-btn" type="button" data-i18n="syncNow">Sync now</button>
+    <header class="options-header">
+      <img src="../icons/langsly-icon.png" alt="" class="lp-mascot logo">
+      <div>
+        <p class="lp-eyebrow" data-i18n="popupBrandName"></p>
+        <h1 class="lp-display" data-i18n="optionsTitle"></h1>
       </div>
-    </div>
+    </header>
 
-    <div class="options-section">
-      <h2 data-i18n="syncInterval"></h2>
-      <div class="slider-row">
-        <input type="range" id="sync-interval" min="15" max="240" step="15" value="60">
-        <span id="sync-interval-label"></span>
+    <!-- Account -->
+    <section class="options-section">
+      <h2 class="options-section-title" data-i18n="accountSettingsTitle">Langsly account</h2>
+      <div class="lp-surface options-group">
+        <div class="lp-row options-row">
+          <div class="lp-row-copy">
+            <p id="account-status" class="lp-row-title" role="status"></p>
+            <p id="account-email" class="lp-row-help"></p>
+          </div>
+          <button id="account-connect" class="lp-btn lp-btn-primary primary-btn hidden" type="button" data-i18n="connectLangslyAccount">Sign in with Langsly</button>
+          <button id="account-logout" class="lp-btn lp-btn-ghost secondary-btn hidden" type="button" data-i18n="logoutButton">Log out</button>
+        </div>
+        <div id="plan-row" class="lp-row options-row hidden">
+          <div class="lp-row-copy">
+            <p class="lp-eyebrow" data-i18n="planLabel">Plan</p>
+            <p id="plan-status" class="lp-row-title"></p>
+          </div>
+          <a id="manage-plan" class="lp-btn lp-btn-secondary" href="#" data-i18n="manageBilling">Manage plan</a>
+        </div>
+        <div id="subscription-required" class="lp-note lp-note-danger options-paywall hidden" role="alert">
+          <p class="subscription-title" data-i18n="subscriptionRequiredTitle">Vocab Pass needs an active subscription ($5/month)</p>
+          <p data-i18n="subscriptionRequiredBody">Highlighting is paused. Subscribe on Langsly, then select Sync now.</p>
+          <div class="options-paywall-actions">
+            <button id="subscribe-btn" class="lp-btn lp-btn-primary primary-btn" type="button" data-i18n="subscribeOnLangsly">Subscribe on Langsly</button>
+            <button id="subscription-recheck" class="lp-btn lp-btn-secondary secondary-btn" type="button" data-i18n="syncNow">Sync now</button>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
 
-    <div class="options-section">
-      <label for="page-source-language" data-i18n="pageTextLanguage">Page text language</label>
-      <select id="page-source-language">
-        <option value="en" data-i18n="pageLanguageEnglish">English</option>
-        <option value="es" data-i18n="pageLanguageSpanish">Spanish</option>
-        <option value="zh" data-i18n="pageLanguageSimplifiedChinese">Simplified Chinese</option>
-      </select>
-      <p data-i18n="pageTextLanguageHelp">Choose the language of the pages where Vocab Pass should match words. Your Langsly course stays selected in your account.</p>
-    </div>
+    <!-- Reading -->
+    <section class="options-section">
+      <h2 class="options-section-title" data-i18n="settingsSectionReading">Reading</h2>
+      <div class="lp-surface options-group">
+        <div class="lp-row options-row">
+          <div class="lp-row-copy">
+            <label class="lp-row-title" for="page-source-language" data-i18n="pageTextLanguage">Page text language</label>
+            <p class="lp-row-help" data-i18n="pageTextLanguageHelp">Choose the language of the pages where Vocab Pass should match words. Your Langsly course stays selected in your account.</p>
+          </div>
+          <select id="page-source-language" class="lp-select options-select">
+            <option value="en" data-i18n="pageLanguageEnglish">English</option>
+            <option value="es" data-i18n="pageLanguageSpanish">Spanish</option>
+            <option value="zh" data-i18n="pageLanguageSimplifiedChinese">Simplified Chinese</option>
+          </select>
+        </div>
+        <div class="lp-row options-row options-row-stack">
+          <div class="lp-row-copy">
+            <label class="lp-row-title" for="sync-interval" data-i18n="syncInterval">Sync every</label>
+            <p class="lp-row-help" data-i18n="syncIntervalHelp">How often Vocab Pass refreshes your word list from Langsly.</p>
+          </div>
+          <div class="slider-row">
+            <input type="range" id="sync-interval" min="15" max="240" step="15" value="60">
+            <span id="sync-interval-label"></span>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    <div class="options-section">
-      <h2 data-i18n="writingPracticeSettingsTitle">Character writing</h2>
-      <label class="checkbox-row" for="writing-practice-enabled">
-        <input type="checkbox" id="writing-practice-enabled" checked>
-        <span data-i18n="writingPracticeSetting">Show "Practice writing" on eligible Chinese words</span>
-      </label>
-      <p data-i18n="writingPracticeSettingHelp">An optional button in the word popup. It never opens by itself and never changes lessons or scores.</p>
-    </div>
+    <!-- Chinese -->
+    <section class="options-section">
+      <h2 class="options-section-title" data-i18n="settingsSectionChinese">Chinese</h2>
+      <div class="lp-surface options-group">
+        <div class="lp-row options-row">
+          <div class="lp-row-copy">
+            <label class="lp-row-title" for="zh-pinyin-mode" data-i18n="pinyinModeTitle">Pinyin above Chinese words</label>
+            <p class="lp-row-help" data-i18n="pinyinModeHelp">Pinyin fades as you learn a word. Tapping a word twice in a week brings it back.</p>
+          </div>
+          <select id="zh-pinyin-mode" class="lp-select options-select">
+            <option value="auto" data-i18n="pinyinModeAuto">Fade as I learn (default)</option>
+            <option value="always" data-i18n="pinyinModeAlways">Always show</option>
+            <option value="popup" data-i18n="pinyinModePopupOnly">Only in the word popup</option>
+          </select>
+        </div>
+        <label class="lp-row options-row checkbox-row" for="writing-practice-enabled">
+          <span class="lp-row-copy">
+            <span class="lp-row-title" data-i18n="writingPracticeSetting">Show "Practice writing" on eligible Chinese words</span>
+            <span class="lp-row-help" data-i18n="writingPracticeSettingHelp">An optional button in the word popup. It never opens by itself and never changes lessons or scores.</span>
+          </span>
+          <span class="lp-switch switch">
+            <input type="checkbox" id="writing-practice-enabled" checked>
+            <span class="lp-switch-track"></span>
+          </span>
+        </label>
+      </div>
+    </section>
 
-    <div class="options-section">
-      <label for="zh-pinyin-mode" data-i18n="pinyinModeTitle">Pinyin above Chinese words</label>
-      <select id="zh-pinyin-mode">
-        <option value="auto" data-i18n="pinyinModeAuto">Fade as I learn (default)</option>
-        <option value="always" data-i18n="pinyinModeAlways">Always show</option>
-        <option value="popup" data-i18n="pinyinModePopupOnly">Only in the word popup</option>
-      </select>
-      <p data-i18n="pinyinModeHelp">Pinyin fades as you learn a word. Tapping a word twice in a week brings it back.</p>
-    </div>
+    <!-- Protected pages -->
+    <section class="options-section">
+      <h2 class="options-section-title" data-i18n="behaviorLabel"></h2>
+      <div class="lp-surface options-group">
+        <p class="options-static lp-secondary" data-i18n="sensitiveProtectionLocked"></p>
+      </div>
+    </section>
 
-    <div class="options-section">
-      <h2 data-i18n="behaviorLabel"></h2>
-      <p data-i18n="sensitiveProtectionLocked"></p>
-    </div>
-
-    <div class="options-section">
-      <h2 data-i18n="aboutTitle">About</h2>
-      <a href="licenses.html" target="_blank" rel="noopener" data-i18n="openSourceLicenses">Open-source licenses</a>
-    </div>
+    <!-- About -->
+    <section class="options-section">
+      <h2 class="options-section-title" data-i18n="aboutTitle">About</h2>
+      <div class="lp-surface options-group">
+        <div class="lp-row options-row">
+          <span class="lp-row-copy lp-row-title" id="about-version"></span>
+          <a class="lp-link" href="licenses.html" target="_blank" rel="noopener" data-i18n="openSourceLicenses">Open-source licenses</a>
+        </div>
+      </div>
+    </section>
 
     <div class="options-footer">
-      <button id="save-btn" class="primary-btn" data-i18n="saveSettings"></button>
-      <button id="reset-preferences" class="secondary-btn" data-i18n="resetToDefaults"></button>
-      <span id="save-status" class="save-status hidden" data-i18n="settingsSaved"></span>
+      <button id="reset-preferences" class="lp-btn lp-btn-ghost secondary-btn" data-i18n="resetToDefaults"></button>
+      <span id="save-status" class="save-status hidden" role="status" data-i18n="settingsSaved"></span>
     </div>
   </div>
   <script src="../vendor/browser-polyfill.min.js"></script>
   <script src="../shared/i18n.js"></script>
   <script src="../shared/source-language.js"></script>
+  <script src="../background/theme-utils.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

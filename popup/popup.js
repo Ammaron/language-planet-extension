@@ -3,14 +3,18 @@ const loginView = document.getElementById('login-view');
 const settingsView = document.getElementById('settings-view');
 const loginError = document.getElementById('login-error');
 const accountConnectBtn = document.getElementById('account-connect-btn');
-const logoutBtn = document.getElementById('logout-btn');
 const syncBtn = document.getElementById('sync-btn');
 const wordCountEl = document.getElementById('word-count');
 const lastSyncEl = document.getElementById('last-sync');
 const sourceLanguageEl = document.getElementById('source-language');
 const matchableWordCountEl = document.getElementById('matchable-word-count');
 const currentDomainEl = document.getElementById('current-domain');
+const siteHelpEl = document.getElementById('site-help');
+const siteSection = document.querySelector('.pp-site');
 const siteToggle = document.getElementById('site-toggle');
+const pageStateEl = document.getElementById('page-state');
+const pageWordCountEl = document.getElementById('page-word-count');
+const pageWordLabelEl = document.getElementById('page-word-label');
 const openVocabpass = document.getElementById('open-vocabpass');
 const openSettings = document.getElementById('open-settings');
 const diffBtns = document.querySelectorAll('.diff-btn');
@@ -21,9 +25,16 @@ const themeSelect = document.getElementById('theme-select');
 const themeStatus = document.getElementById('theme-status');
 const subscriptionRequiredEl = document.getElementById('subscription-required');
 const subscribeBtn = document.getElementById('subscribe-btn');
+const subscriptionRecheck = document.getElementById('subscription-recheck');
+const learnMoreLink = document.getElementById('login-learn-more');
 let subscribeUrl = '';
 const LEGACY_FRONTEND_URL = 'http://localhost:3000';
 const DEFAULT_FRONTEND_URL = 'https://langsly.com';
+
+// What the content script reports for the active tab, if it is reachable.
+let pageState = { reachable: false, lifecycleState: null, wordCount: 0 };
+let siteEnabled = true;
+let latestStatus = null;
 
 function t(key, substitutions, fallback) {
   if (window.LangslyI18n) return window.LangslyI18n.t(key, substitutions, fallback);
@@ -40,6 +51,11 @@ function resolveFrontendUrl(value) {
   return !normalized || normalized === normalizeUrl(LEGACY_FRONTEND_URL)
     ? DEFAULT_FRONTEND_URL
     : normalized;
+}
+
+async function frontendUrl() {
+  const { frontendUrl: stored } = await browser.storage.local.get('frontendUrl');
+  return resolveFrontendUrl(stored);
 }
 
 function applyThemeTokens(tokens) {
@@ -109,7 +125,7 @@ function showLogin() {
     const unfinished = pending && !['connected', 'cancelled'].includes(pending.status);
     accountConnectBtn.textContent = unfinished
       ? (pending.expiresAt <= Date.now() || pending.status === 'denied' ? t('connectRestart', 'Restart connection') : t('connectContinue', 'Continue connection'))
-      : t('connectLangslyAccount', 'Connect Langsly account');
+      : t('connectLangslyAccount', 'Sign in with Langsly');
   });
 }
 
@@ -123,10 +139,112 @@ async function renderLoggedInState() {
   showSettings();
   updateStatus(status);
   syncAndRenderThemes(status);
+  await loadActiveTab();
 }
 
 function setLoginControlsDisabled(disabled) {
   if (accountConnectBtn) accountConnectBtn.disabled = disabled;
+}
+
+// ─── Active tab ──────────────────────────────
+async function loadActiveTab() {
+  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+  pageState = { reachable: false, lifecycleState: null, wordCount: 0 };
+  let domain = '';
+  if (tab && tab.url) {
+    try {
+      const url = new URL(tab.url);
+      if (['http:', 'https:'].includes(url.protocol)) domain = url.hostname;
+    } catch {
+      domain = '';
+    }
+  }
+  currentDomainEl.textContent = domain || t('thisPage', 'This page');
+  siteToggle.disabled = !domain;
+
+  if (domain) {
+    // Whitelisted here means "paused on this site".
+    const response = await browser.runtime.sendMessage({ type: 'GET_WHITELIST' }).catch(() => null);
+    if (response && response.domains) {
+      siteEnabled = !response.domains.some(d => domain.includes(d) || d.includes(domain));
+      siteToggle.checked = siteEnabled;
+    }
+    if (tab.id) {
+      try {
+        const reply = await browser.tabs.sendMessage(tab.id, { type: 'GET_PAGE_STATE' });
+        if (reply && typeof reply === 'object') {
+          pageState = { reachable: true, lifecycleState: reply.lifecycleState || null, wordCount: Number(reply.wordCount) || 0 };
+        }
+      } catch {
+        // No content script on this page (store pages, PDFs, browser UI).
+      }
+    }
+  }
+  renderPageState();
+}
+
+function formatRelativeTime(iso) {
+  const then = new Date(iso).getTime();
+  if (!Number.isFinite(then)) return '–';
+  const minutes = Math.max(0, Math.round((Date.now() - then) / 60000));
+  if (minutes < 1) return t('justNow', 'just now');
+  if (minutes < 60) return t('minutesAgo', [String(minutes)], `${minutes} min ago`);
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return t('hoursAgo', [String(hours)], `${hours} h ago`);
+  return new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+// One sentence that says what Vocab Pass is doing on this tab right now.
+function renderPageState() {
+  const status = latestStatus || {};
+  const domainKnown = !siteToggle.disabled;
+  let dot = 'on';
+  let label = t('pageStateOn', 'On');
+  let help = t('siteHelpOn', 'Words from your Langsly course appear here while you read.');
+  let countVisible = true;
+
+  siteSection.classList.remove('is-off', 'is-protected', 'is-unavailable');
+
+  if (status.subscriptionRequired) {
+    dot = 'off';
+    label = t('pageStateSubscription', 'Pass ended');
+  } else if (!domainKnown || (!pageState.reachable && !['offline', 'failed'].includes(status.syncStatus))) {
+    dot = '';
+    label = t('pageStateUnavailable', 'Unavailable');
+    help = t('siteHelpUnavailable', 'Vocab Pass works on regular web pages, not browser or store pages.');
+    countVisible = false;
+    siteSection.classList.add('is-unavailable');
+  } else if (!siteEnabled || pageState.lifecycleState === 'disabled') {
+    dot = '';
+    label = t('pageStatePaused', 'Paused here');
+    help = t('siteHelpOff', 'Turn it back on to highlight words on this site.');
+    siteSection.classList.add('is-off');
+  } else if (pageState.lifecycleState === 'excluded') {
+    dot = 'warn';
+    label = t('pageStateProtected', 'Protected page');
+    help = t('siteHelpProtected', 'Sign-in, banking and similar pages are never read.');
+    siteSection.classList.add('is-protected');
+  } else if (status.syncStatus === 'offline') {
+    dot = 'warn';
+    label = t('pageStateOffline', 'Offline');
+  } else if (['failed', 'unsupported_locale', 'source_unavailable'].includes(status.syncStatus)) {
+    dot = 'off';
+    label = t('statusSyncFailed', 'Sync failed');
+  }
+
+  statusIndicator.className = `lp-dot ${dot}`.trim();
+  statusIndicator.title = label;
+  pageStateEl.textContent = label;
+  siteHelpEl.textContent = help;
+
+  if (countVisible && pageState.reachable) {
+    const n = pageState.wordCount;
+    pageWordCountEl.textContent = String(n);
+    pageWordLabelEl.textContent = n === 1 ? t('wordOnThisPage', 'word on this page') : t('wordsOnThisPage', 'words on this page');
+  } else {
+    pageWordCountEl.textContent = '–';
+    pageWordLabelEl.textContent = t('wordsOnThisPage', 'words on this page');
+  }
 }
 
 // ─── Init ────────────────────────────────────
@@ -143,27 +261,11 @@ async function init() {
   showSettings();
   updateStatus(status);
   syncAndRenderThemes(status);
-
-  // Get current tab domain
-  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-  if (tab && tab.url) {
-    try {
-      const domain = new URL(tab.url).hostname;
-      currentDomainEl.textContent = domain;
-
-      // Check if domain is whitelisted (whitelisted = extension disabled there)
-      const response = await browser.runtime.sendMessage({ type: 'GET_WHITELIST' });
-      if (response && response.domains) {
-        const isWhitelisted = response.domains.some(d => domain.includes(d) || d.includes(domain));
-        siteToggle.checked = !isWhitelisted;
-      }
-    } catch {
-      currentDomainEl.textContent = t('notAvailable', 'N/A');
-    }
-  }
+  await loadActiveTab();
 }
 
 function updateStatus(status) {
+  latestStatus = status;
   wordCountEl.textContent = status.wordCount || 0;
   const matchableWordCount = Number.isFinite(status.matchableWordCount)
     ? status.matchableWordCount
@@ -180,30 +282,34 @@ function updateStatus(status) {
   }
 
   if (status.lastSync) {
-    const syncDate = new Date(status.lastSync);
-    lastSyncEl.textContent = syncDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    lastSyncEl.textContent = formatRelativeTime(status.lastSync);
 
     // Check for stale data (>24h)
-    const hoursSinceSync = (Date.now() - syncDate.getTime()) / (1000 * 60 * 60);
+    const hoursSinceSync = (Date.now() - new Date(status.lastSync).getTime()) / (1000 * 60 * 60);
     if (hoursSinceSync > 24 && statusBanner) {
-      statusBanner.textContent = t('dataStaleWarning', 'Data may be stale - last synced over 24h ago');
-      statusBanner.className = 'status-banner warning';
+      statusBanner.textContent = t('dataStaleWarning', 'Your words were last synced over a day ago.');
+      statusBanner.className = 'lp-note';
       statusBanner.classList.remove('hidden');
     }
   } else {
-    lastSyncEl.textContent = '\u2014';
+    lastSyncEl.textContent = '–';
   }
 
   if ((status.wordCount || 0) > 0 && matchableWordCount === 0 && statusBanner) {
     statusBanner.textContent = t('noMatchableWordsWarning', 'Words synced, but none have page text triggers for the selected source language.');
-    statusBanner.className = 'status-banner warning';
+    statusBanner.className = 'lp-note';
     statusBanner.classList.remove('hidden');
   }
   if (statusBanner && ['unsupported_locale', 'source_unavailable'].includes(status.syncStatus)) {
     statusBanner.textContent = status.syncStatus === 'unsupported_locale'
       ? t('sourceLanguageUnsupported', 'This page language is not supported. Choose a supported language in Langsly.')
       : t('sourceLanguageUnavailable', 'Reviewed vocabulary is not yet available for this page language and course.');
-    statusBanner.className = 'status-banner warning';
+    statusBanner.className = 'lp-note';
+    statusBanner.classList.remove('hidden');
+  }
+  if (status.syncStatus === 'offline' && statusBanner) {
+    statusBanner.textContent = t('offlineCachedVocabulary', 'Offline. Using the words saved on this device.');
+    statusBanner.className = 'lp-note';
     statusBanner.classList.remove('hidden');
   }
 
@@ -211,6 +317,7 @@ function updateStatus(status) {
   subscribeUrl = status.subscribeUrl || '';
   if (subscriptionRequiredEl) {
     subscriptionRequiredEl.classList.toggle('hidden', !status.subscriptionRequired);
+    settingsView.classList.toggle('pp-paywalled', Boolean(status.subscriptionRequired));
   }
 
   // Update difficulty buttons
@@ -218,30 +325,7 @@ function updateStatus(status) {
     btn.classList.toggle('active', btn.dataset.level === (status.difficulty || 'normal'));
   });
 
-  // Connection health indicator
-  if (statusIndicator) {
-    if (status.syncStatus === 'success') {
-      statusIndicator.className = 'status-dot connected';
-      statusIndicator.title = t('statusConnected', 'Connected');
-    } else if (status.syncStatus === 'offline') {
-      statusIndicator.className = 'status-dot offline';
-      statusIndicator.title = t('statusOffline', 'Offline');
-      if (statusBanner) {
-        statusBanner.textContent = t('offlineCachedVocabulary', 'Offline - using cached vocabulary');
-        statusBanner.className = 'status-banner offline';
-        statusBanner.classList.remove('hidden');
-      }
-    } else if (status.syncStatus === 'subscription_required') {
-      statusIndicator.className = 'status-dot error';
-      statusIndicator.title = t('statusSubscriptionRequired', 'Subscription needed');
-    } else if (['failed', 'unsupported_locale', 'source_unavailable'].includes(status.syncStatus)) {
-      statusIndicator.className = 'status-dot error';
-      statusIndicator.title = t('statusSyncFailed', 'Sync failed');
-    } else {
-      statusIndicator.className = 'status-dot unknown';
-      statusIndicator.title = t('statusUnknown', 'Unknown');
-    }
-  }
+  renderPageState();
 }
 
 // ─── Login ───────────────────────────────────
@@ -261,29 +345,55 @@ if (accountConnectBtn) {
     }
 
     setLoginControlsDisabled(false);
-    accountConnectBtn.textContent = t('connectLangslyAccount', 'Connect Langsly account');
+    accountConnectBtn.textContent = t('connectLangslyAccount', 'Sign in with Langsly');
   });
 }
 
-// ─── Logout ──────────────────────────────────
-logoutBtn.addEventListener('click', async () => {
-  await browser.runtime.sendMessage({ type: 'LOGOUT' });
-  showLogin();
-});
+if (learnMoreLink) {
+  learnMoreLink.addEventListener('click', async (e) => {
+    e.preventDefault();
+    browser.tabs.create({ url: `${await frontendUrl()}/vocab-pass` });
+  });
+}
 
 // ─── Sync ────────────────────────────────────
 syncBtn.addEventListener('click', async () => {
   syncBtn.textContent = t('syncing', 'Syncing...');
   syncBtn.disabled = true;
 
-  await browser.runtime.sendMessage({ type: 'SYNC_NOW' });
+  // A fast sync would otherwise flash by unseen and look like a dead button.
+  const minimumFeedback = new Promise(resolve => setTimeout(resolve, 700));
+  await browser.runtime.sendMessage({ type: 'SYNC_NOW' }).catch(() => null);
   const status = await browser.runtime.sendMessage({ type: 'GET_STATUS' });
   updateStatus(status);
   syncAndRenderThemes(status);
+  await loadActiveTab();
+  await minimumFeedback;
 
+  const failed = ['failed', 'offline'].includes(status.syncStatus);
+  if (failed) {
+    syncBtn.textContent = t('statusSyncFailed', 'Sync failed');
+    await new Promise(resolve => setTimeout(resolve, 1500));
+  }
   syncBtn.textContent = t('syncNow', 'Sync now');
   syncBtn.disabled = false;
 });
+
+if (subscriptionRecheck) {
+  subscriptionRecheck.addEventListener('click', async () => {
+    subscriptionRecheck.disabled = true;
+    subscriptionRecheck.textContent = t('syncing', 'Syncing...');
+    try {
+      await browser.runtime.sendMessage({ type: 'SYNC_NOW' }).catch(() => null);
+      const status = await browser.runtime.sendMessage({ type: 'GET_STATUS' });
+      updateStatus(status);
+      await loadActiveTab();
+    } finally {
+      subscriptionRecheck.textContent = t('syncNow', 'Sync now');
+      subscriptionRecheck.disabled = false;
+    }
+  });
+}
 
 if (themeSelect) {
   themeSelect.addEventListener('change', async () => {
@@ -325,8 +435,10 @@ diffBtns.forEach(btn => {
 // ─── Site Toggle (whitelist) ─────────────────
 siteToggle.addEventListener('change', async () => {
   const domain = currentDomainEl.textContent;
-  if (!domain || domain === t('notAvailable', 'N/A')) return;
+  if (!domain || siteToggle.disabled) return;
   siteToggle.disabled = true;
+  siteEnabled = siteToggle.checked;
+  renderPageState();
 
   try {
     await browser.runtime.sendMessage({ type: 'TOGGLE_WHITELIST', domain, add: !siteToggle.checked });
@@ -340,17 +452,15 @@ siteToggle.addEventListener('change', async () => {
     }
   } finally {
     siteToggle.disabled = false;
+    // Give the page a moment to re-scan before counting its words again.
+    setTimeout(() => { void loadActiveTab(); }, 900);
   }
 });
 
 // ─── Subscribe ───────────────────────────────
 if (subscribeBtn) {
   subscribeBtn.addEventListener('click', async () => {
-    let url = subscribeUrl;
-    if (!url) {
-      const { frontendUrl } = await browser.storage.local.get('frontendUrl');
-      url = `${resolveFrontendUrl(frontendUrl)}/vocab-pass/subscribe`;
-    }
+    const url = subscribeUrl || `${await frontendUrl()}/vocab-pass/subscribe`;
     browser.tabs.create({ url });
   });
 }
@@ -358,9 +468,7 @@ if (subscribeBtn) {
 // ─── Open Dashboard ──────────────────────────
 openVocabpass.addEventListener('click', async (e) => {
   e.preventDefault();
-  const { frontendUrl } = await browser.storage.local.get('frontendUrl');
-  const url = resolveFrontendUrl(frontendUrl);
-  browser.tabs.create({ url: `${url}/vocab-pass` });
+  browser.tabs.create({ url: `${await frontendUrl()}/vocab-pass` });
 });
 
 if (openSettings) {

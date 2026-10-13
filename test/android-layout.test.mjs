@@ -17,7 +17,11 @@ test('Android action surfaces use safe areas, coarse-pointer responsiveness, and
   const options = await read('popup/options.css');
   const content = await read('content/content.css');
   assert.match(popup, /env\(safe-area-inset-top\)/);
-  assert.match(popup, /@media \(max-width: 480px\), \(pointer: coarse\)/);
+  // Phone layout must key on touch input only. A desktop popup viewport is always
+  // narrower than 480px, so a width query would collapse the Chrome/Brave popup.
+  assert.match(popup, /@media \(hover: none\) and \(pointer: coarse\)/);
+  assert.doesNotMatch(popup, /@media \(max-width: 480px\)/);
+  assert.match(popup, /^body \{\r?\n  width: 372px;/m);
   assert.match(popup, /\.switch[\s\S]*?height:\s*44px/);
   assert.match(popup, /\.link-btn[\s\S]*?min-height:\s*44px/);
   assert.match(popup, /\.diff-btn[\s\S]*?min-height:\s*44px/);

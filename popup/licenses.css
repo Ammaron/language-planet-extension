@@ -1,23 +1,42 @@
-:root { color-scheme: light dark; }
+/* Licenses page. Tokens and fonts come from theme.css. */
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   max-width: 760px;
   margin: 0 auto;
-  padding: 24px 16px;
-  font-size: 14px;
-  line-height: 1.5;
-  background: Canvas;
-  color: CanvasText;
+  padding: 28px 16px 48px;
 }
-h1 { font-size: 20px; margin: 0 0 8px; }
-h2 { font-size: 15px; margin: 24px 0 8px; }
+
+h1 {
+  font-size: 28px;
+  margin: 2px 0 8px;
+}
+
+.intro {
+  margin-bottom: 20px;
+}
+
+h2 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 24px 0 8px;
+}
+
+.license p {
+  color: var(--lp-text-secondary);
+  font-size: 13.5px;
+  margin-bottom: 8px;
+}
+
 pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  font-family: var(--lp-font-mono);
   font-size: 12px;
-  padding: 12px;
-  border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
-  border-radius: 8px;
+  line-height: 1.5;
+  padding: 12px 14px;
+  margin: 0;
+  border: var(--lp-hairline);
+  border-radius: var(--lp-radius);
+  background: var(--lp-surface);
   max-height: 420px;
   overflow: auto;
 }

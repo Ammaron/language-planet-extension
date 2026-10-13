@@ -4,9 +4,20 @@ const t = (key, fallback) => window.LangslyI18n?.t(key, fallback) || fallback;
 const send = (type, extra = {}) => browser.runtime.sendMessage({ type, ...extra });
 let state;
 let busy = false;
+// Which of the three steps on the left is current for a given panel state.
+const STEP_FOR_VIEW = { loading: 1, pending: 2, error: 1, subscription: 3, success: 3 };
 function show(name) {
   Object.entries(views).forEach(([key, node]) => node.classList.toggle('hidden', key !== name));
+  const current = STEP_FOR_VIEW[name] || 1;
+  document.querySelectorAll('.connect-step').forEach((step) => {
+    const n = Number(step.dataset.step);
+    step.classList.toggle('is-current', n === current);
+    step.classList.toggle('is-done', n < current || (name === 'success' && n === 3));
+  });
 }
+browser.storage.local.get('themeTokens').then(({ themeTokens }) => {
+  if (window.LangslyTheme) window.LangslyTheme.applyThemeTokensToDocument(document.documentElement, themeTokens);
+});
 let subscribeUrl = '';
 async function showConnected() {
   const account = await send('GET_STATUS');
@@ -72,6 +83,17 @@ document.getElementById('recheck-connect').addEventListener('click', () => void 
 }));
 document.getElementById('close-connect').addEventListener('click', () => {
   window.location.href = browser.runtime.getURL('popup/popup.html');
+});
+// A stable, text-rich article in the language of the pages the user reads.
+const SAMPLE_ARTICLES = {
+  en: 'https://en.wikipedia.org/wiki/Barcelona',
+  es: 'https://es.wikipedia.org/wiki/Barcelona',
+  zh: 'https://zh.wikipedia.org/wiki/%E5%B7%B4%E5%A1%9E%E7%BD%97%E9%82%A3',
+};
+document.getElementById('try-article').addEventListener('click', async () => {
+  const account = await send('GET_STATUS').catch(() => null);
+  const language = String(account?.pageTextLanguage || account?.extensionSourceLanguage || 'en').toLowerCase();
+  browser.tabs.create({ url: SAMPLE_ARTICLES[language] || SAMPLE_ARTICLES.en });
 });
 browser.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && changes.extensionDeviceAuthorization) void send('DEVICE_CONNECTION_STATUS').then(render);

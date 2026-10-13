@@ -38,7 +38,7 @@ test('Spanish locale defines every English message key', async () => {
   assert.ok(spanishMessages.extDescription.message.length <= 132);
   assert.equal(
     spanishMessages.popupHeroTitle.message,
-    'Repasa palabras de español e inglés en las páginas que lees.',
+    'Las palabras de tu curso, en cada página que lees.',
   );
 });
 

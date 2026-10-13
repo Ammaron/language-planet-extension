@@ -21,7 +21,7 @@ test('popup and onboarding open the device connection tab without credential fie
     const css = await readText(cssPath);
     const js = await readText(jsPath);
     assert.match(html, /data-i18n="connectLangslyAccount"/);
-    assert.match(html, /class="account-connect-btn"/);
+    assert.match(html, /class="[^"]*\baccount-connect-btn\b[^"]*"/);
     assert.doesNotMatch(html, /type="(?:email|password)"/);
     assert.doesNotMatch(html, /google-login-btn/);
     assert.doesNotMatch(css, /content:\s*["']G["']/);

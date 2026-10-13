@@ -15,6 +15,7 @@ const runtimeFiles = [
   'background/device-connection.js', 'content/connection-bridge.js', 'background/theme-utils.js', 'background/encounter-coordinator.js', 'background/service-worker.js',
   'background/hanzi-practice.js',
   'content/request-coordinator.js', 'content/grammar-rules.js', 'content/matcher.js', 'content/writing-practice.js', 'content/popup.js', 'content/content.js', 'content/content.css',
+  'popup/theme.css', 'fonts/fraunces-latin-wght-normal.woff2', 'fonts/dm-sans-latin-wght-normal.woff2', 'fonts/LICENSE-fraunces', 'fonts/LICENSE-dm-sans',
   'popup/popup.html', 'popup/popup.js', 'popup/popup.css',
   'popup/options.html', 'popup/options.js', 'popup/options.css',
   'popup/onboarding.html', 'popup/onboarding.js', 'popup/onboarding.css',

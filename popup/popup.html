@@ -4,123 +4,119 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title data-i18n="popupTitle"></title>
+  <link rel="stylesheet" href="theme.css">
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div id="app">
-    <!-- Login view (shown when logged out) -->
+    <!-- Signed out: show the product, one way in -->
     <div id="login-view" class="view hidden">
-      <div class="hero-strip">
-        <div class="brand-mark" aria-hidden="true">
-          <img src="../icons/langsly-icon.png" alt="" class="brand-logo">
-        </div>
-        <div class="brand-copy">
-          <p class="eyebrow" data-i18n="popupBrandName"></p>
-          <h1 data-i18n="popupHeroTitle"></h1>
-          <p class="subtitle" data-i18n="popupHeroSubtitle"></p>
-        </div>
+      <header class="pp-header">
+        <img src="../icons/langsly-icon.png" alt="" class="lp-mascot pp-mascot">
+        <span class="pp-brand lp-display" data-i18n="popupBrandShort">Vocab Pass</span>
+      </header>
+
+      <h1 class="lp-display pp-hero-title" data-i18n="popupHeroTitle"></h1>
+      <p class="lp-secondary pp-hero-copy" data-i18n="popupHeroSubtitle"></p>
+
+      <div class="lp-sample" aria-hidden="true">
+        <span data-i18n="popupSampleLead"></span>
+        <span class="lp-sample-word" data-i18n="popupSampleWordOne"></span>
+        <span data-i18n="popupSampleMiddle"></span>
+        <span class="lp-sample-word" data-i18n="popupSampleWordTwo"></span><span data-i18n="popupSampleTail"></span>
+        <br>
+        <span class="lp-sample-tip"><span data-i18n="popupSampleWordOne"></span><small data-i18n="popupSampleMeaning"></small></span>
       </div>
 
-      <div id="login-form" class="auth-form">
-        <button type="button" id="account-connect-btn" class="account-connect-btn" data-i18n="connectLangslyAccount"></button>
-        <p class="form-note" data-i18n="loginFormNote"></p>
-        <div id="login-error" class="error hidden"></div>
-        <button type="button" id="login-open-settings" class="secondary-btn" data-i18n="accountSettingsTitle">Langsly account</button>
+      <div id="login-form" class="pp-auth">
+        <button type="button" id="account-connect-btn" class="lp-btn lp-btn-primary lp-btn-block account-connect-btn" data-i18n="connectLangslyAccount"></button>
+        <p class="pp-price lp-muted" data-i18n="popupPriceLine"></p>
+        <div id="login-error" class="lp-note lp-note-danger hidden" role="alert"></div>
+        <p class="pp-auth-links">
+          <a id="login-learn-more" class="lp-link" href="#" data-i18n="popupLearnMore"></a>
+          <span class="lp-muted" aria-hidden="true">·</span>
+          <button type="button" id="login-open-settings" class="lp-link" data-i18n="settingsLink"></button>
+        </p>
       </div>
     </div>
 
-    <!-- Settings view (shown when logged in) -->
+    <!-- Signed in: what is Vocab Pass doing on this page -->
     <div id="settings-view" class="view hidden">
-      <div class="header-bar">
-        <div class="header-left">
-          <div class="brand-mark brand-mark-small" aria-hidden="true">
-            <img src="../icons/langsly-icon.png" alt="" class="brand-logo">
+      <header class="pp-header">
+        <img src="../icons/langsly-icon.png" alt="" class="lp-mascot pp-mascot">
+        <span class="pp-brand lp-display" data-i18n="popupBrandShort">Vocab Pass</span>
+        <span class="pp-state" aria-live="polite">
+          <span id="status-indicator" class="lp-dot" data-i18n-title="statusUnknown"></span>
+          <span id="page-state" class="pp-state-label"></span>
+        </span>
+        <button type="button" id="open-settings" class="lp-btn lp-btn-ghost link-btn pp-settings-btn" data-i18n="settingsLink"></button>
+      </header>
+
+      <!-- Vocab Pass needs an active subscription (HTTP 402 from sync) -->
+      <section id="subscription-required" class="pp-paywall hidden" role="alert">
+        <img src="../icons/langsly-icon.png" alt="" class="lp-mascot pp-paywall-mascot">
+        <h2 class="lp-display pp-paywall-title" data-i18n="subscriptionRequiredTitle"></h2>
+        <p class="lp-secondary" data-i18n="subscriptionRequiredBody"></p>
+        <button type="button" id="subscribe-btn" class="lp-btn lp-btn-primary lp-btn-block" data-i18n="subscribeOnLangsly"></button>
+        <button type="button" id="subscription-recheck" class="lp-link pp-paywall-recheck" data-i18n="syncNow"></button>
+      </section>
+
+      <div id="status-banner" class="lp-note hidden" role="status"></div>
+
+      <!-- The hero control: this site on/off -->
+      <section class="pp-site lp-surface">
+        <div class="lp-row pp-site-row">
+          <div class="lp-row-copy">
+            <div class="lp-eyebrow" data-i18n="currentPage"></div>
+            <div id="current-domain" class="pp-domain"></div>
+            <div id="site-help" class="lp-row-help"></div>
           </div>
-          <div class="header-copy">
-            <span class="eyebrow" data-i18n="popupBrandName"></span>
-            <div class="header-title-row">
-              <span class="header-title" data-i18n="extensionStatus"></span>
-              <span class="status-pill">
-                <span id="status-indicator" class="status-dot unknown" data-i18n-title="statusUnknown"></span>
-                <span class="status-pill-label" data-i18n="connectionLabel"></span>
-              </span>
-            </div>
-          </div>
-        </div>
-        <button id="logout-btn" class="link-btn" data-i18n="logoutButton"></button>
-      </div>
-
-      <!-- Status banner (offline/stale) -->
-      <div id="status-banner" class="status-banner hidden"></div>
-
-      <!-- Vocab Pass subscription needed (HTTP 402 from sync) -->
-      <div id="subscription-required" class="subscription-required hidden" role="alert">
-        <p class="subscription-title" data-i18n="subscriptionRequiredTitle"></p>
-        <p class="subscription-body" data-i18n="subscriptionRequiredBody"></p>
-        <button type="button" id="subscribe-btn" class="subscribe-btn" data-i18n="subscribeOnLangsly"></button>
-      </div>
-
-      <div class="summary-band">
-        <div class="summary-panel">
-          <span class="summary-label" data-i18n="wordsLoaded"></span>
-          <span id="word-count" class="summary-value">0</span>
-        </div>
-        <div class="summary-panel summary-panel-alt">
-          <span class="summary-label" data-i18n="lastSync"></span>
-          <span id="last-sync" class="summary-meta">--</span>
-        </div>
-        <div class="summary-panel summary-panel-alt">
-          <span class="summary-label" data-i18n="sourceLanguage"></span>
-          <span id="source-language" class="summary-meta">EN</span>
-        </div>
-        <div class="summary-panel">
-          <span class="summary-label" data-i18n="matchableWords"></span>
-          <span id="matchable-word-count" class="summary-meta">0</span>
-        </div>
-      </div>
-
-      <!-- Whitelist toggle for current site -->
-      <div class="section">
-        <label class="section-label" data-i18n="currentPage"></label>
-        <div class="toggle-row">
-          <div class="toggle-copy">
-            <div class="toggle-label" data-i18n="activeOnThisSite"></div>
-            <div id="current-domain" class="domain-chip"></div>
-          </div>
-          <label class="switch">
+          <label class="lp-switch switch">
             <input type="checkbox" id="site-toggle" checked data-i18n-aria-label="activeOnThisSite">
-            <span class="slider"></span>
+            <span class="lp-switch-track slider"></span>
           </label>
         </div>
-      </div>
-
-      <div class="section">
-        <label class="section-label" data-i18n="difficultyLabel"></label>
-        <div class="difficulty-group">
-          <button class="diff-btn" data-level="easy" data-i18n="difficultyEasy"></button>
-          <button class="diff-btn active" data-level="normal" data-i18n="difficultyNormal"></button>
-          <button class="diff-btn" data-level="challenge" data-i18n="difficultyChallenge"></button>
+        <div class="pp-count">
+          <span id="page-word-count" class="pp-count-number lp-display">–</span>
+          <span id="page-word-label" class="pp-count-label"></span>
         </div>
-      </div>
+      </section>
 
-      <div class="section action-section">
-        <label class="section-label" data-i18n="actionsLabel"></label>
-        <button id="sync-btn" class="secondary-btn" data-i18n="syncNow"></button>
-        <button id="open-settings" class="secondary-btn" data-i18n="advancedSettings"></button>
-        <a id="open-vocabpass" class="dashboard-link" href="#">
-          <span data-i18n="openDashboard"></span>
-          <svg class="dashboard-link-icon" aria-hidden="true" focusable="false" viewBox="0 0 256 256" fill="currentColor" data-icon-source="phosphor" data-icon-name="arrow-square-out">
-            <path d="M224,104a8,8,0,0,1-16,0V59.31l-82.34,82.35a8,8,0,0,1-11.32-11.32L196.69,48H152a8,8,0,0,1,0-16h64a8,8,0,0,1,8,8Zm-40,24a8,8,0,0,0-8,8v72H48V80h72a8,8,0,0,0,0-16H48A16,16,0,0,0,32,80V208a16,16,0,0,0,16,16H176a16,16,0,0,0,16-16V136A8,8,0,0,0,184,128Z"></path>
-          </svg>
-        </a>
-        <label id="theme-row" class="theme-row hidden" for="theme-select">
-          <span class="theme-copy">
-            <span class="theme-label" data-i18n="themeLabel"></span>
-            <span id="theme-status" class="theme-status" data-i18n="themeSynced"></span>
-          </span>
-          <select id="theme-select" class="theme-select" data-i18n-aria-label="themeLabel"></select>
-        </label>
-      </div>
+      <section class="pp-difficulty">
+        <div class="lp-eyebrow pp-section-label" data-i18n="difficultyLabel"></div>
+        <div class="lp-segmented difficulty-group" role="group" data-i18n-aria-label="difficultyLabel">
+          <button class="lp-segment diff-btn" data-level="easy" data-i18n="difficultyEasy"></button>
+          <button class="lp-segment diff-btn active" data-level="normal" data-i18n="difficultyNormal"></button>
+          <button class="lp-segment diff-btn" data-level="challenge" data-i18n="difficultyChallenge"></button>
+        </div>
+      </section>
+
+      <label id="theme-row" class="lp-row pp-theme-row hidden" for="theme-select">
+        <span class="lp-row-copy">
+          <span class="lp-row-title" data-i18n="themeLabel"></span>
+          <span id="theme-status" class="lp-row-help" data-i18n="themeSynced"></span>
+        </span>
+        <select id="theme-select" class="lp-select theme-select" data-i18n-aria-label="themeLabel"></select>
+      </label>
+
+      <footer class="pp-footer">
+        <div class="pp-actions">
+          <button id="sync-btn" class="lp-btn lp-btn-ghost" data-i18n="syncNow"></button>
+          <a id="open-vocabpass" class="lp-btn lp-btn-secondary dashboard-link" href="#">
+            <span data-i18n="openDashboardShort"></span>
+            <svg class="dashboard-link-icon" aria-hidden="true" focusable="false" viewBox="0 0 256 256" fill="currentColor" data-icon-source="phosphor" data-icon-name="arrow-square-out">
+              <path d="M224,104a8,8,0,0,1-16,0V59.31l-82.34,82.35a8,8,0,0,1-11.32-11.32L196.69,48H152a8,8,0,0,1,0-16h64a8,8,0,0,1,8,8Zm-40,24a8,8,0,0,0-8,8v72H48V80h72a8,8,0,0,0,0-16H48A16,16,0,0,0,32,80V208a16,16,0,0,0,16,16H176a16,16,0,0,0,16-16V136A8,8,0,0,0,184,128Z"></path>
+            </svg>
+          </a>
+        </div>
+        <p class="pp-meta lp-muted">
+          <span><span id="word-count">0</span> <span data-i18n="wordsReadyLabel"></span></span>
+          <span class="pp-meta-sep" aria-hidden="true">·</span>
+          <span><span id="matchable-word-count" class="pp-meta-hidden">0</span><span id="source-language">EN</span> <span data-i18n="pagesLabel"></span></span>
+          <span class="pp-meta-sep" aria-hidden="true">·</span>
+          <span><span data-i18n="syncedLabel"></span> <span id="last-sync">–</span></span>
+        </p>
+      </footer>
     </div>
   </div>
   <script src="../vendor/browser-polyfill.min.js"></script>

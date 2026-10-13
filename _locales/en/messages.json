@@ -8,16 +8,19 @@
     "description": "Extension description shown in the browser and extension stores."
   },
   "popupTitle": {
-    "message": "Langsly Extension"
+    "message": "Langsly Vocab Pass",
+    "description": "Toolbar popup window title."
   },
   "popupBrandName": {
     "message": "Langsly Vocab Pass"
   },
   "popupHeroTitle": {
-    "message": "Review Spanish and English words on the pages you read."
+    "message": "Your course words, on every page you read.",
+    "description": "Signed-out popup headline."
   },
   "popupHeroSubtitle": {
-    "message": "Sign in to sync Langsly vocabulary, tune the challenge level, and keep review active only where you want it."
+    "message": "Vocab Pass swaps words you are learning into the articles you already read, so review happens while you browse.",
+    "description": "Signed-out popup subtitle."
   },
   "emailLabel": {
     "message": "Email"
@@ -149,10 +152,12 @@
     "message": "Could not apply theme"
   },
   "dataStaleWarning": {
-    "message": "Data may be stale - last synced over 24h ago"
+    "message": "Your words were last synced over a day ago.",
+    "description": "Banner when the last sync is older than 24 hours."
   },
   "offlineCachedVocabulary": {
-    "message": "Offline - using cached vocabulary"
+    "message": "Offline. Using the words saved on this device.",
+    "description": "Banner when the last sync failed for lack of connection."
   },
   "statusConnected": {
     "message": "Connected"
@@ -173,7 +178,8 @@
     "message": "Login failed"
   },
   "optionsTitle": {
-    "message": "Langsly Settings"
+    "message": "Vocab Pass settings",
+    "description": "Settings page title."
   },
   "serverConfiguration": {
     "message": "Server Configuration"
@@ -191,10 +197,12 @@
     "message": "https://langsly.com"
   },
   "resetToDefaults": {
-    "message": "Reset to Defaults"
+    "message": "Reset to defaults",
+    "description": "Footer button."
   },
   "syncInterval": {
-    "message": "Sync Interval"
+    "message": "Sync every",
+    "description": "Settings row title for the sync interval."
   },
   "minuteLabel": {
     "message": "$MINUTES$ min",
@@ -205,7 +213,8 @@
     }
   },
   "behaviorLabel": {
-    "message": "Behavior"
+    "message": "Protected pages",
+    "description": "Settings section heading for the always-on exclusions."
   },
   "autoExcludeSensitiveSites": {
     "message": "Auto-exclude sensitive sites (banking, government, login pages)"
@@ -214,7 +223,8 @@
     "message": "Save Settings"
   },
   "settingsSaved": {
-    "message": "Settings saved!"
+    "message": "Saved",
+    "description": "Toast after a setting is stored."
   },
   "onboardingTitle": {
     "message": "Welcome to Langsly"
@@ -414,7 +424,8 @@
     "message": "Translation request failed"
   },
   "connectLangslyAccount": {
-    "message": "Connect Langsly account"
+    "message": "Sign in with Langsly",
+    "description": "Primary sign-in button."
   },
   "deviceLoginOpening": {
     "message": "Opening secure connection..."
@@ -435,10 +446,12 @@
     "message": "Connect Vocab Pass"
   },
   "connectBrowserTitle": {
-    "message": "Connect your browser"
+    "message": "Connect this browser",
+    "description": "Connect page headline."
   },
   "connectBrowserIntro": {
-    "message": "Sign in to Langsly, then approve this browser connection. We will finish setup automatically."
+    "message": "Sign in on Langsly and approve this browser. Setup finishes here by itself.",
+    "description": "Connect page intro."
   },
   "connectPreparing": {
     "message": "Preparing a secure connection..."
@@ -468,19 +481,23 @@
     "message": "Not connected to Langsly."
   },
   "connectWaiting": {
-    "message": "Continue on Langsly to sign in and approve. Connection finishes automatically."
+    "message": "Waiting for your approval on Langsly…",
+    "description": "Status while the device connection is pending."
   },
   "connectOpenApproval": {
-    "message": "Continue on Langsly"
+    "message": "Continue on Langsly",
+    "description": "Primary button on the pending connect page."
   },
   "connectCancel": {
     "message": "Cancel"
   },
   "connectSuccessTitle": {
-    "message": "Vocab Pass is connected"
+    "message": "You’re connected",
+    "description": "Connect page success headline."
   },
   "connectSuccessBody": {
-    "message": "Your vocabulary and settings are syncing. You can close this tab."
+    "message": "Open any article and words from your course will start appearing.",
+    "description": "Connect page success body."
   },
   "connectClose": {
     "message": "Open Vocab Pass"
@@ -492,7 +509,8 @@
     "message": "Try again"
   },
   "connectPrivacyTitle": {
-    "message": "Before you approve"
+    "message": "What Vocab Pass reads",
+    "description": "Heading of the short privacy summary on the connect page."
   },
   "connectPrivacyBody": {
     "message": "Vocab Pass automatically checks visible text on non-sensitive sites, syncs vocabulary, records domains and trusted interactions, and may send matched phrases or bounded visible sentence context to Langsly and OpenRouter. It does not send complete pages, form values, hidden text, or full URLs."
@@ -665,5 +683,227 @@
   "statusSubscriptionRequired": {
     "message": "Subscription needed",
     "description": "Connection status tooltip when the subscription is missing."
+  },
+  "popupBrandShort": {
+    "message": "Vocab Pass",
+    "description": "Short product name shown next to the mascot."
+  },
+  "popupSampleLead": {
+    "message": "The",
+    "description": "Sample sentence, first part (page language)."
+  },
+  "popupSampleWordOne": {
+    "message": "casa",
+    "description": "Sample sentence, first swapped word (target language)."
+  },
+  "popupSampleMiddle": {
+    "message": "is near the",
+    "description": "Sample sentence, middle part (page language)."
+  },
+  "popupSampleWordTwo": {
+    "message": "mercado",
+    "description": "Sample sentence, second swapped word (target language)."
+  },
+  "popupSampleTail": {
+    "message": ".",
+    "description": "Sample sentence punctuation."
+  },
+  "popupSampleMeaning": {
+    "message": "house",
+    "description": "Meaning shown in the sample tooltip for the first swapped word."
+  },
+  "popupPriceLine": {
+    "message": "$$5/month after sign-in · cancel anytime",
+    "description": "Price line under the sign-in button."
+  },
+  "popupLearnMore": {
+    "message": "What is Vocab Pass?",
+    "description": "Link to the Vocab Pass page on langsly.com."
+  },
+  "settingsLink": {
+    "message": "Settings",
+    "description": "Opens the extension settings page."
+  },
+  "wordsOnThisPage": {
+    "message": "words on this page",
+    "description": "Label after the count of swapped words on the active tab."
+  },
+  "wordOnThisPage": {
+    "message": "word on this page",
+    "description": "Singular label after the count of swapped words."
+  },
+  "wordsReadyLabel": {
+    "message": "words ready",
+    "description": "Footer: number of synced words."
+  },
+  "pagesLabel": {
+    "message": "pages",
+    "description": "Footer: follows the page language code, e.g. \"EN pages\"."
+  },
+  "syncedLabel": {
+    "message": "synced",
+    "description": "Footer: precedes the relative sync time."
+  },
+  "openDashboardShort": {
+    "message": "Dashboard",
+    "description": "Button that opens the Vocab Pass dashboard on langsly.com."
+  },
+  "thisPage": {
+    "message": "This page",
+    "description": "Shown instead of a domain when the tab has no web address."
+  },
+  "justNow": {
+    "message": "just now",
+    "description": "Relative time."
+  },
+  "minutesAgo": {
+    "message": "$MINUTES$ min ago",
+    "description": "Relative time in minutes.",
+    "placeholders": {
+      "minutes": {
+        "content": "$1",
+        "example": "8"
+      }
+    }
+  },
+  "hoursAgo": {
+    "message": "$HOURS$ h ago",
+    "description": "Relative time in hours.",
+    "placeholders": {
+      "hours": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "pageStateOn": {
+    "message": "On",
+    "description": "Status pill: Vocab Pass is working on this tab."
+  },
+  "pageStatePaused": {
+    "message": "Paused here",
+    "description": "Status pill: the user paused this site."
+  },
+  "pageStateProtected": {
+    "message": "Protected page",
+    "description": "Status pill: sensitive page, never read."
+  },
+  "pageStateOffline": {
+    "message": "Offline",
+    "description": "Status pill: no connection, cached words in use."
+  },
+  "pageStateUnavailable": {
+    "message": "Unavailable",
+    "description": "Status pill: browser or store page without a content script."
+  },
+  "siteHelpOn": {
+    "message": "Words from your Langsly course appear here while you read.",
+    "description": "Help text under the site switch when on."
+  },
+  "siteHelpOff": {
+    "message": "Turn it back on to highlight words on this site.",
+    "description": "Help text under the site switch when paused."
+  },
+  "siteHelpProtected": {
+    "message": "Sign-in, banking and similar pages are never read.",
+    "description": "Help text on protected pages."
+  },
+  "siteHelpUnavailable": {
+    "message": "Vocab Pass works on regular web pages, not browser or store pages.",
+    "description": "Help text when the tab cannot run the extension."
+  },
+  "connectStepSignIn": {
+    "message": "Sign in on Langsly",
+    "description": "Connect page step 1."
+  },
+  "connectStepApprove": {
+    "message": "Approve this browser",
+    "description": "Connect page step 2."
+  },
+  "connectStepDone": {
+    "message": "Start reading",
+    "description": "Connect page step 3."
+  },
+  "connectPrivacyPointOne": {
+    "message": "Visible text on ordinary pages, to find words from your course.",
+    "description": "Privacy summary bullet 1."
+  },
+  "connectPrivacyPointTwo": {
+    "message": "Matched phrases and a short sentence around them, sent to Langsly and OpenRouter to check the match.",
+    "description": "Privacy summary bullet 2."
+  },
+  "connectPrivacyPointThree": {
+    "message": "Never full pages, form fields, hidden text, full URLs, or sign-in, banking and health pages.",
+    "description": "Privacy summary bullet 3."
+  },
+  "connectTryArticle": {
+    "message": "Try it on an article",
+    "description": "Success button that opens a sample article."
+  },
+  "planLabel": {
+    "message": "Plan",
+    "description": "Label for the subscription row."
+  },
+  "planActive": {
+    "message": "Vocab Pass · active",
+    "description": "Plan row when the subscription is active without a known end date."
+  },
+  "planRenews": {
+    "message": "Vocab Pass · renews $DATE$",
+    "description": "Plan row when the subscription renews.",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "Nov 12"
+      }
+    }
+  },
+  "planEnds": {
+    "message": "Vocab Pass · ends $DATE$",
+    "description": "Plan row when the subscription is set to end.",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "Nov 12"
+      }
+    }
+  },
+  "planTrialUntil": {
+    "message": "Free trial · until $DATE$",
+    "description": "Plan row during a trial.",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "Nov 12"
+      }
+    }
+  },
+  "planComplimentary": {
+    "message": "Vocab Pass · complimentary",
+    "description": "Plan row for comp or staff access."
+  },
+  "planInactive": {
+    "message": "No active Vocab Pass",
+    "description": "Plan row when there is no access."
+  },
+  "manageBilling": {
+    "message": "Manage plan",
+    "description": "Link to the Vocab Pass page on langsly.com."
+  },
+  "syncIntervalHelp": {
+    "message": "How often Vocab Pass refreshes your word list from Langsly.",
+    "description": "Help text for the sync interval."
+  },
+  "settingsSectionReading": {
+    "message": "Reading",
+    "description": "Settings section heading."
+  },
+  "settingsSectionChinese": {
+    "message": "Chinese",
+    "description": "Settings section heading."
+  },
+  "pageStateSubscription": {
+    "message": "Pass ended",
+    "description": "Status pill: the Vocab Pass subscription has lapsed."
   }
 }

@@ -122,7 +122,14 @@ globalThis.LangslyRequestCoordinator = (() => {
       return { inFlight, queued: queue.length, acceptedInWindow: acceptedAt.length, generation };
     }
 
-    return { request, cancel, snapshot };
+    // Milliseconds until request() will accept another payload (0 = now).
+    function msUntilCapacity() {
+      const now = Date.now();
+      prune(now);
+      return acceptedAt.length < maxPerWindow ? 0 : Math.max(0, acceptedAt[0] + windowMs - now);
+    }
+
+    return { request, cancel, snapshot, msUntilCapacity };
   }
 
   return { createRequestCoordinator, createBatchCoordinator };

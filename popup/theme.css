@@ -1,0 +1,455 @@
+/* Langsly Vocab Pass — shared design system for every extension page.
+   Color tokens mirror the dashboard theme packs (background/theme-utils.js):
+   the defaults below are the "system" theme, and a signed-in user's active
+   pack overrides them on <html> at runtime. Keep every color on a token. */
+
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../fonts/fraunces-latin-wght-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "DM Sans";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../fonts/dm-sans-latin-wght-normal.woff2") format("woff2");
+}
+
+:root {
+  --lp-page-bg: #F7F6F2;
+  --lp-surface: #FFFFFF;
+  --lp-surface-elevated: #F0F1EC;
+  --lp-text-primary: #141C1A;
+  --lp-text-secondary: #4F5D59;
+  --lp-text-muted: #7B8782;
+  --lp-border: #DCDDD6;
+  --lp-border-strong: #C7C9C0;
+  --lp-accent: #C98B2C;
+  --lp-accent-hover: #A97220;
+  --lp-accent-text: #2B1E08;
+  --lp-success: #4E873E;
+  --lp-warning: #C98B2C;
+  --lp-danger: #C84A58;
+  --lp-header-bg: #FFFFFF;
+  --lp-button-primary-bg: #B73A48;
+  --lp-button-primary-text: #FFFFFF;
+
+  --lp-font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --lp-font-body: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --lp-font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --lp-radius-sm: 8px;
+  --lp-radius: 12px;
+  --lp-radius-lg: 18px;
+  --lp-focus: 0 0 0 3px color-mix(in srgb, var(--lp-accent) 35%, transparent);
+  --lp-hairline: 1px solid var(--lp-border);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--lp-page-bg);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--lp-text-primary);
+  background: var(--lp-page-bg);
+  font-family: var(--lp-font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  font-feature-settings: "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, p {
+  margin: 0;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ─── Type ───────────────────────────────────────── */
+.lp-display {
+  font-family: var(--lp-font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.08;
+  font-variation-settings: "SOFT" 50;
+}
+
+.lp-eyebrow {
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lp-text-muted);
+}
+
+.lp-muted {
+  color: var(--lp-text-muted);
+}
+
+.lp-secondary {
+  color: var(--lp-text-secondary);
+}
+
+/* ─── Buttons ────────────────────────────────────── */
+.lp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--lp-radius);
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--lp-text-primary);
+  background: transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.lp-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--lp-focus);
+}
+
+.lp-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.lp-btn-primary {
+  background: var(--lp-button-primary-bg);
+  color: var(--lp-button-primary-text);
+  border-color: var(--lp-button-primary-bg);
+}
+
+.lp-btn-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--lp-button-primary-bg) 88%, #000);
+  border-color: color-mix(in srgb, var(--lp-button-primary-bg) 88%, #000);
+}
+
+.lp-btn-secondary {
+  background: var(--lp-surface);
+  border-color: var(--lp-border-strong);
+}
+
+.lp-btn-secondary:hover:not(:disabled) {
+  background: var(--lp-surface-elevated);
+}
+
+.lp-btn-ghost {
+  padding-inline: 10px;
+  color: var(--lp-text-secondary);
+}
+
+.lp-btn-ghost:hover:not(:disabled) {
+  background: var(--lp-surface-elevated);
+  color: var(--lp-text-primary);
+}
+
+.lp-btn-block {
+  width: 100%;
+}
+
+.lp-btn-icon {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.lp-link {
+  color: var(--lp-text-secondary);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  text-underline-offset: 3px;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+}
+
+.lp-link:hover {
+  color: var(--lp-text-primary);
+  text-decoration-color: currentColor;
+}
+
+.lp-link:focus-visible {
+  outline: none;
+  box-shadow: var(--lp-focus);
+  border-radius: 4px;
+}
+
+/* ─── Switch ─────────────────────────────────────── */
+.lp-switch {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  width: 46px;
+  height: 44px; /* 44px hit target; the visible track is centered inside */
+}
+
+.lp-switch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.lp-switch-track {
+  position: absolute;
+  inset: 8px 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--lp-text-muted) 35%, transparent);
+  transition: background 0.2s ease;
+  pointer-events: none;
+}
+
+.lp-switch-track::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease;
+}
+
+.lp-switch input:checked + .lp-switch-track {
+  background: var(--lp-success);
+}
+
+.lp-switch input:checked + .lp-switch-track::before {
+  transform: translateX(18px);
+}
+
+.lp-switch input:focus-visible + .lp-switch-track {
+  box-shadow: var(--lp-focus);
+}
+
+.lp-switch input:disabled + .lp-switch-track {
+  opacity: 0.5;
+}
+
+/* ─── Segmented control ──────────────────────────── */
+.lp-segmented {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 2px;
+  padding: 3px;
+  border: var(--lp-hairline);
+  border-radius: var(--lp-radius);
+  background: var(--lp-surface-elevated);
+}
+
+.lp-segment {
+  min-height: 44px;
+  padding: 8px 6px;
+  border: 0;
+  border-radius: calc(var(--lp-radius) - 3px);
+  background: transparent;
+  color: var(--lp-text-secondary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lp-segment:hover {
+  color: var(--lp-text-primary);
+}
+
+.lp-segment:focus-visible {
+  outline: none;
+  box-shadow: var(--lp-focus);
+}
+
+.lp-segment.active {
+  background: var(--lp-surface);
+  color: var(--lp-text-primary);
+  box-shadow: 0 1px 2px rgba(20, 28, 26, 0.12);
+}
+
+/* ─── Select ─────────────────────────────────────── */
+.lp-select {
+  appearance: none;
+  min-height: 44px;
+  padding: 9px 36px 9px 12px;
+  border: 1px solid var(--lp-border-strong);
+  border-radius: var(--lp-radius);
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%237B8782'><path d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'/></svg>") no-repeat right 12px center / 14px,
+    var(--lp-surface);
+  color: var(--lp-text-primary);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.lp-select:focus-visible {
+  outline: none;
+  border-color: var(--lp-accent);
+  box-shadow: var(--lp-focus);
+}
+
+.lp-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ─── Rows & surfaces ────────────────────────────── */
+.lp-surface {
+  background: var(--lp-surface);
+  border: var(--lp-hairline);
+  border-radius: var(--lp-radius-lg);
+}
+
+.lp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 0;
+}
+
+.lp-row + .lp-row {
+  border-top: var(--lp-hairline);
+}
+
+.lp-row-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.lp-row-title {
+  font-weight: 600;
+  color: var(--lp-text-primary);
+}
+
+.lp-row-help {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--lp-text-muted);
+}
+
+.lp-row-title {
+  display: block;
+}
+
+/* ─── Notes & status ─────────────────────────────── */
+.lp-note {
+  padding: 10px 12px;
+  border-radius: var(--lp-radius);
+  border: 1px solid color-mix(in srgb, var(--lp-warning) 35%, transparent);
+  background: color-mix(in srgb, var(--lp-warning) 10%, var(--lp-surface));
+  color: var(--lp-text-primary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.lp-note-danger {
+  border-color: color-mix(in srgb, var(--lp-danger) 35%, transparent);
+  background: color-mix(in srgb, var(--lp-danger) 8%, var(--lp-surface));
+}
+
+.lp-note-success {
+  border-color: color-mix(in srgb, var(--lp-success) 35%, transparent);
+  background: color-mix(in srgb, var(--lp-success) 9%, var(--lp-surface));
+}
+
+.lp-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lp-text-muted);
+  flex-shrink: 0;
+}
+
+.lp-dot.on { background: var(--lp-success); }
+.lp-dot.warn { background: var(--lp-warning); }
+.lp-dot.off { background: var(--lp-danger); }
+
+/* ─── Mascot ─────────────────────────────────────── */
+.lp-mascot {
+  display: block;
+  object-fit: contain;
+}
+
+/* ─── Sample sentence (shows the product) ────────── */
+.lp-sample {
+  padding: 14px 16px;
+  border-radius: var(--lp-radius);
+  background: var(--lp-surface);
+  border: var(--lp-hairline);
+  font-family: var(--lp-font-display);
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--lp-text-primary);
+}
+
+.lp-sample-word {
+  position: relative;
+  padding: 0 2px;
+  border-bottom: 2px solid color-mix(in srgb, var(--lp-accent) 70%, transparent);
+  background: color-mix(in srgb, var(--lp-accent) 14%, transparent);
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.lp-sample-tip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--lp-text-primary);
+  color: var(--lp-page-bg);
+  font-family: var(--lp-font-body);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.lp-sample-tip small {
+  font-weight: 400;
+  opacity: 0.75;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

@@ -267,6 +267,20 @@ const validationCoordinator = LangslyRequestCoordinator.createBatchCoordinator({
       return items.map(item => byId.get(item.item_id) || null);
     }),
 });
+// A pending word that could not be judged yet (budget, rate limit, slow
+// validator) keeps showing its original text and is asked about again later.
+const VALIDATION_RETRY_MIN_MS = 2000;
+const VALIDATION_RETRY_MAX_MS = 30_000;
+const VALIDATION_MAX_ATTEMPTS = 6;
+let validationRetryTimer = null;
+let validationRetryDelay = VALIDATION_RETRY_MIN_MS;
+let vocabularySignature = '';
+// Key-order independent: browser.storage hands objects back with sorted keys.
+function vocabularySignatureOf(words) {
+  return JSON.stringify(words, (key, value) => (value && typeof value === 'object' && !Array.isArray(value)
+    ? Object.fromEntries(Object.keys(value).sort().map(name => [name, value[name]]))
+    : value));
+}
 const LEGACY_FRONTEND_URL = 'http://localhost:3000';
 const DEFAULT_FRONTEND_URL = 'https://langsly.com';
 
@@ -379,6 +393,7 @@ async function runInit(generation) {
     return;
   }
   rotationSalt = rotation_salt || '';
+  vocabularySignature = vocabularySignatureOf(vocabWords);
 
   // Check whitelist
   const domain = window.location.hostname;
@@ -698,11 +713,47 @@ function buildPendingPhraseSpan(phrase, fullText, domain, contextOverride) {
   return span;
 }
 
+function viewportDistance(element) {
+  if (typeof element.getBoundingClientRect !== 'function') return 0;
+  const rect = element.getBoundingClientRect();
+  if (rect.bottom < 0) return -rect.bottom;
+  const height = window.innerHeight || 0;
+  return rect.top > height ? rect.top - height : 0;
+}
+
+function scheduleValidationRetry() {
+  if (validationRetryTimer || !extensionActive) return;
+  const delay = Math.max(validationRetryDelay, validationCoordinator.msUntilCapacity());
+  validationRetryDelay = Math.min(validationRetryDelay * 2, VALIDATION_RETRY_MAX_MS);
+  validationRetryTimer = setTimeout(() => {
+    validationRetryTimer = null;
+    // Hidden tabs resume from handleVisibilityChange.
+    if (extensionActive && !document.hidden) requestPendingValidations();
+  }, delay);
+}
+
+function cancelValidationRetry() {
+  if (validationRetryTimer) clearTimeout(validationRetryTimer);
+  validationRetryTimer = null;
+  validationRetryDelay = VALIDATION_RETRY_MIN_MS;
+}
+
 function requestPendingValidations() {
-  document.querySelectorAll('.lp-validation-pending').forEach(span => {
+  // The validation budget is small; spend it on what the learner is reading.
+  const spans = [...document.querySelectorAll('.lp-validation-pending')]
+    .filter(span => !getPrivate(span).validationQueued)
+    .map(span => ({ span, distance: viewportDistance(span) }))
+    .sort((a, b) => a.distance - b.distance);
+  for (const { span } of spans) {
+    // Out of budget for now: leave the rest unqueued (no attempt spent) and
+    // come back when the window has room.
+    if (validationCoordinator.msUntilCapacity() > 0) {
+      scheduleValidationRetry();
+      break;
+    }
     const state = getPrivate(span);
-    if (state.validationQueued) return;
-    setPrivate(span, { validationQueued: true });
+    const attempts = (state.validationAttempts || 0) + 1;
+    setPrivate(span, { validationQueued: true, validationAttempts: attempts });
     const item = {
       item_id: String(++validationSequence),
       validation_version: state.validationVersion || 2,
@@ -720,8 +771,8 @@ function requestPendingValidations() {
     const generation = lifecycleGeneration;
     const revision = vocabularyRevision;
     const original = state.original;
-    let expired = false;
     let stale = false;
+    let deferred = false;
     const editObserver = new MutationObserver(mutations => {
       if (mutations.some(mutation => {
         const element = mutation.target.nodeType === Node.TEXT_NODE
@@ -732,21 +783,21 @@ function requestPendingValidations() {
     if (span.parentElement) editObserver.observe(span.parentElement, {
       subtree: true, childList: true, characterData: true,
     });
-    const timer = setTimeout(() => {
-      expired = true;
-      editObserver.disconnect();
-      if (span.isConnected && span.textContent === original && span.parentNode) {
-        span.parentNode.replaceChild(document.createTextNode(original), span);
-      }
-    }, 8000);
+    // No queue-time expiry: later batches wait behind earlier ones, and the
+    // background already bounds each validator call.
     validationCoordinator.request(item).then(result => {
       // Identical pending occurrences share a request. The coordinator has
       // already matched the backend item ID; give this subscriber its own ID.
       if (result && result.item_id !== item.item_id) result = { ...result, item_id: item.item_id };
-      clearTimeout(timer);
-      if (expired || stale || generation !== lifecycleGeneration || revision !== vocabularyRevision
-        || !extensionActive || !span.isConnected || span.textContent !== original
-        || result?.item_id !== item.item_id || result?.validation_version !== item.validation_version
+      if (stale || generation !== lifecycleGeneration || revision !== vocabularyRevision
+        || !extensionActive || !span.isConnected || span.textContent !== original) return;
+      // No verdict (over budget, rate limited, validator slow/offline): ask again later.
+      if (!result) {
+        deferred = attempts < VALIDATION_MAX_ATTEMPTS;
+        return;
+      }
+      validationRetryDelay = VALIDATION_RETRY_MIN_MS;
+      if (result.item_id !== item.item_id || result.validation_version !== item.validation_version
         || result?.decision !== 'replace' || !result.replacement_text) return;
       const ids = Array.isArray(result.vocabulary_ids) ? result.vocabulary_ids.map(String) : [];
       if (!ids.length || ids.some(id => !state.candidates.map(String).includes(id))) return;
@@ -827,13 +878,16 @@ function requestPendingValidations() {
       }
       ids.forEach(id => recordEncounter(id, state.domain, false));
     }).catch(() => {}).finally(() => {
-      clearTimeout(timer);
       editObserver.disconnect();
-      if (span.isConnected && span.classList.contains('lp-validation-pending') && span.parentNode) {
-        span.parentNode.replaceChild(document.createTextNode(original), span);
+      if (!span.isConnected || !span.classList.contains('lp-validation-pending') || !span.parentNode) return;
+      if (deferred) {
+        setPrivate(span, { validationQueued: false });
+        scheduleValidationRetry();
+        return;
       }
+      span.parentNode.replaceChild(document.createTextNode(original), span);
     });
-  });
+  }
 }
 
 function grammarExplanation(code, language) {
@@ -883,6 +937,14 @@ function observeMutations() {
 
 // ─── Message Listener ────────────────────────────
 browser.runtime.onMessage.addListener((message) => {
+  if (message.type === 'GET_PAGE_STATE') {
+    // The toolbar popup asks what this tab is doing so it can say it in words.
+    return {
+      lifecycleState,
+      wordCount: document.querySelectorAll(`.${LP_CLASS}, .lp-vocab-phrase`).length,
+    };
+  }
+
   if (message.type === 'AUTH_CLEARED') {
     stopDocumentWork({ loggedOut: true });
     return { success: true };
@@ -909,6 +971,17 @@ browser.runtime.onMessage.addListener((message) => {
   }
 
   if (message.type === 'VOCAB_UPDATED' && message.words) {
+    const signature = vocabularySignatureOf(message.words);
+    if (extensionActive && matcher && signature === vocabularySignature) {
+      // Same words (e.g. "Sync now" with nothing new): keep the page as it is
+      // and finish whatever is still waiting instead of starting over.
+      cancelValidationRetry();
+      processDocument();
+      requestPendingValidations();
+      return;
+    }
+    vocabularySignature = signature;
+    cancelValidationRetry();
     vocabularyRevision += 1;
     validationCoordinator.cancel();
     restoreOriginalPageText();
@@ -948,6 +1021,8 @@ function stopDocumentWork({ loggedOut = false } = {}) {
   lifecycleGeneration += 1;
   vocabularyRevision += 1;
   validationCoordinator.cancel();
+  cancelValidationRetry();
+  vocabularySignature = '';
   extensionActive = false;
   lifecycleState = loggedOut ? 'logged-out' : 'excluded';
   initPromise = null;
@@ -1007,7 +1082,10 @@ const safetyObserver = new MutationObserver(scheduleSafetyCheck);
 function handleVisibilityChange() {
   if (document.hidden) return;
   scheduleSafetyCheck();
-  if (extensionActive) processDocument();
+  if (extensionActive) {
+    processDocument();
+    requestPendingValidations();
+  }
 }
 
 const startSafetyController = () => {

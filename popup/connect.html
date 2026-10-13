@@ -4,68 +4,91 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title data-i18n="connectPageTitle">Connect Vocab Pass</title>
+  <link rel="stylesheet" href="theme.css">
   <link rel="stylesheet" href="connect.css">
 </head>
 <body>
   <main class="connect-shell">
     <section class="connect-card" aria-labelledby="connect-title">
-      <img src="../icons/langsly-icon.png" alt="" class="connect-logo">
-      <p class="eyebrow" data-i18n="popupBrandName">Langsly Vocab Pass</p>
-      <h1 id="connect-title" data-i18n="connectBrowserTitle">Connect your browser</h1>
-      <p class="intro" data-i18n="connectBrowserIntro">Approve this browser from your signed-in Langsly account. Authorization never happens automatically.</p>
+      <div class="connect-copy">
+        <p class="lp-eyebrow" data-i18n="popupBrandName">Langsly Vocab Pass</p>
+        <h1 id="connect-title" class="lp-display connect-title" data-i18n="connectBrowserTitle">Connect this browser</h1>
+        <p class="lp-secondary connect-intro" data-i18n="connectBrowserIntro">Sign in on Langsly and approve this browser. Setup finishes here by itself.</p>
 
-      <div id="loading-view" class="state-view" role="status">
-        <div class="spinner" aria-hidden="true"></div>
-        <p data-i18n="connectPreparing">Preparing a secure connection…</p>
+        <ol class="connect-steps" id="connect-steps" aria-label="Steps">
+          <li class="connect-step" data-step="1"><span class="connect-step-num">1</span><span data-i18n="connectStepSignIn">Sign in on Langsly</span></li>
+          <li class="connect-step" data-step="2"><span class="connect-step-num">2</span><span data-i18n="connectStepApprove">Approve this browser</span></li>
+          <li class="connect-step" data-step="3"><span class="connect-step-num">3</span><span data-i18n="connectStepDone">Start reading</span></li>
+        </ol>
+
+        <aside class="privacy-note">
+          <h2 class="privacy-title" data-i18n="connectPrivacyTitle">What Vocab Pass reads</h2>
+          <ul class="privacy-list">
+            <li data-i18n="connectPrivacyPointOne">Visible text on ordinary pages, to find words from your course.</li>
+            <li data-i18n="connectPrivacyPointTwo">Matched phrases and a short sentence around them, sent to Langsly and OpenRouter to check the match.</li>
+            <li data-i18n="connectPrivacyPointThree">Never full pages, form fields, hidden text, full URLs, or sign-in, banking and health pages.</li>
+          </ul>
+          <a id="privacy-link" class="lp-link" href="#" data-i18n="connectPrivacyLink">Read Langsly’s privacy policy</a>
+        </aside>
       </div>
 
-      <div id="pending-view" class="state-view hidden">
-        <details class="other-device"><summary data-i18n="connectOtherDevice">Use another device</summary><p class="code-label" data-i18n="connectCodeLabel">Your connection code</p>
-        <output id="user-code" class="user-code" aria-live="polite"></output>
-        <div class="computer-instructions">
-          <p data-i18n="connectComputerInstructions">On your computer, open:</p>
-          <a id="approval-url" class="approval-url" href="#">langsly.com/extension-connect</a>
-          <button id="copy-approval-url" type="button" class="copy-link" data-i18n="connectCopyUrl">Copy computer link</button>
-          <p id="copy-status" class="copy-status" role="status" aria-live="polite"></p>
+      <div class="connect-panel">
+        <img src="../icons/langsly-icon.png" alt="" class="lp-mascot connect-mascot">
+
+        <div id="loading-view" class="state-view" role="status">
+          <div class="spinner" aria-hidden="true"></div>
+          <p class="lp-secondary" data-i18n="connectPreparing">Preparing a secure connection…</p>
         </div>
-        </details>
-        <p id="pending-message" class="status-copy" role="status" data-i18n="connectWaiting">Waiting for your approval on Langsly…</p>
-        <div class="actions">
-          <button id="open-approval" type="button" class="primary" data-i18n="connectOpenApproval">Open approval page</button>
-          <button id="cancel-connect" type="button" class="secondary" data-i18n="connectCancel">Cancel</button>
+
+        <div id="pending-view" class="state-view hidden">
+          <p id="pending-message" class="status-copy lp-secondary" role="status" data-i18n="connectWaiting">Waiting for your approval on Langsly…</p>
+          <div class="actions">
+            <button id="open-approval" type="button" class="lp-btn lp-btn-primary lp-btn-block" data-i18n="connectOpenApproval">Continue on Langsly</button>
+            <button id="cancel-connect" type="button" class="lp-btn lp-btn-ghost lp-btn-block" data-i18n="connectCancel">Cancel</button>
+          </div>
+          <details class="other-device"><summary data-i18n="connectOtherDevice">Use another device</summary>
+            <p class="code-label lp-eyebrow" data-i18n="connectCodeLabel">Your connection code</p>
+            <output id="user-code" class="user-code lp-display" aria-live="polite"></output>
+            <div class="computer-instructions">
+              <p class="lp-secondary" data-i18n="connectComputerInstructions">On your other device, open this link and enter the code:</p>
+              <a id="approval-url" class="approval-url" href="#">langsly.com/extension-connect</a>
+              <button id="copy-approval-url" type="button" class="lp-btn lp-btn-secondary copy-link" data-i18n="connectCopyUrl">Copy link</button>
+              <p id="copy-status" class="copy-status lp-muted" role="status" aria-live="polite"></p>
+            </div>
+          </details>
+        </div>
+
+        <div id="success-view" class="state-view hidden" role="status">
+          <h2 class="lp-display state-title" data-i18n="connectSuccessTitle">You’re connected</h2>
+          <p class="lp-secondary" data-i18n="connectSuccessBody">Open any article and words from your course will start appearing.</p>
+          <div class="actions">
+            <button id="try-article" type="button" class="lp-btn lp-btn-primary lp-btn-block" data-i18n="connectTryArticle">Try it on an article</button>
+            <button id="close-connect" type="button" class="lp-btn lp-btn-ghost lp-btn-block" data-i18n="connectClose">Open Vocab Pass</button>
+          </div>
+        </div>
+
+        <div id="subscription-view" class="state-view hidden" role="alert">
+          <h2 class="lp-display state-title" data-i18n="subscriptionRequiredTitle">Vocab Pass needs an active subscription ($5/month)</h2>
+          <p class="lp-secondary" data-i18n="subscriptionRequiredBody">Highlighting is paused. Subscribe on Langsly, then select Sync now.</p>
+          <div class="actions">
+            <button id="subscribe-connect" type="button" class="lp-btn lp-btn-primary lp-btn-block" data-i18n="subscribeOnLangsly">Subscribe on Langsly</button>
+            <button id="recheck-connect" type="button" class="lp-btn lp-btn-ghost lp-btn-block" data-i18n="syncNow">Sync now</button>
+          </div>
+        </div>
+
+        <div id="error-view" class="state-view hidden" role="alert">
+          <h2 class="lp-display state-title" data-i18n="connectProblemTitle">Connection needs attention</h2>
+          <p id="error-message" class="lp-secondary"></p>
+          <div class="actions">
+            <button id="retry-connect" type="button" class="lp-btn lp-btn-primary lp-btn-block" data-i18n="connectRetry">Try again</button>
+          </div>
         </div>
       </div>
-
-      <div id="success-view" class="state-view hidden" role="status">
-        <h2 data-i18n="connectSuccessTitle">Vocab Pass is connected</h2>
-        <p data-i18n="connectSuccessBody">Your vocabulary and settings are syncing. You can close this tab.</p>
-        <button id="close-connect" type="button" class="primary" data-i18n="connectClose">Close</button>
-      </div>
-
-      <div id="subscription-view" class="state-view hidden" role="alert">
-        <h2 data-i18n="subscriptionRequiredTitle">Vocab Pass needs an active subscription ($5/month)</h2>
-        <p data-i18n="subscriptionRequiredBody">Highlighting is paused. Subscribe on Langsly, then select Sync now.</p>
-        <div class="actions">
-          <button id="subscribe-connect" type="button" class="primary" data-i18n="subscribeOnLangsly">Subscribe on Langsly</button>
-          <button id="recheck-connect" type="button" class="secondary" data-i18n="syncNow">Sync now</button>
-        </div>
-      </div>
-
-      <div id="error-view" class="state-view hidden" role="alert">
-        <h2 data-i18n="connectProblemTitle">Connection needs attention</h2>
-        <p id="error-message"></p>
-        <button id="retry-connect" type="button" class="primary" data-i18n="connectRetry">Try again</button>
-      </div>
-
-      <aside class="privacy-note">
-        <h2 data-i18n="connectPrivacyTitle">Before you approve</h2>
-        <p data-i18n="connectPrivacyBody">Vocab Pass automatically checks visible text on non-sensitive sites, syncs vocabulary, records domains and trusted interactions, and may send matched phrases or bounded visible sentence context to Langsly and OpenRouter. It does not send complete pages, form values, hidden text, or full URLs.</p>
-        <a id="privacy-link" href="#" data-i18n="connectPrivacyLink">Read Langsly’s privacy policy</a>
-      </aside>
     </section>
   </main>
   <script src="../vendor/browser-polyfill.min.js"></script>
   <script src="../shared/i18n.js"></script>
+  <script src="../background/theme-utils.js"></script>
   <script src="connect.js"></script>
 </body>
 </html>

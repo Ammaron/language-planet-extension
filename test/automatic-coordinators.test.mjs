@@ -163,3 +163,32 @@ test('encounter writes and flushes serialize, send no more than 50, and preserve
   assert.equal(Math.max(...batches.map((batch) => batch.length)), 50);
   assert.deepEqual(stored, []);
 });
+
+test('batch coordinator reports when a full window has room again', async () => {
+  const factory = await loadGlobal('content/request-coordinator.js', 'LangslyRequestCoordinator');
+  const coordinator = factory.createBatchCoordinator({
+    maxBatch: 20, maxPerWindow: 2, windowMs: 60_000, send: (items) => Promise.resolve(items.map(() => null)),
+  });
+  assert.equal(coordinator.msUntilCapacity(), 0);
+  coordinator.request({ id: 1 });
+  coordinator.request({ id: 2 });
+  const wait = coordinator.msUntilCapacity();
+  assert.ok(wait > 59_000 && wait <= 60_000);
+  coordinator.cancel();
+  assert.equal(coordinator.msUntilCapacity(), 0);
+});
+
+test('unjudged words are retried, not dropped, and an unchanged sync keeps the page', async () => {
+  const content = await readFile(new URL('../content/content.js', import.meta.url), 'utf8');
+  const worker = await readFile(new URL('../background/service-worker.js', import.meta.url), 'utf8');
+  // No queue-time expiry that throws away later batches.
+  assert.doesNotMatch(content, /expired = true/);
+  // Over budget: stop queueing and come back later without spending an attempt.
+  assert.match(content, /msUntilCapacity\(\) > 0\) \{\s*scheduleValidationRetry\(\);\s*break;/);
+  assert.match(content, /if \(deferred\) \{[\s\S]{0,80}validationQueued: false[\s\S]{0,40}scheduleValidationRetry\(\)/);
+  // Same vocabulary (key order ignored) must not wipe the page.
+  assert.match(content, /signature === vocabularySignature\) \{[\s\S]{0,400}requestPendingValidations\(\);\s*return;/);
+  assert.match(content, /Object\.keys\(value\)\.sort\(\)/);
+  // Changed vocabulary restarts validation budgets in the background.
+  assert.match(worker, /if \(vocabularyChanged\) _resetAutomaticBudget\('disambiguate'\)/);
+});

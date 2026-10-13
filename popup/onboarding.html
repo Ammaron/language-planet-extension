@@ -4,76 +4,87 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title data-i18n="onboardingTitle"></title>
+  <link rel="stylesheet" href="theme.css">
   <link rel="stylesheet" href="onboarding.css">
 </head>
 <body>
   <div id="onboarding-app" class="setup-shell">
     <div class="setup-panel">
-      <div class="setup-art" aria-hidden="true">
-        <div class="brand-mark">
-          <img src="../icons/langsly-icon.png" alt="" class="brand-logo">
+      <!-- Left: the product, shown rather than described -->
+      <aside class="setup-showcase" aria-hidden="true">
+        <div class="showcase-page">
+          <div class="showcase-chrome"><span></span><span></span><span></span></div>
+          <p class="showcase-headline lp-display">A weekend in Barcelona</p>
+          <p class="showcase-text">
+            We left the <span class="lp-sample-word" data-i18n="popupSampleWordOne">casa</span> early and walked to the
+            <span class="lp-sample-word" data-i18n="popupSampleWordTwo">mercado</span> before the crowds arrived. The
+            <span class="lp-sample-word">ciudad</span> was still quiet.
+          </p>
+          <span class="lp-sample-tip showcase-tip"><span data-i18n="popupSampleWordOne">casa</span><small data-i18n="popupSampleMeaning">house</small></span>
         </div>
-        <div class="orbit orbit-one"></div>
-        <div class="orbit orbit-two"></div>
-      </div>
+        <img src="../icons/langsly-icon.png" alt="" class="lp-mascot showcase-mascot">
+      </aside>
 
-      <div id="step-1" class="step">
-        <p class="eyebrow" data-i18n="popupBrandName"></p>
-        <h1 data-i18n="learnWhileBrowse"></h1>
-        <p class="subtitle" data-i18n="bringDashboardVocabulary"></p>
-        <div class="feature-list">
-          <div class="feature-row">
-            <span class="feature-badge">1</span>
-            <span class="feature-copy" data-i18n="onboardingFeatureWordsInContext"></span>
+      <!-- Right: three short steps -->
+      <div class="setup-steps">
+        <div id="step-1" class="step">
+          <p class="lp-eyebrow" data-i18n="popupBrandName"></p>
+          <h1 class="lp-display" data-i18n="learnWhileBrowse"></h1>
+          <p class="subtitle lp-secondary" data-i18n="bringDashboardVocabulary"></p>
+          <div class="feature-list">
+            <div class="feature-row">
+              <span class="feature-badge">1</span>
+              <span class="feature-copy" data-i18n="onboardingFeatureWordsInContext"></span>
+            </div>
+            <div class="feature-row">
+              <span class="feature-badge">2</span>
+              <span class="feature-copy" data-i18n="onboardingFeatureDetails"></span>
+            </div>
+            <div class="feature-row">
+              <span class="feature-badge">3</span>
+              <span class="feature-copy" data-i18n="onboardingFeatureProgress"></span>
+            </div>
           </div>
-          <div class="feature-row">
-            <span class="feature-badge">2</span>
-            <span class="feature-copy" data-i18n="onboardingFeatureDetails"></span>
-          </div>
-          <div class="feature-row">
-            <span class="feature-badge">3</span>
-            <span class="feature-copy" data-i18n="onboardingFeatureProgress"></span>
-          </div>
+          <button id="next-1" class="lp-btn lp-btn-primary lp-btn-block primary-btn" data-i18n="getStarted"></button>
         </div>
-        <button id="next-1" class="primary-btn" data-i18n="getStarted"></button>
-      </div>
 
-      <div id="step-2" class="step hidden">
-        <p class="eyebrow" data-i18n="signInEyebrow"></p>
-        <h1 data-i18n="connectAccount"></h1>
-        <p class="subtitle" data-i18n="loginToSyncTheme"></p>
-        <div id="onboard-login-form">
-          <button type="button" id="onboard-account-connect-btn" class="account-connect-btn" data-i18n="connectLangslyAccount"></button>
-          <div id="onboard-error" class="error hidden"></div>
+        <div id="step-2" class="step hidden">
+          <p class="lp-eyebrow" data-i18n="signInEyebrow"></p>
+          <h1 class="lp-display" data-i18n="connectAccount"></h1>
+          <p class="subtitle lp-secondary" data-i18n="loginToSyncTheme"></p>
+          <div id="onboard-login-form">
+            <button type="button" id="onboard-account-connect-btn" class="lp-btn lp-btn-primary lp-btn-block account-connect-btn" data-i18n="connectLangslyAccount"></button>
+            <div id="onboard-error" class="lp-note hidden" role="status"></div>
+          </div>
+          <p class="hint-text lp-muted" data-i18n="needAccount"></p>
         </div>
-        <p class="hint-text" data-i18n="needAccount"></p>
-      </div>
 
-      <div id="step-3" class="step hidden">
-        <p class="eyebrow" data-i18n="readyEyebrow"></p>
-        <h1 data-i18n="vocabPassSet"></h1>
-        <p class="subtitle" data-i18n="vocabThemeSynced"></p>
-        <div class="feature-list">
-          <div class="feature-row">
-            <span class="feature-badge success-badge">A</span>
-            <span class="feature-copy" data-i18n="readyFeatureHover"></span>
+        <div id="step-3" class="step hidden">
+          <p class="lp-eyebrow" data-i18n="readyEyebrow"></p>
+          <h1 class="lp-display" data-i18n="vocabPassSet"></h1>
+          <p class="subtitle lp-secondary" data-i18n="vocabThemeSynced"></p>
+          <div class="feature-list">
+            <div class="feature-row">
+              <span class="feature-badge success-badge">✓</span>
+              <span class="feature-copy" data-i18n="readyFeatureHover"></span>
+            </div>
+            <div class="feature-row">
+              <span class="feature-badge success-badge">✓</span>
+              <span class="feature-copy" data-i18n="readyFeaturePauseSite"></span>
+            </div>
+            <div class="feature-row">
+              <span class="feature-badge success-badge">✓</span>
+              <span class="feature-copy" data-i18n="readyFeatureThemes"></span>
+            </div>
           </div>
-          <div class="feature-row">
-            <span class="feature-badge success-badge">B</span>
-            <span class="feature-copy" data-i18n="readyFeaturePauseSite"></span>
-          </div>
-          <div class="feature-row">
-            <span class="feature-badge success-badge">C</span>
-            <span class="feature-copy" data-i18n="readyFeatureThemes"></span>
-          </div>
+          <button id="finish-btn" class="lp-btn lp-btn-primary lp-btn-block primary-btn" data-i18n="startBrowsing"></button>
         </div>
-        <button id="finish-btn" class="primary-btn" data-i18n="startBrowsing"></button>
-      </div>
 
-      <div class="step-dots" aria-hidden="true">
-        <span id="dot-1" class="dot active"></span>
-        <span id="dot-2" class="dot"></span>
-        <span id="dot-3" class="dot"></span>
+        <div class="step-dots" aria-hidden="true">
+          <span id="dot-1" class="dot active"></span>
+          <span id="dot-2" class="dot"></span>
+          <span id="dot-3" class="dot"></span>
+        </div>
       </div>
     </div>
   </div>
