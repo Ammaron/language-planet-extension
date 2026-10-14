@@ -1166,6 +1166,23 @@ function enterUnavailable() {
   stopSafetyController();
 }
 
+// The pinyin setting no longer forces a vocabulary resync, so pages showing
+// Chinese words re-render themselves when it changes.
+browser.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== 'local' || !('zhPinyinMode' in changes) || extensionContextOrphaned) return;
+  if (!extensionActive || !matcher || !document.querySelector('.lp-zh-island')) return;
+  const generation = lifecycleGeneration;
+  void Promise.all([loadPinyinPreferences(), browser.storage.local.get('vocabWords')]).then(([, { vocabWords }]) => {
+    if (generation !== lifecycleGeneration || !extensionActive || !Array.isArray(vocabWords)) return;
+    cancelValidationRetry();
+    vocabularyRevision += 1;
+    validationCoordinator.cancel();
+    restoreOriginalPageText();
+    matcher = new VocabMatcher(vocabularyForPage(vocabWords), { rotationSalt });
+    processDocument();
+  }).catch(() => {});
+});
+
 const RESUME_STORAGE_KEYS = ['vocabWords', 'subscriptionRequired'];
 browser.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== 'local' || !RESUME_STORAGE_KEYS.some(key => key in changes)) return;
