@@ -263,5 +263,17 @@
   "syncIntervalHelp": "Vocab Pass 从 Langsly 刷新单词列表的频率。",
   "settingsSectionReading": "阅读",
   "settingsSectionChinese": "中文",
-  "pageStateSubscription": "通行证已到期"
+  "pageStateSubscription": "通行证已到期",
+  "posNoun": "名词",
+  "posVerb": "动词",
+  "posAdjective": "形容词",
+  "posAdverb": "副词",
+  "posPronoun": "代词",
+  "posPreposition": "介词",
+  "posConjunction": "连词",
+  "posInterjection": "感叹词",
+  "posArticle": "冠词",
+  "posDeterminer": "限定词",
+  "posNumber": "数词",
+  "posExpression": "表达"
 }

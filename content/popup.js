@@ -36,6 +36,23 @@ const VocabPopup = (() => {
     return fallback || key;
   }
 
+  const POS_KEYS = {
+    noun: 'posNoun', verb: 'posVerb', adjective: 'posAdjective', adverb: 'posAdverb',
+    pronoun: 'posPronoun', preposition: 'posPreposition', conjunction: 'posConjunction',
+    interjection: 'posInterjection', article: 'posArticle', determiner: 'posDeterminer',
+    number: 'posNumber', numeral: 'posNumber', phrase: 'phraseBadge', expression: 'posExpression',
+  };
+
+  // part_of_speech arrives as English curriculum data; label it in the extension's UI language.
+  function posLabel(pos) {
+    const raw = String(pos || '').trim();
+    if (!raw) return '';
+    const key = POS_KEYS[raw.toLowerCase()];
+    if (key) return t(key, raw.toLowerCase());
+    // Unknown values are untranslated English, so show them only in an English UI.
+    return String(t('@@ui_locale', 'en')).toLowerCase().startsWith('en') ? raw : '';
+  }
+
   function normalizeUrl(url) {
     return String(url || '').trim().replace(/\/+$/, '');
   }
@@ -608,7 +625,7 @@ const VocabPopup = (() => {
     header.appendChild(createEl('span', 'lp-popup-arrow', '→'));
     header.appendChild(chineseEl('span', 'lp-popup-translation lp-zh-term', zh.term || ''));
     if (zh.gloss) header.appendChild(createEl('span', 'lp-popup-base', `(${zh.gloss})`));
-    if (state.pos) header.appendChild(createEl('span', 'lp-popup-pos', state.pos));
+    if (posLabel(state.pos)) header.appendChild(createEl('span', 'lp-popup-pos', posLabel(state.pos)));
     popupEl.appendChild(header);
 
     const reading = zh.reading || {};
@@ -749,7 +766,7 @@ const VocabPopup = (() => {
     if (baseTranslation && baseTranslation.toLowerCase() !== original.toLowerCase()) {
       header.appendChild(createEl('span', 'lp-popup-base', `(${baseTranslation})`));
     }
-    if (pos) header.appendChild(createEl('span', 'lp-popup-pos', pos));
+    if (posLabel(pos)) header.appendChild(createEl('span', 'lp-popup-pos', posLabel(pos)));
     if (uncertain === 'true') {
       header.appendChild(createEl('span', 'lp-popup-pos lp-popup-uncertain', t('uncertainBadge', 'uncertain')));
     }
@@ -948,8 +965,8 @@ const VocabPopup = (() => {
       wordRow.appendChild(createEl('span', 'lp-phrase-word-original', m.original));
       wordRow.appendChild(createEl('span', 'lp-popup-arrow', '\u2192'));
       wordRow.appendChild(createEl('span', 'lp-phrase-word-term', m.word.term));
-      if (m.word.part_of_speech) {
-        wordRow.appendChild(createEl('span', 'lp-popup-pos', m.word.part_of_speech));
+      if (posLabel(m.word.part_of_speech)) {
+        wordRow.appendChild(createEl('span', 'lp-popup-pos', posLabel(m.word.part_of_speech)));
       }
       wordRow.addEventListener('click', (e) => {
         e.preventDefault();

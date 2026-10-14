@@ -905,5 +905,53 @@
   "pageStateSubscription": {
     "message": "Pass ended",
     "description": "Status pill: the Vocab Pass subscription has lapsed."
+  },
+  "posNoun": {
+    "message": "noun",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posVerb": {
+    "message": "verb",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posAdjective": {
+    "message": "adjective",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posAdverb": {
+    "message": "adverb",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posPronoun": {
+    "message": "pronoun",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posPreposition": {
+    "message": "preposition",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posConjunction": {
+    "message": "conjunction",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posInterjection": {
+    "message": "interjection",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posArticle": {
+    "message": "article",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posDeterminer": {
+    "message": "determiner",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posNumber": {
+    "message": "number",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posExpression": {
+    "message": "expression",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
   }
 }

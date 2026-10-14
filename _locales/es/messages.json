@@ -905,5 +905,41 @@
   "pageStateSubscription": {
     "message": "Pase vencido",
     "description": "Status pill: the Vocab Pass subscription has lapsed."
+  },
+  "posNoun": {
+    "message": "sustantivo"
+  },
+  "posVerb": {
+    "message": "verbo"
+  },
+  "posAdjective": {
+    "message": "adjetivo"
+  },
+  "posAdverb": {
+    "message": "adverbio"
+  },
+  "posPronoun": {
+    "message": "pronombre"
+  },
+  "posPreposition": {
+    "message": "preposición"
+  },
+  "posConjunction": {
+    "message": "conjunción"
+  },
+  "posInterjection": {
+    "message": "interjección"
+  },
+  "posArticle": {
+    "message": "artículo"
+  },
+  "posDeterminer": {
+    "message": "determinante"
+  },
+  "posNumber": {
+    "message": "número"
+  },
+  "posExpression": {
+    "message": "expresión"
   }
 }
