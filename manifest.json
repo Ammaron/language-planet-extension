@@ -1,16 +1,18 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extName__",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "__MSG_extDescription__",
   "default_locale": "en",
+  "minimum_chrome_version": "111",
   "permissions": [
     "storage",
     "alarms",
     "scripting"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "http://*/*",
+    "https://*/*"
   ],
   "background": {
     "service_worker": "background/service-worker.js"
@@ -18,15 +20,18 @@
   "content_scripts": [
     {
       "matches": [
-        "<all_urls>"
+        "http://*/*",
+        "https://*/*"
       ],
       "js": [
         "vendor/browser-polyfill.min.js",
         "shared/i18n.js",
+        "shared/hosts.js",
         "content/request-coordinator.js",
         "content/grammar-rules.js",
         "content/matcher.js",
         "content/writing-practice.js",
+        "content/content-styles.js",
         "content/popup.js",
         "content/content.js"
       ],
@@ -45,16 +50,6 @@
         "content/connection-bridge.js"
       ],
       "run_at": "document_start"
-    }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "content/content.css"
-      ],
-      "matches": [
-        "<all_urls>"
-      ]
     }
   ],
   "action": {

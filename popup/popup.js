@@ -1,4 +1,4 @@
-/* global browser */
+/* global browser, LangslyHosts */
 const loginView = document.getElementById('login-view');
 const settingsView = document.getElementById('settings-view');
 const loginError = document.getElementById('login-error');
@@ -164,9 +164,10 @@ async function loadActiveTab() {
 
   if (domain) {
     // Whitelisted here means "paused on this site".
-    const response = await browser.runtime.sendMessage({ type: 'GET_WHITELIST' }).catch(() => null);
-    if (response && response.domains) {
-      siteEnabled = !response.domains.some(d => domain.includes(d) || d.includes(domain));
+    const response = await browser.runtime.sendMessage({ type: 'GET_WHITELIST', refresh: true }).catch(() => null);
+    if (response && Array.isArray(response.domains) && response.known !== false) {
+      // Same rule as the content script: the entry itself or one of its subdomains.
+      siteEnabled = !LangslyHosts.matchesAnyDomain(domain, response.domains);
       siteToggle.checked = siteEnabled;
     }
     if (tab.id) {
@@ -441,7 +442,16 @@ siteToggle.addEventListener('change', async () => {
   renderPageState();
 
   try {
-    await browser.runtime.sendMessage({ type: 'TOGGLE_WHITELIST', domain, add: !siteToggle.checked });
+    const result = await browser.runtime.sendMessage({ type: 'TOGGLE_WHITELIST', domain, add: !siteToggle.checked })
+      .catch(() => null);
+    if (!result || !result.success) {
+      // The server did not take the change: show the state that is really in effect.
+      if (result && typeof result.paused === 'boolean') siteToggle.checked = !result.paused;
+      else siteToggle.checked = !siteToggle.checked;
+      siteEnabled = siteToggle.checked;
+      renderPageState();
+      return;
+    }
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     if (tab && tab.id) {
       try {

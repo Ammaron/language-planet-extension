@@ -16,7 +16,9 @@ test('sensitive exclusions are mandatory and reevaluated for SPA and password mu
   const content = await read('content/content.js');
   assert.doesNotMatch(content, /excludeSensitive\s*===\s*false/);
   assert.match(content, /input\[type="password"\]/);
-  assert.match(content, /\['pushState',\s*'replaceState'\]/);
+  assert.doesNotMatch(content, /history\[method\] = /);
+  assert.match(content, /currententrychange/);
+  assert.match(content, /setInterval\(checkUrlChange/);
   assert.match(content, /MutationObserver\(scheduleSafetyCheck\)/);
   assert.match(content, /deactivateForSensitivePage/);
 });
@@ -31,4 +33,11 @@ test('automatic processing is bounded and trusted feedback rejects synthetic cli
   assert.match(`${content}\n${popup}`, /if \(!e\.isTrusted\) return/);
   assert.match(worker, /_consumeAutomaticBudget/);
   assert.match(worker, /maxStored:\s*1000/);
+});
+
+test('swapped words carry no empty hover tooltip and never expose the original as an attribute', async () => {
+  const css = await read('content/content.css');
+  assert.doesNotMatch(css, /::after/);
+  assert.doesNotMatch(css, /attr\(data-original\)/);
+  assert.doesNotMatch(await read('content/content.js'), /data-original/);
 });

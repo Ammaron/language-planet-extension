@@ -53,3 +53,16 @@ test('build accepts a reviewed fixture on disk', () => {
   writeFileSync(join(root, 'release/zh_CN.review.json'), JSON.stringify(review()));
   assert.deepEqual(verifyChineseLocaleForBuild(root), { chineseIncluded: true, keys: 1 });
 });
+
+test('review hashes ignore CRLF vs LF checkouts but still bind every other byte', () => {
+  const pretty = value => Buffer.from(JSON.stringify(JSON.parse(value), null, 2) + '\n');
+  const lfSource = pretty(source); const lfRuntime = pretty(runtime);
+  const crlf = bytes => Buffer.from(bytes.toString().replace(/\n/g, '\r\n'));
+  const meta = review(lfRuntime);
+  meta.source_sha256 = digest(lfSource);
+  for (const role of REVIEW_ROLES) meta[role].source_sha256 = meta.source_sha256;
+  assert.equal(validateChineseLocale(lfSource, lfRuntime, meta), 1);
+  assert.equal(validateChineseLocale(crlf(lfSource), crlf(lfRuntime), meta), 1);
+  assert.throws(() => validateChineseLocale(lfSource, Buffer.from(lfRuntime.toString().replace('你好', '您好')), meta), /differs/);
+  assert.throws(() => validateChineseLocale(lfSource, Buffer.from(lfRuntime.toString() + ' '), meta), /differs/);
+});

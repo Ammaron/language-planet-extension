@@ -336,9 +336,9 @@ export function parseHtml(document, html, parent) {
 }
 
 const ROOT = new URL('../', import.meta.url);
-const SCRIPTS = ['content/request-coordinator.js', 'content/grammar-rules.js', 'content/matcher.js', 'content/popup.js', 'content/content.js'];
+const SCRIPTS = ['shared/hosts.js', 'content/request-coordinator.js', 'content/grammar-rules.js', 'content/matcher.js', 'content/popup.js', 'content/content.js'];
 
-export async function loadContentPage({ html, words, storage = {}, validate, audio = {} }) {
+export async function loadContentPage({ html, words, storage = {}, validate, audio = {}, whitelist = [], location, navigation }) {
   const document = new MiniDocument();
   parseHtml(document, html, document.body);
   const state = { vocabWords: words, rotation_salt: '', frontendUrl: 'https://langsly.com', ...storage };
@@ -358,11 +358,12 @@ export async function loadContentPage({ html, words, storage = {}, validate, aud
       onChanged: { addListener: listener => storageListeners.push(listener) },
     },
     runtime: {
+      id: 'test',
       getURL: path => `chrome-extension://test/${path}`,
       onMessage: { addListener: listener => { browser.runtime.listener = listener; } },
       sendMessage: async (message) => {
         sent.push(message);
-        if (message.type === 'GET_WHITELIST') return { domains: [] };
+        if (message.type === 'GET_WHITELIST') return { domains: whitelist };
         if (message.type === 'VALIDATE_REPLACEMENTS') return { results: await validate(message.items) };
         if (message.type === 'FETCH_AUDIO') return { success: false };
         return { success: true };
@@ -378,15 +379,24 @@ export async function loadContentPage({ html, words, storage = {}, validate, aud
       return audio.fail ? Promise.reject(new Error('404')) : Promise.resolve();
     }
   }
+  const observers = new Set();
+  const intervals = new Set();
   const window = {
     document, browser, NodeFilter, Node: { ELEMENT_NODE, TEXT_NODE },
-    location: { href: 'https://news.example.test/article', hostname: 'news.example.test', pathname: '/article' },
+    location: location || { href: 'https://news.example.test/article', hostname: 'news.example.test', pathname: '/article' },
+    navigation,
     innerWidth: 1280, innerHeight: 800, scrollX: 0, scrollY: 0,
     history: { pushState() {}, replaceState() {} },
     addEventListener() {}, removeEventListener() {},
     getComputedStyle: () => ({ backgroundColor: 'rgb(255, 255, 255)' }),
     matchMedia: () => ({ matches: false }),
-    MutationObserver: class { observe() {} disconnect() {} },
+    MutationObserver: class {
+      constructor(callback) { this.callback = callback; }
+      observe() { observers.add(this); }
+      disconnect() { observers.delete(this); }
+    },
+    setInterval: (handler, ms) => { const id = setInterval(handler, ms); id.unref?.(); intervals.add(id); return id; },
+    clearInterval: (id) => { intervals.delete(id); clearInterval(id); },
     Audio: FakeAudio,
     SpeechSynthesisUtterance: class { constructor(text) { this.text = text; } },
     speechSynthesis: { speak: utterance => spoken.push(utterance) },
@@ -400,7 +410,12 @@ export async function loadContentPage({ html, words, storage = {}, validate, aud
     vm.runInContext(await readFile(new URL(script, ROOT), 'utf8'), context, { filename: script });
   }
   return {
-    document, window, state, sent, spoken, played,
+    document, window, state, sent, spoken, played, observers, intervals,
+    changeStorage: (values) => {
+      const changes = Object.fromEntries(Object.entries(values).map(([key, newValue]) => [key, { oldValue: state[key], newValue }]));
+      Object.assign(state, values);
+      for (const listener of storageListeners) listener(changes, 'local');
+    },
     settle: async (rounds = 12) => { for (let i = 0; i < rounds; i += 1) await new Promise(resolve => setTimeout(resolve, 15)); },
     islands: () => document.querySelectorAll('.lp-zh-island'),
     popup: () => {

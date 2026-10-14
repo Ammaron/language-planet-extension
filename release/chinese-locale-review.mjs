@@ -4,6 +4,10 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 export const digest = bytes => createHash('sha256').update(bytes).digest('hex');
+// Locale JSON is hashed with LF line endings so a CRLF checkout (Windows autocrlf)
+// and an LF checkout bind to the same reviewed text; any other byte change still fails.
+export const normalizeEol = bytes => Buffer.from(Buffer.from(bytes).toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
+export const textDigest = bytes => digest(normalizeEol(bytes));
 export const REVIEW_ROLES = ['native_reviewer', 'product_reviewer', 'privacy_reviewer', 'legal_reviewer'];
 const tokens = value => [...value.matchAll(/\$(?:[A-Z][A-Z0-9_]*\$|\d+)/gi)].map(([token]) => token.toLowerCase()).sort();
 const brands = ['Langsly', 'LANGSLY', 'Vocab Pass', 'Word Racing', 'Word Fight', 'Google', 'Firefox', 'OpenRouter'];
@@ -12,8 +16,8 @@ export function validateChineseLocale(sourceBytes, runtimeBytes, review) {
   assert.equal(review.locale, 'zh-Hans');
   assert.equal(review.extension_locale, 'zh_CN');
   assert.equal(review.status, 'approved', 'Chinese extension copy is not approved');
-  const sourceHash = digest(sourceBytes);
-  const runtimeHash = digest(runtimeBytes);
+  const sourceHash = textDigest(sourceBytes);
+  const runtimeHash = textDigest(runtimeBytes);
   assert.equal(review.source_sha256, sourceHash, 'Chinese extension review has stale English source');
   assert.equal(review.runtime_sha256, runtimeHash, 'Chinese extension runtime differs from reviewed copy');
   for (const role of REVIEW_ROLES) {

@@ -1,6 +1,6 @@
-# AMO reviewer instructions — 0.2.7
+# AMO reviewer instructions — 0.2.8
 
-Version 0.2.7 is the current source candidate. These instructions do not establish a signed artifact, store submission, publication, or installed-device acceptance.
+Version 0.2.8 is the current source candidate. These instructions do not establish a signed artifact, store submission, publication, or installed-device acceptance.
 
 ## Build
 
@@ -8,7 +8,7 @@ Use Node.js 24.13.1 and follow `BUILDING.md`. `npm ci` installs the pinned valid
 
 ## Account connection
 
-1. Install the signed 0.2.7 build.
+1. Install the signed 0.2.8 build.
 2. Open the toolbar popup and select **Connect account**.
 3. The add-on opens its full-tab connection screen and requests a short-lived device code.
 4. Select **Open Langsly**. Sign in on the Langsly website if required; the `/extension-connect` route is preserved through login.
@@ -19,7 +19,7 @@ The extension never authorizes automatically. The extension tab polls only while
 
 ## Feature review
 
-On a non-sensitive article page, verify word and phrase highlighting, contextual disambiguation, audio/speech fallback, theme and difficulty controls, site disable/re-enable, and offline cached vocabulary. Then visit a login form containing a password field and representative banking, payment, government, health, and legal URLs; the add-on must not load vocabulary, change the DOM, or send page-derived requests there. Repeat after a same-page navigation.
+On a non-sensitive article page, verify word and phrase highlighting, contextual disambiguation, audio/speech fallback, theme and difficulty controls, site disable/re-enable, and offline cached vocabulary. Then visit a login form containing a password field and representative banking, payment, government, health, and legal URLs (for example a chase.com or bbva.mx sign-in, a MyChart portal, mail.google.com, web.whatsapp.com); the add-on must not load vocabulary, change the DOM, or send page-derived requests there. Repeat after a same-page navigation.
 
 ## Test account
 

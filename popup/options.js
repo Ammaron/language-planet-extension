@@ -172,17 +172,20 @@ async function persistPreferences() {
     zhPinyinMode: PINYIN_MODES.includes(zhPinyinModeSelect.value) ? zhPinyinModeSelect.value : DEFAULTS.zhPinyinMode,
   };
 
+  const previous = await browser.storage.local.get(['syncInterval', 'extensionSourceLanguage']);
   await browser.storage.local.set(settings);
 
-  await browser.runtime.sendMessage({
-    type: 'UPDATE_CONFIG',
-    syncInterval: settings.syncInterval,
-  });
-  const sourceResult = await browser.runtime.sendMessage({
-    type: 'SET_SOURCE_LANGUAGE',
-    sourceLanguage: pageSourceLanguage.value,
-  });
-  if (!sourceResult?.success) return;
+  // Only real changes reach the worker: an interval change re-creates the sync
+  // alarm, and a page-language change refetches words. Pinyin and writing-practice
+  // toggles are read from storage and never cost a vocabulary download.
+  if (previous.syncInterval !== settings.syncInterval) {
+    await browser.runtime.sendMessage({ type: 'UPDATE_CONFIG', syncInterval: settings.syncInterval });
+  }
+  const sourceLanguage = pageSourceLanguage.value;
+  if ((previous.extensionSourceLanguage || DEFAULTS.extensionSourceLanguage) !== sourceLanguage) {
+    const sourceResult = await browser.runtime.sendMessage({ type: 'SET_SOURCE_LANGUAGE', sourceLanguage });
+    if (!sourceResult?.success) return;
+  }
   showSaved();
 }
 

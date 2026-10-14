@@ -91,6 +91,7 @@ class TestElement {
 
   attachShadow({ mode }) {
     this.shadowMode = mode;
+    this.adoptedStyleSheets = [];
     return this;
   }
 
@@ -145,7 +146,7 @@ class TestElement {
   }
 }
 
-function createHarness({ storageData = {}, playResult = Promise.resolve(), onMessage = async () => ({}) } = {}) {
+function createHarness({ storageData = {}, playResult = Promise.resolve(), onMessage = async () => ({}), extra = {} } = {}) {
   const audioInstances = [];
   const speechCalls = [];
   const document = {
@@ -222,6 +223,7 @@ function createHarness({ storageData = {}, playResult = Promise.resolve(), onMes
     },
   };
 
+  Object.assign(sandbox, extra);
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
   vm.runInContext(`${popupSource}\nglobalThis.__VocabPopup = VocabPopup;`, sandbox, {
@@ -270,6 +272,16 @@ test('popup mounts its runtime stylesheet inside the closed shadow root', async 
   assert.equal(host.children[0].tagName, 'LINK');
   assert.equal(host.children[0].rel, 'stylesheet');
   assert.equal(host.children[0].href, 'moz-extension://test/content/content.css');
+});
+
+test('popup adopts the bundled stylesheet so no extension file is web-accessible', async () => {
+  class CSSStyleSheet { replaceSync(text) { this.text = text; } }
+  const harness = createHarness({ extra: { CSSStyleSheet, LangslyContentStyles: '.lp-vocab-popup{color:red}' } });
+  await harness.VocabPopup.showWord(harness.makeSpan());
+  const host = harness.document.body.children.find((child) => child.shadowMode === 'closed');
+  assert.equal(host.adoptedStyleSheets.length, 1);
+  assert.equal(host.adoptedStyleSheets[0].text, '.lp-vocab-popup{color:red}');
+  assert.ok(!host.children.some(child => child.tagName === 'LINK'), 'no web-accessible stylesheet link');
 });
 
 test('listen button plays relative synced audio from the API origin', async () => {
@@ -441,47 +453,62 @@ test('listen button shows fallback styling when no real audio is available', asy
   assert.deepEqual(harness.speechCalls, [{ text: 'hola', lang: 'es' }]);
 });
 
-test('listen button syncs stale words and plays newly available audio before voice fallback', async () => {
+test('listen button never starts a sync: it uses newer stored audio or the browser voice', async () => {
   const storageData = {
     apiBase: 'https://api.langsly.com/api',
-    vocabWords: [
-      {
-        id: 'word_hola',
-        term: 'hola',
-        pronunciation_audio: '',
-      },
-    ],
+    vocabWords: [{ id: 'word_hola', term: 'hola', pronunciation_audio: '/api/media/assets/audio-1/content/' }],
   };
-  const syncMessages = [];
+  const messages = [];
   const harness = createHarness({
     storageData,
+    onMessage: async (message) => { messages.push(message.type); return { success: true }; },
+  });
+
+  await harness.VocabPopup.showWord(harness.makeSpan({ wordId: 'word_hola', audioUrl: '' }));
+  const listenButton = harness.document.body.querySelector('.lp-popup-listen');
+  await listenButton.click();
+  await flushMicrotasks();
+  assert.equal(harness.audioInstances.length, 1);
+  assert.equal(harness.audioInstances[0].src, 'https://api.langsly.com/api/media/assets/audio-1/content/');
+
+  storageData.vocabWords = [{ id: 'word_hola', term: 'hola', pronunciation_audio: '' }];
+  await harness.VocabPopup.showWord(harness.makeSpan({ wordId: 'word_hola', audioUrl: '' }));
+  const fallbackButton = harness.document.body.querySelector('.lp-popup-listen');
+  for (let tap = 0; tap < 11; tap += 1) {
+    await fallbackButton.click();
+    await flushMicrotasks();
+  }
+  assert.equal(harness.speechCalls.length, 11);
+  assert.deepEqual(messages.filter(type => type !== 'FETCH_AUDIO'), [], 'Listen taps must not sync');
+});
+
+test('an expired signed recording is refreshed once before the browser voice', async () => {
+  const expired = '/api/media/assets/audio-1/content/?signature=old';
+  const fresh = '/api/media/assets/audio-1/content/?signature=new';
+  const storageData = {
+    apiBase: 'https://api.langsly.com/api',
+    vocabWords: [{ id: 'word_hola', term: 'hola', pronunciation_audio: expired }],
+  };
+  const messages = [];
+  const harness = createHarness({
+    storageData,
+    playResult: src => (src.includes('signature=new') ? Promise.resolve() : Promise.reject(new Error('403'))),
     onMessage: async (message) => {
-      syncMessages.push(message);
-      if (message.type === 'SYNC_NOW') {
-        storageData.vocabWords = [
-          {
-            id: 'word_hola',
-            term: 'hola',
-            pronunciation_audio: '/api/media/assets/audio-1/content/',
-          },
-        ];
+      messages.push(message.type);
+      if (message.type === 'REFRESH_WORD_AUDIO') {
+        storageData.vocabWords = [{ id: 'word_hola', term: 'hola', pronunciation_audio: fresh }];
       }
-      return { success: true };
+      return { success: false };
     },
   });
 
-  await harness.VocabPopup.showWord(harness.makeSpan({
-    wordId: 'word_hola',
-    audioUrl: '',
-  }));
+  await harness.VocabPopup.showWord(harness.makeSpan({ wordId: 'word_hola', audioUrl: expired }));
   const listenButton = harness.document.body.querySelector('.lp-popup-listen');
-
   await listenButton.click();
   await flushMicrotasks();
 
-  assert.equal(JSON.stringify(syncMessages), JSON.stringify([{ type: 'SYNC_NOW' }]));
-  assert.equal(harness.audioInstances.length, 1);
-  assert.equal(harness.audioInstances[0].src, 'https://api.langsly.com/api/media/assets/audio-1/content/');
+  assert.deepEqual(messages, ['FETCH_AUDIO', 'REFRESH_WORD_AUDIO']);
+  assert.equal(harness.audioInstances.at(-1).src, 'https://api.langsly.com/api/media/assets/audio-1/content/?signature=new');
   assert.equal(harness.speechCalls.length, 0);
 });
 

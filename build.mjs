@@ -3,6 +3,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 import { deflateRawSync } from 'node:zlib';
 import { verifyChineseLocaleForBuild } from './release/chinese-locale-review.mjs';
 import { verifyHanziVendor } from './release/hanzi-writer-vendor.mjs';
+import { writeContentStyles } from './release/content-styles.mjs';
 
 const root = dirname(new URL(import.meta.url).pathname.replace(/^\/(.:)/, '$1'));
 const dist = join(root, 'dist');
@@ -11,10 +12,10 @@ const firefoxDir = join(dist, 'firefox');
 const fixedDate = new Date('1980-01-01T00:00:00Z');
 
 const runtimeFiles = [
-  'vendor/browser-polyfill.min.js', 'shared/i18n.js', 'shared/source-language.js',
+  'vendor/browser-polyfill.min.js', 'shared/i18n.js', 'shared/source-language.js', 'shared/hosts.js',
   'background/device-connection.js', 'content/connection-bridge.js', 'background/theme-utils.js', 'background/encounter-coordinator.js', 'background/service-worker.js',
   'background/hanzi-practice.js',
-  'content/request-coordinator.js', 'content/grammar-rules.js', 'content/matcher.js', 'content/writing-practice.js', 'content/popup.js', 'content/content.js', 'content/content.css',
+  'content/request-coordinator.js', 'content/grammar-rules.js', 'content/matcher.js', 'content/writing-practice.js', 'content/content-styles.js', 'content/popup.js', 'content/content.js', 'content/content.css',
   'popup/theme.css', 'fonts/fraunces-latin-wght-normal.woff2', 'fonts/dm-sans-latin-wght-normal.woff2', 'fonts/LICENSE-fraunces', 'fonts/LICENSE-dm-sans',
   'popup/popup.html', 'popup/popup.js', 'popup/popup.css',
   'popup/options.html', 'popup/options.js', 'popup/options.css',
@@ -101,6 +102,7 @@ async function createZip(sourceDirectory, outputPath) {
 
 const manifest = JSON.parse(await readFile(join(root, 'manifest.json'), 'utf8'));
 verifyChineseLocaleForBuild(root);
+await writeContentStyles(root);
 await rm(dist, { recursive: true, force: true });
 await mkdir(chromeDir, { recursive: true });
 await mkdir(firefoxDir, { recursive: true });
@@ -108,7 +110,13 @@ await copyRuntime(chromeDir); await copyRuntime(firefoxDir);
 await writeFile(join(chromeDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 
 const firefoxManifest = structuredClone(manifest);
-firefoxManifest.background = { scripts: ['vendor/browser-polyfill.min.js', 'shared/i18n.js', 'shared/source-language.js', 'background/theme-utils.js', 'background/encounter-coordinator.js', 'background/device-connection.js', 'background/hanzi-practice.js', 'background/service-worker.js'] };
+// Firefox gives every install a random moz-extension:// UUID, so a web-accessible
+// stylesheet there cannot fingerprint installs. It is kept only as the popover's
+// fallback when a constructed stylesheet cannot be adopted from a content script.
+firefoxManifest.web_accessible_resources = [{ resources: ['content/content.css'], matches: ['http://*/*', 'https://*/*'] }];
+// Chrome-only key; Firefox's floor is gecko.strict_min_version below.
+delete firefoxManifest.minimum_chrome_version;
+firefoxManifest.background = { scripts: ['vendor/browser-polyfill.min.js', 'shared/i18n.js', 'shared/source-language.js', 'shared/hosts.js', 'background/theme-utils.js', 'background/encounter-coordinator.js', 'background/device-connection.js', 'background/hanzi-practice.js', 'background/service-worker.js'] };
 firefoxManifest.browser_specific_settings = {
   gecko: {
     id: 'vocabpass@languageplanet.app',
@@ -125,7 +133,7 @@ await createZip(firefoxDir, join(dist, `langsly-vocab-pass-firefox-amo-${version
 
 const sourceDir = join(dist, 'amo-source');
 await mkdir(sourceDir, { recursive: true });
-const sourceFiles = [...new Set([...runtimeFiles, ...hanziVendorFiles, 'vendor/.gitattributes', 'release/hanzi-writer-vendor.mjs', 'manifest.json', 'build.mjs', 'build.sh', 'build.ps1', 'build.cmd', 'BUILDING.md', 'THIRD_PARTY_NOTICES.md', 'package.json', 'package-lock.json', 'vendor/browser-polyfill.js', 'vendor/LICENSE-webextension-polyfill'])];
+const sourceFiles = [...new Set([...runtimeFiles, ...hanziVendorFiles, '.gitattributes', 'vendor/.gitattributes', 'release/hanzi-writer-vendor.mjs', 'manifest.json', 'build.mjs', 'build.sh', 'build.ps1', 'build.cmd', 'BUILDING.md', 'THIRD_PARTY_NOTICES.md', 'package.json', 'package-lock.json', 'vendor/browser-polyfill.js', 'vendor/LICENSE-webextension-polyfill'])];
 // Review drafts are test inputs in the AMO source archive, never runtime assets.
 sourceFiles.push('docs/evidence/zh_CN.messages.draft.json', 'docs/evidence/zh_CN.messages.draft.meta.json');
 for (const file of sourceFiles) await copy(file, sourceDir);

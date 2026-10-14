@@ -148,7 +148,8 @@
             state.intervalMs = Math.max(state.intervalMs + 5000, Number(data.interval || 10) * 1000);
             state.status = 'pending';
           } else state.status = data.error === 'authorization_pending' ? 'pending' : 'offline';
-        } catch {
+        } catch (error) {
+          console.warn('[Langsly] device sign-in poll failed', error);
           if (!current()) return;
           state.status = 'offline';
         }

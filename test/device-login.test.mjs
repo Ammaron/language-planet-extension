@@ -7,7 +7,7 @@ const readJson = async (path) => JSON.parse(await readText(path));
 
 test('base manifest removes identity and activeTab and uses full-tab options', async () => {
   const manifest = await readJson('manifest.json');
-  assert.equal(manifest.version, '0.2.7');
+  assert.equal(manifest.version, '0.2.8');
   // scripting is only for the packaged writer, injected after an explicit practice click.
   assert.deepEqual(manifest.permissions.sort(), ['alarms', 'scripting', 'storage']);
   assert.equal(manifest.options_ui.page, 'popup/options.html');
@@ -61,7 +61,7 @@ test('service worker renews extension sessions and preserves them through transi
   assert.doesNotMatch(serviceWorker, /\[400, 401, 403\]\.includes\(res\.status\)/);
   assert.match(serviceWorker, /function isAccessTokenFresh\(token, now = Date\.now\(\)\)/);
   assert.match(serviceWorker, /isLoggedIn: !!\(authToken \|\| refreshToken\)/);
-  assert.match(serviceWorker, /ensureAccessToken\(\)\.catch\(\(\) => \{\}\)/);
+  assert.match(serviceWorker, /ensureAccessToken\(\)\.catch\(error => console\.warn\(/);
   assert.doesNotMatch(serviceWorker, /if \(!res\.ok\) \{\s*if \(generation === authGeneration\) await clearSession\(\)/);
 });
 

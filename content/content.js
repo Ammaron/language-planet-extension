@@ -2,16 +2,11 @@
  * Content Script — DOM scanning, word replacement, and popup UI.
  * Runs on every page, processes text nodes and replaces matched vocabulary.
  */
-/* global browser, VocabMatcher, VocabPopup, GrammarRules, LangslyRequestCoordinator */
+/* global browser, VocabMatcher, VocabPopup, GrammarRules, LangslyRequestCoordinator, LangslyHosts */
 
 // ─── Sensitive Page Exclusion ────────────────────
-const SENSITIVE_PATTERNS = [
-  /(^|[.-])(bank|banking|paypal|stripe|checkout|payment|payments)([.-]|$)/i,
-  /(^|[.-])(health|medical|patient|pharmacy|insurance|medicare|medicaid)([.-]|$)/i,
-  /(^|[.-])(legal|attorney|court|law)([.-]|$)/i,
-  /(^|[.-])(login|signin|auth|account)([.-]|$)/i,
-  /\.(gov|gob)(\.[a-z]{2})?$/i,
-];
+// Banking, card, health, webmail, chat and private-document sites come from the
+// bundled list in shared/hosts.js (exact host or dot-suffix, plus label rules).
 
 function _pageHasPasswordFields() {
   return document.querySelectorAll('input[type="password"]').length > 0;
@@ -23,7 +18,7 @@ function _pageRequiresImmediateExclusion() {
   const host = window.location.hostname.toLowerCase();
   const path = window.location.pathname.toLowerCase();
   if (/\/(login|signin|sign-in|oauth|authorize|checkout|payment|patient|legal)(\/|$)/i.test(path)) return true;
-  return SENSITIVE_PATTERNS.some((pattern) => pattern.test(host));
+  return LangslyHosts.isSensitivePage(host, path);
 }
 
 async function shouldExcludePage() {
@@ -33,7 +28,7 @@ async function shouldExcludePage() {
   // User-configurable blocklist
   const { sensitiveBlocklist = [] } = await browser.storage.local.get('sensitiveBlocklist');
   const host = window.location.hostname.toLowerCase();
-  if (sensitiveBlocklist.some(pattern => host.includes(String(pattern).toLowerCase()))) return true;
+  if (LangslyHosts.matchesAnyDomain(host, sensitiveBlocklist)) return true;
   return false;
 }
 
@@ -48,11 +43,37 @@ const SKIP_TAGS = new Set([
   'SVG', 'MATH', 'CANVAS', 'VIDEO', 'AUDIO', 'IFRAME',
 ]);
 
+// Hidden text (collapsed menus, screen-reader-only spans, templates, aria-hidden
+// regions) is never scanned and never sent as sentence context.
+const HIDDEN_SELECTOR = '[hidden],[aria-hidden="true"],template,.sr-only,.visually-hidden,.screen-reader-text,.screen-reader-only';
+function elementIsHidden(element) {
+  if (!element) return true;
+  if (element.closest(HIDDEN_SELECTOR)) return true;
+  // display: contents elements have no box of their own; judge the nearest one that does.
+  let boxed = element;
+  while (boxed && boxed.parentElement && typeof window.getComputedStyle === 'function'
+    && window.getComputedStyle(boxed).display === 'contents') boxed = boxed.parentElement;
+  if (typeof boxed.checkVisibility === 'function') {
+    if (!boxed.checkVisibility({ checkVisibilityCSS: true })) return true;
+  } else if (typeof boxed.getClientRects === 'function' && boxed.getClientRects().length === 0) {
+    return true;
+  }
+  // Visually-hidden clipping: a 1px (or smaller) box that still holds text.
+  if (typeof boxed.getBoundingClientRect === 'function') {
+    const box = boxed.getBoundingClientRect();
+    if (box && box.width <= 1 && box.height <= 1) return true;
+  }
+  return false;
+}
+
 const LP_PROCESSED = 'data-lp-processed';
 const LP_CLASS = 'lp-vocab-word';
 let privateState = globalThis.LangslyPrivateState || new WeakMap();
 globalThis.LangslyPrivateState = privateState;
 const getPrivate = (element) => privateState.get(element) || {};
+// Only elements this script created carry private state. A page that reuses the
+// lp-* class names is never flattened, re-rendered or sent for validation.
+const ownElements = (selector, root = document) => [...root.querySelectorAll(selector)].filter(element => privateState.has(element));
 const setPrivate = (element, values) => {
   const next = { ...getPrivate(element), ...values };
   privateState.set(element, next);
@@ -179,8 +200,8 @@ function enforceNoBridges(island) {
   const walker = document.createTreeWalker(block, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
       if (node.nodeType === Node.ELEMENT_NODE) {
-        if (node.classList.contains('lp-zh-island')) return NodeFilter.FILTER_ACCEPT;
-        if (node.classList.contains('lp-validation-pending')) return NodeFilter.FILTER_SKIP;
+        if (node.classList.contains('lp-zh-island') && privateState.has(node)) return NodeFilter.FILTER_ACCEPT;
+        if (node.classList.contains('lp-validation-pending') && privateState.has(node)) return NodeFilter.FILTER_SKIP;
         return node.hasAttribute(LP_PROCESSED) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_SKIP;
       }
       return node.parentElement && node.parentElement.closest('.lp-zh-island')
@@ -276,10 +297,16 @@ let validationRetryTimer = null;
 let validationRetryDelay = VALIDATION_RETRY_MIN_MS;
 let vocabularySignature = '';
 // Key-order independent: browser.storage hands objects back with sorted keys.
+// Signed audio URLs change on every sync; a fresh signature alone is not a
+// vocabulary change and must not restart the page (the Listen button reads the
+// current URL from storage when an old one has expired).
 function vocabularySignatureOf(words) {
-  return JSON.stringify(words, (key, value) => (value && typeof value === 'object' && !Array.isArray(value)
-    ? Object.fromEntries(Object.keys(value).sort().map(name => [name, value[name]]))
-    : value));
+  return JSON.stringify(words, (key, value) => {
+    if (key === 'pronunciation_audio' && typeof value === 'string') return value.split('?')[0];
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? Object.fromEntries(Object.keys(value).sort().map(name => [name, value[name]]))
+      : value;
+  });
 }
 const LEGACY_FRONTEND_URL = 'http://localhost:3000';
 const DEFAULT_FRONTEND_URL = 'https://langsly.com';
@@ -356,13 +383,14 @@ function flushEncounterBuffer() {
 // ─── Initialization ──────────────────────────────
 function init() {
   if (extensionActive || initPromise) return initPromise;
-  if (['disabled', 'unavailable', 'logged-out'].includes(lifecycleState)) return null;
+  if (['disabled', 'unavailable', 'logged-out', 'orphaned'].includes(lifecycleState)) return null;
   const generation = lifecycleGeneration;
   lifecycleState = 'initializing';
-  initPromise = runInit(generation).finally(() => {
-    if (generation === lifecycleGeneration) initPromise = null;
+  const promise = runInit(generation).finally(() => {
+    if (initPromise === promise) initPromise = null;
   });
-  return initPromise;
+  initPromise = promise;
+  return promise;
 }
 
 async function runInit(generation) {
@@ -389,22 +417,25 @@ async function runInit(generation) {
   const { vocabWords, rotation_salt } = await browser.storage.local.get(['vocabWords', 'rotation_salt']);
   if (generation !== lifecycleGeneration) return;
   if (!vocabWords || vocabWords.length === 0) {
-    lifecycleState = 'unavailable';
+    enterUnavailable();
     return;
   }
   rotationSalt = rotation_salt || '';
   vocabularySignature = vocabularySignatureOf(vocabWords);
 
-  // Check whitelist
+  // Paused sites. The worker answers from its cached list; while the list is
+  // unknown (never fetched and the API unreachable) the page stays paused.
   const domain = window.location.hostname;
-  const response = await browser.runtime.sendMessage({ type: 'GET_WHITELIST' });
+  const response = await browser.runtime.sendMessage({ type: 'GET_WHITELIST' }).catch(() => null);
   if (generation !== lifecycleGeneration) return;
-  if (response && response.domains) {
-    whitelistedDomains = response.domains;
-    if (whitelistedDomains.some(d => domain.includes(d) || d.includes(domain))) {
-      lifecycleState = 'disabled';
-      return;
-    }
+  if (!response || !Array.isArray(response.domains) || response.known === false) {
+    lifecycleState = 'disabled';
+    return;
+  }
+  whitelistedDomains = response.domains;
+  if (LangslyHosts.matchesAnyDomain(domain, whitelistedDomains)) {
+    lifecycleState = 'disabled';
+    return;
   }
 
   await loadPinyinPreferences();
@@ -415,6 +446,7 @@ async function runInit(generation) {
   detectTheme();
   processDocument();
   observeMutations();
+  startUrlWatch();
 
   // Flush encounters on page unload
   window.removeEventListener('beforeunload', flushEncounterBuffer);
@@ -483,6 +515,7 @@ function runProcessNode(root, complete) {
         if (SKIP_TAGS.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
         if (parent.isContentEditable) return NodeFilter.FILTER_REJECT;
         if (node.textContent.trim().length < 2) return NodeFilter.FILTER_REJECT;
+        if (elementIsHidden(parent)) return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
       },
     }
@@ -613,6 +646,7 @@ function sentenceContextForNode(textNode, matchStart) {
   const blockSelector = BLOCK_SELECTOR;
   const block = textNode.parentElement.closest(blockSelector) || textNode.parentElement;
   if (!block || block.querySelector('script,style,code,pre,input,textarea,select,button,[contenteditable]')) return null;
+  if (elementIsHidden(block)) return null;
   const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
   let combined = '';
   let position = -1;
@@ -620,6 +654,8 @@ function sentenceContextForNode(textNode, matchStart) {
     const parent = node.parentElement;
     if (!parent || parent.closest(`[${LP_PROCESSED}]`) || SKIP_TAGS.has(parent.tagName)
       || parent.isContentEditable || (parent !== block && parent.closest(blockSelector) !== block)) return null;
+    // A hidden piece anywhere in the block would leak into the sentence: skip the block.
+    if (node.textContent.trim() && parent !== block && elementIsHidden(parent)) return null;
     if (node === textNode) position = combined.length + matchStart;
     combined += node.textContent;
     if (combined.length > 500) return null;
@@ -740,7 +776,7 @@ function cancelValidationRetry() {
 
 function requestPendingValidations() {
   // The validation budget is small; spend it on what the learner is reading.
-  const spans = [...document.querySelectorAll('.lp-validation-pending')]
+  const spans = ownElements('.lp-validation-pending')
     .filter(span => !getPrivate(span).validationQueued)
     .map(span => ({ span, distance: viewportDistance(span) }))
     .sort((a, b) => a.distance - b.distance);
@@ -859,6 +895,7 @@ function requestPendingValidations() {
       });
       span.addEventListener('click', event => {
         if (!event.isTrusted) return;
+        if (extensionContextLost()) return;
         event.preventDefault();
         event.stopPropagation();
         if (chineseIsland) recordPinyinTap(selected.id);
@@ -885,7 +922,7 @@ function requestPendingValidations() {
         scheduleValidationRetry();
         return;
       }
-      span.parentNode.replaceChild(document.createTextNode(original), span);
+      span.parentNode.replaceChild(document.createTextNode(typeof original === 'string' ? original : span.textContent), span);
     });
   }
 }
@@ -941,7 +978,7 @@ browser.runtime.onMessage.addListener((message) => {
     // The toolbar popup asks what this tab is doing so it can say it in words.
     return {
       lifecycleState,
-      wordCount: document.querySelectorAll(`.${LP_CLASS}, .lp-vocab-phrase`).length,
+      wordCount: ownElements(`.${LP_CLASS}, .lp-vocab-phrase`).length,
     };
   }
 
@@ -953,13 +990,14 @@ browser.runtime.onMessage.addListener((message) => {
   if (message.type === 'SUBSCRIPTION_REQUIRED') {
     // Vocab Pass access lapsed: restore the page and wait for VOCAB_UPDATED.
     stopDocumentWork();
-    lifecycleState = 'unavailable';
+    enterUnavailable();
     return { success: true };
   }
 
   if (message.type === 'SITE_ACCESS_CHANGED') {
     if (message.enabled) {
       lifecycleGeneration += 1;
+      initPromise = null;
       lifecycleState = 'idle';
       startSafetyController();
       void init();
@@ -992,6 +1030,7 @@ browser.runtime.onMessage.addListener((message) => {
         processDocument();
       } else {
         lifecycleGeneration += 1;
+        initPromise = null;
         lifecycleState = 'idle';
         startSafetyController();
         void init();
@@ -1003,15 +1042,15 @@ browser.runtime.onMessage.addListener((message) => {
 // ─── Start ───────────────────────────────────────
 function restoreOriginalPageText() {
   zhIslandBudget = { page: 0, words: new Map(), sentences: new WeakMap() };
-  document.querySelectorAll('.lp-validation-pending').forEach((element) => {
+  ownElements('.lp-validation-pending').forEach((element) => {
     if (!element.parentNode) return;
     element.parentNode.replaceChild(document.createTextNode(getPrivate(element).original || element.textContent), element);
   });
-  document.querySelectorAll('.lp-vocab-phrase').forEach((element) => {
+  ownElements('.lp-vocab-phrase').forEach((element) => {
     if (!element.parentNode) return;
     element.parentNode.replaceChild(document.createTextNode(getPrivate(element).original || element.textContent), element);
   });
-  document.querySelectorAll(`.${LP_CLASS}`).forEach((element) => {
+  ownElements(`.${LP_CLASS}`).forEach((element) => {
     if (!element.parentNode) return;
     element.parentNode.replaceChild(document.createTextNode(getPrivate(element).original || element.textContent), element);
   });
@@ -1031,6 +1070,7 @@ function stopDocumentWork({ loggedOut = false } = {}) {
   whitelistedDomains = [];
   if (contentObserver) contentObserver.disconnect();
   contentObserver = null;
+  stopUrlWatch();
   if (mutationDebounceTimer) clearTimeout(mutationDebounceTimer);
   mutationDebounceTimer = null;
   pendingMutationNodes = [];
@@ -1058,15 +1098,35 @@ function deactivateForSensitivePage() {
   stopDocumentWork();
 }
 
+// After an extension update or reload the old content script keeps running but can
+// no longer reach the worker ("Extension context invalidated"). Put the page back
+// the way it was and stop every watcher instead of leaving dead swapped words.
+let extensionContextOrphaned = false;
+function extensionContextLost() {
+  if (extensionContextOrphaned) return true;
+  let alive = false;
+  try { alive = Boolean(browser.runtime && browser.runtime.id); } catch { alive = false; }
+  if (alive) return false;
+  extensionContextOrphaned = true;
+  try { stopDocumentWork({ loggedOut: true }); } catch { /* best effort */ }
+  try { stopSafetyController(); } catch { /* best effort */ }
+  lifecycleState = 'orphaned';
+  return true;
+}
+
 let safetyTimer = null;
 let safetyControllerActive = false;
-const originalHistoryMethods = new Map();
+let lastSafetyHref = window.location.href;
+let urlWatchTimer = null;
+const URL_WATCH_INTERVAL_MS = 1000;
 async function evaluateSafety() {
   const excluded = await shouldExcludePage();
   if (excluded && extensionActive) deactivateForSensitivePage();
   if (!excluded && !extensionActive && !document.hidden) await init();
 }
 function scheduleSafetyCheck() {
+  if (extensionContextLost()) return;
+  lastSafetyHref = window.location.href;
   if (_pageRequiresImmediateExclusion()) {
     if (extensionActive) deactivateForSensitivePage();
     return;
@@ -1078,9 +1138,27 @@ function scheduleSafetyCheck() {
   }, 200);
 }
 
+// Content scripts run in an isolated world, so patching history.pushState here
+// never sees the page's own SPA navigations. Instead: the Navigation API where
+// available, the safety MutationObserver, and a low-frequency URL check while active.
+function checkUrlChange() {
+  if (window.location.href !== lastSafetyHref) scheduleSafetyCheck();
+}
+function startUrlWatch() {
+  if (urlWatchTimer) return;
+  lastSafetyHref = window.location.href;
+  urlWatchTimer = setInterval(checkUrlChange, URL_WATCH_INTERVAL_MS);
+}
+function stopUrlWatch() {
+  if (urlWatchTimer) clearInterval(urlWatchTimer);
+  urlWatchTimer = null;
+}
+const pageNavigation = typeof window.navigation === 'object' && window.navigation
+  && typeof window.navigation.addEventListener === 'function' ? window.navigation : null;
+
 const safetyObserver = new MutationObserver(scheduleSafetyCheck);
 function handleVisibilityChange() {
-  if (document.hidden) return;
+  if (document.hidden || extensionContextLost()) return;
   scheduleSafetyCheck();
   if (extensionActive) {
     processDocument();
@@ -1100,15 +1178,7 @@ const startSafetyController = () => {
   window.addEventListener('popstate', scheduleSafetyCheck);
   window.addEventListener('hashchange', scheduleSafetyCheck);
   document.addEventListener('visibilitychange', handleVisibilityChange);
-  for (const method of ['pushState', 'replaceState']) {
-    const original = history[method];
-    originalHistoryMethods.set(method, original);
-    history[method] = function (...args) {
-      const result = original.apply(this, args);
-      scheduleSafetyCheck();
-      return result;
-    };
-  }
+  if (pageNavigation) pageNavigation.addEventListener('currententrychange', scheduleSafetyCheck);
   void evaluateSafety();
 };
 
@@ -1118,12 +1188,53 @@ function stopSafetyController() {
   safetyObserver.disconnect();
   clearTimeout(safetyTimer);
   safetyTimer = null;
+  stopUrlWatch();
   window.removeEventListener('popstate', scheduleSafetyCheck);
   window.removeEventListener('hashchange', scheduleSafetyCheck);
   document.removeEventListener('visibilitychange', handleVisibilityChange);
-  for (const [method, original] of originalHistoryMethods) history[method] = original;
-  originalHistoryMethods.clear();
+  if (pageNavigation) pageNavigation.removeEventListener('currententrychange', scheduleSafetyCheck);
 }
+
+// With no usable vocabulary (none synced, signed out, or Vocab Pass lapsed) there is
+// nothing to do on the page, so stop watching it until storage says that changed.
+function enterUnavailable() {
+  lifecycleState = 'unavailable';
+  stopSafetyController();
+}
+
+// The pinyin setting no longer forces a vocabulary resync, so pages showing
+// Chinese words re-render themselves when it changes.
+browser.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== 'local' || !('zhPinyinMode' in changes) || extensionContextOrphaned) return;
+  if (!extensionActive || !matcher || ownElements('.lp-zh-island').length === 0) return;
+  const generation = lifecycleGeneration;
+  void Promise.all([loadPinyinPreferences(), browser.storage.local.get('vocabWords')]).then(([, { vocabWords }]) => {
+    if (generation !== lifecycleGeneration || !extensionActive || !Array.isArray(vocabWords)) return;
+    cancelValidationRetry();
+    vocabularyRevision += 1;
+    validationCoordinator.cancel();
+    restoreOriginalPageText();
+    matcher = new VocabMatcher(vocabularyForPage(vocabWords), { rotationSalt });
+    processDocument();
+  }).catch(() => {});
+});
+
+const RESUME_STORAGE_KEYS = ['vocabWords', 'subscriptionRequired'];
+browser.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== 'local' || !RESUME_STORAGE_KEYS.some(key => key in changes)) return;
+  if (extensionContextOrphaned) return;
+  if (!['unavailable', 'logged-out'].includes(lifecycleState) || extensionActive) return;
+  if ('vocabWords' in changes) {
+    const words = changes.vocabWords.newValue;
+    if (!Array.isArray(words) || words.length === 0) return;
+  } else if (changes.subscriptionRequired.newValue !== false) {
+    return;
+  }
+  lifecycleGeneration += 1;
+  initPromise = null;
+  lifecycleState = 'idle';
+  startSafetyController();
+});
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startSafetyController, { once: true });
 else startSafetyController();
