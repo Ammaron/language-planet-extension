@@ -34,3 +34,10 @@ test('automatic processing is bounded and trusted feedback rejects synthetic cli
   assert.match(worker, /_consumeAutomaticBudget/);
   assert.match(worker, /maxStored:\s*1000/);
 });
+
+test('swapped words carry no empty hover tooltip and never expose the original as an attribute', async () => {
+  const css = await read('content/content.css');
+  assert.doesNotMatch(css, /::after/);
+  assert.doesNotMatch(css, /attr\(data-original\)/);
+  assert.doesNotMatch(await read('content/content.js'), /data-original/);
+});
