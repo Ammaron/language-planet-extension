@@ -167,14 +167,35 @@ const VocabPopup = (() => {
     popupHost = document.createElement('span');
     popupHost.setAttribute(LP_PROCESSED, 'true');
     const shadow = popupHost.attachShadow({ mode: 'closed' });
-    const stylesheet = document.createElement('link');
-    stylesheet.rel = 'stylesheet';
-    stylesheet.href = browser.runtime.getURL('content/content.css');
-    stylesheet.addEventListener('load', () => {
-      if (popupAnchor && popupEl && popupAnchor.isConnected) positionPopup(popupAnchor);
-    }, { once: true });
-    shadow.append(stylesheet, popupEl);
+    if (adoptPopupStyles(shadow)) {
+      shadow.append(popupEl);
+    } else {
+      // Fallback (Firefox only, where the stylesheet stays web-accessible behind
+      // a random per-install UUID).
+      const stylesheet = document.createElement('link');
+      stylesheet.rel = 'stylesheet';
+      stylesheet.href = browser.runtime.getURL('content/content.css');
+      stylesheet.addEventListener('load', () => {
+        if (popupAnchor && popupEl && popupAnchor.isConnected) positionPopup(popupAnchor);
+      }, { once: true });
+      shadow.append(stylesheet, popupEl);
+    }
     document.body.appendChild(popupHost);
+  }
+
+  // The popover's styles are bundled (content/content-styles.js) and adopted as a
+  // constructed stylesheet, so no extension file has to be web-accessible.
+  function adoptPopupStyles(shadow) {
+    const css = globalThis.LangslyContentStyles;
+    if (typeof css !== 'string' || typeof CSSStyleSheet !== 'function' || !('adoptedStyleSheets' in shadow)) return false;
+    try {
+      const sheet = new CSSStyleSheet();
+      sheet.replaceSync(css);
+      shadow.adoptedStyleSheets = [sheet];
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   function resolveAudioUrl(audioUrl, apiBase) {

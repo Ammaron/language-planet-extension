@@ -41,10 +41,12 @@ test('in-page popup flips above low anchors and clamps both viewport axes', asyn
   assert.match(popupRuntime, /window\.innerWidth - popupRect\.width - margin/);
 });
 
-test('closed-shadow stylesheet is the only web-accessible runtime resource', async () => {
+test('no runtime resource is web-accessible; the popover CSS is bundled and in sync', async () => {
   const manifest = JSON.parse(await read('manifest.json'));
-  assert.deepEqual(manifest.web_accessible_resources, [{
-    resources: ['content/content.css'],
-    matches: ['http://*/*', 'https://*/*'],
-  }]);
+  assert.equal(manifest.web_accessible_resources, undefined);
+  const scripts = manifest.content_scripts[0].js;
+  assert.ok(scripts.indexOf('content/content-styles.js') >= 0 && scripts.indexOf('content/content-styles.js') < scripts.indexOf('content/popup.js'));
+  const { contentStylesModule } = await import('../release/content-styles.mjs');
+  assert.equal((await read('content/content-styles.js')).replace(/\r\n/g, '\n'), contentStylesModule(await read('content/content.css')),
+    'run npm run build to regenerate content/content-styles.js');
 });

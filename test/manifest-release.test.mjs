@@ -40,12 +40,11 @@ test('built packages carry the pinned writer, pilot data and full notices', asyn
   }
 });
 
-test('generated Chrome and Firefox manifests expose only the closed-shadow stylesheet', async () => {
-  for (const target of ['chrome', 'firefox']) {
-    const manifest = JSON.parse(await readFile(new URL(`../dist/${target}/manifest.json`, import.meta.url), 'utf8'));
-    assert.deepEqual(manifest.web_accessible_resources, [{
-      resources: ['content/content.css'],
-      matches: ['http://*/*', 'https://*/*'],
-    }]);
-  }
+test('generated Chrome manifest exposes nothing; Firefox keeps only the UUID-scoped stylesheet fallback', async () => {
+  const manifestFor = async target => JSON.parse(await readFile(new URL(`../dist/${target}/manifest.json`, import.meta.url), 'utf8'));
+  assert.equal((await manifestFor('chrome')).web_accessible_resources, undefined);
+  assert.deepEqual((await manifestFor('firefox')).web_accessible_resources, [{
+    resources: ['content/content.css'],
+    matches: ['http://*/*', 'https://*/*'],
+  }]);
 });

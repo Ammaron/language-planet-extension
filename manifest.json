@@ -31,6 +31,7 @@
         "content/grammar-rules.js",
         "content/matcher.js",
         "content/writing-practice.js",
+        "content/content-styles.js",
         "content/popup.js",
         "content/content.js"
       ],
@@ -49,17 +50,6 @@
         "content/connection-bridge.js"
       ],
       "run_at": "document_start"
-    }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "content/content.css"
-      ],
-      "matches": [
-        "http://*/*",
-        "https://*/*"
-      ]
     }
   ],
   "action": {

@@ -91,6 +91,7 @@ class TestElement {
 
   attachShadow({ mode }) {
     this.shadowMode = mode;
+    this.adoptedStyleSheets = [];
     return this;
   }
 
@@ -145,7 +146,7 @@ class TestElement {
   }
 }
 
-function createHarness({ storageData = {}, playResult = Promise.resolve(), onMessage = async () => ({}) } = {}) {
+function createHarness({ storageData = {}, playResult = Promise.resolve(), onMessage = async () => ({}), extra = {} } = {}) {
   const audioInstances = [];
   const speechCalls = [];
   const document = {
@@ -222,6 +223,7 @@ function createHarness({ storageData = {}, playResult = Promise.resolve(), onMes
     },
   };
 
+  Object.assign(sandbox, extra);
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
   vm.runInContext(`${popupSource}\nglobalThis.__VocabPopup = VocabPopup;`, sandbox, {
@@ -270,6 +272,16 @@ test('popup mounts its runtime stylesheet inside the closed shadow root', async 
   assert.equal(host.children[0].tagName, 'LINK');
   assert.equal(host.children[0].rel, 'stylesheet');
   assert.equal(host.children[0].href, 'moz-extension://test/content/content.css');
+});
+
+test('popup adopts the bundled stylesheet so no extension file is web-accessible', async () => {
+  class CSSStyleSheet { replaceSync(text) { this.text = text; } }
+  const harness = createHarness({ extra: { CSSStyleSheet, LangslyContentStyles: '.lp-vocab-popup{color:red}' } });
+  await harness.VocabPopup.showWord(harness.makeSpan());
+  const host = harness.document.body.children.find((child) => child.shadowMode === 'closed');
+  assert.equal(host.adoptedStyleSheets.length, 1);
+  assert.equal(host.adoptedStyleSheets[0].text, '.lp-vocab-popup{color:red}');
+  assert.ok(!host.children.some(child => child.tagName === 'LINK'), 'no web-accessible stylesheet link');
 });
 
 test('listen button plays relative synced audio from the API origin', async () => {
