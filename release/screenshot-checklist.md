@@ -1,6 +1,6 @@
-# AMO screenshot checklist — 0.2.7
+# AMO screenshot checklist — 0.2.8
 
-Version 0.2.7 is the current source candidate. These instructions do not establish a signed artifact, store submission, publication, or installed-device acceptance.
+Version 0.2.8 is the current source candidate. These instructions do not establish a signed artifact, store submission, publication, or installed-device acceptance.
 
 Capture from the exact signed artifact submitted to AMO. Do not use desktop-responsive mockups as Android evidence.
 
