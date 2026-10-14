@@ -43,6 +43,29 @@ const SKIP_TAGS = new Set([
   'SVG', 'MATH', 'CANVAS', 'VIDEO', 'AUDIO', 'IFRAME',
 ]);
 
+// Hidden text (collapsed menus, screen-reader-only spans, templates, aria-hidden
+// regions) is never scanned and never sent as sentence context.
+const HIDDEN_SELECTOR = '[hidden],[aria-hidden="true"],template,.sr-only,.visually-hidden,.screen-reader-text,.screen-reader-only';
+function elementIsHidden(element) {
+  if (!element) return true;
+  if (element.closest(HIDDEN_SELECTOR)) return true;
+  // display: contents elements have no box of their own; judge the nearest one that does.
+  let boxed = element;
+  while (boxed && boxed.parentElement && typeof window.getComputedStyle === 'function'
+    && window.getComputedStyle(boxed).display === 'contents') boxed = boxed.parentElement;
+  if (typeof boxed.checkVisibility === 'function') {
+    if (!boxed.checkVisibility({ checkVisibilityCSS: true })) return true;
+  } else if (typeof boxed.getClientRects === 'function' && boxed.getClientRects().length === 0) {
+    return true;
+  }
+  // Visually-hidden clipping: a 1px (or smaller) box that still holds text.
+  if (typeof boxed.getBoundingClientRect === 'function') {
+    const box = boxed.getBoundingClientRect();
+    if (box && box.width <= 1 && box.height <= 1) return true;
+  }
+  return false;
+}
+
 const LP_PROCESSED = 'data-lp-processed';
 const LP_CLASS = 'lp-vocab-word';
 let privateState = globalThis.LangslyPrivateState || new WeakMap();
@@ -489,6 +512,7 @@ function runProcessNode(root, complete) {
         if (SKIP_TAGS.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
         if (parent.isContentEditable) return NodeFilter.FILTER_REJECT;
         if (node.textContent.trim().length < 2) return NodeFilter.FILTER_REJECT;
+        if (elementIsHidden(parent)) return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
       },
     }
@@ -619,6 +643,7 @@ function sentenceContextForNode(textNode, matchStart) {
   const blockSelector = BLOCK_SELECTOR;
   const block = textNode.parentElement.closest(blockSelector) || textNode.parentElement;
   if (!block || block.querySelector('script,style,code,pre,input,textarea,select,button,[contenteditable]')) return null;
+  if (elementIsHidden(block)) return null;
   const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
   let combined = '';
   let position = -1;
@@ -626,6 +651,8 @@ function sentenceContextForNode(textNode, matchStart) {
     const parent = node.parentElement;
     if (!parent || parent.closest(`[${LP_PROCESSED}]`) || SKIP_TAGS.has(parent.tagName)
       || parent.isContentEditable || (parent !== block && parent.closest(blockSelector) !== block)) return null;
+    // A hidden piece anywhere in the block would leak into the sentence: skip the block.
+    if (node.textContent.trim() && parent !== block && elementIsHidden(parent)) return null;
     if (node === textNode) position = combined.length + matchStart;
     combined += node.textContent;
     if (combined.length > 500) return null;
