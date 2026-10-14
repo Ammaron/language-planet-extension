@@ -1041,10 +1041,14 @@ function _lastSyncAgeMs(lastSync) {
 async function requestVocabularySync({ maxAgeMs = 0 } = {}) {
   if (sharedVocabularySync) return sharedVocabularySync;
   if (maxAgeMs > 0) {
-    const { lastSync } = await browser.storage.local.get('lastSync');
+    const { lastSync, vocabSyncAttemptAt } = await browser.storage.local.get(['lastSync', 'vocabSyncAttemptAt']);
     const age = _lastSyncAgeMs(lastSync);
     if (age >= 0 && age < maxAgeMs) return undefined;
+    // While the API is down, worker wakes must not turn into a request storm.
+    const attemptAge = Date.now() - Number(vocabSyncAttemptAt || 0);
+    if (attemptAge >= 0 && attemptAge < AUTOMATIC_SYNC_MIN_AGE_MS) return undefined;
     if (sharedVocabularySync) return sharedVocabularySync;
+    await browser.storage.local.set({ vocabSyncAttemptAt: Date.now() });
   }
   sharedVocabularySync = Promise.resolve()
     .then(() => syncVocabulary())

@@ -38,7 +38,10 @@ function loadScheduling({ storage = {}, alarms = {}, syncDelayMs = 0 } = {}) {
     syncVocabulary: () => { syncs.push(Date.now()); return new Promise(resolve => setTimeout(resolve, syncDelayMs)); },
     browser: {
       alarms: fake.api,
-      storage: { local: { get: async keys => Object.fromEntries([].concat(keys).filter(k => k in storage).map(k => [k, storage[k]])) } },
+      storage: { local: {
+        get: async keys => Object.fromEntries([].concat(keys).filter(k => k in storage).map(k => [k, storage[k]])),
+        set: async values => { Object.assign(storage, values); },
+      } },
     },
   };
   vm.createContext(context);
@@ -92,6 +95,11 @@ test('concurrent sync requests share one fetch and recent syncs are skipped for 
   await settle();
   await recent.context.requestVocabularySync({ maxAgeMs: 2 * 60 * 1000 });
   assert.equal(recent.syncs.length, 0);
+  // A failing API (lastSync stays old) is retried at most once per 2 minutes.
+  const failing = loadScheduling({ storage: { lastSync: '2020-01-01T00:00:00Z' } });
+  await settle();
+  for (let wake = 0; wake < 5; wake += 1) await failing.context.requestVocabularySync({ maxAgeMs: 60 * 60 * 1000 });
+  assert.equal(failing.syncs.length, 1);
 });
 
 function loadConfig() {
