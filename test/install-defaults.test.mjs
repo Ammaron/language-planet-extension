@@ -10,7 +10,10 @@ async function loadInstallHandler(initial) {
   assert.ok(start >= 0 && end > start, 'install handler missing');
   const storage = { ...initial };
   const opened = [];
+  const calls = [];
   const context = {
+    flushEncounters: async () => { calls.push('flush'); },
+    requestVocabularySync: async () => { calls.push('sync'); },
     browser: {
       storage: { local: {
         get: async keys => Object.fromEntries(keys.filter(key => key in storage).map(key => [key, storage[key]])),
@@ -22,7 +25,7 @@ async function loadInstallHandler(initial) {
   };
   vm.createContext(context);
   vm.runInContext(`${worker.slice(start, end)}\nthis.handleInstalled = handleInstalled;`, context);
-  return { handleInstalled: context.handleInstalled, storage, opened };
+  return { handleInstalled: context.handleInstalled, storage, opened, calls };
 }
 
 test('first install writes defaults and opens onboarding', async () => {
@@ -43,9 +46,11 @@ test('install only fills keys that are missing', async () => {
 test('extension and browser updates keep queued encounters, difficulty and sync status', async () => {
   for (const reason of ['update', 'chrome_update', 'browser_update', 'shared_module_update']) {
     const initial = { pendingEncounters: [{ id: 'e1' }], difficulty: 'hard', syncStatus: 'success' };
-    const { handleInstalled, storage, opened } = await loadInstallHandler(initial);
+    const { handleInstalled, storage, opened, calls } = await loadInstallHandler(initial);
     await handleInstalled({ reason });
     assert.deepEqual(storage, initial, reason);
     assert.equal(opened.length, 0, reason);
+    // An extension update sends the queued encounters and refreshes the words.
+    assert.deepEqual(calls, reason === 'update' ? ['flush', 'sync'] : [], reason);
   }
 });

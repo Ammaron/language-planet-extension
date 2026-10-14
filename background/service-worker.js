@@ -1,4 +1,4 @@
-/* global browser, LangslyEncounterCoordinator */
+/* global browser, LangslyEncounterCoordinator, LangslyHosts */
 try {
   if (typeof importScripts === 'function') {
     importScripts('../vendor/browser-polyfill.min.js');
@@ -13,6 +13,9 @@ if (typeof importScripts === 'function') {
   }
   if (!globalThis.LangslySourceLanguage) {
     importScripts('../shared/source-language.js');
+  }
+  if (!globalThis.LangslyHosts) {
+    importScripts('../shared/hosts.js');
   }
   if (!globalThis.LangslyTheme) {
     importScripts('theme-utils.js');
@@ -109,10 +112,35 @@ function normalizeUrl(url) {
   return String(url || '').trim().replace(/\/+$/, '');
 }
 
+// storage.local is readable and writable by content scripts, so a stored endpoint
+// is only honoured when it points at Langsly over https. Anything else falls back
+// to the production default, so a compromised page cannot redirect token refreshes.
+const ALLOWED_CONFIG_HOSTS = new Set(['langsly.com', 'www.langsly.com', 'api.langsly.com']);
+function isAllowedConfigUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && ALLOWED_CONFIG_HOSTS.has(url.hostname) && !url.username && !url.password && !url.port;
+  } catch {
+    return false;
+  }
+}
+
 function resolveConfigValue(value, fallback) {
   const normalized = normalizeUrl(value);
   const normalizedLegacy = normalizeUrl(LEGACY_DEFAULTS[fallback]);
-  return !normalized || normalized === normalizedLegacy ? DEFAULTS[fallback] : normalized;
+  if (!normalized || normalized === normalizedLegacy || !isAllowedConfigUrl(normalized)) return DEFAULTS[fallback];
+  return normalized;
+}
+
+// Popup, options, onboarding and connect pages; never a content script on a site.
+const EXTENSION_PAGE_ONLY_MESSAGES = new Set([
+  'LOGOUT', 'SYNC_NOW', 'SET_DIFFICULTY', 'UPDATE_CONFIG', 'TOGGLE_WHITELIST', 'GET_STATUS',
+  'APPLY_THEME', 'SYNC_THEMES',
+]);
+function isExtensionPage(sender) {
+  if (!sender || (sender.id && sender.id !== browser.runtime.id)) return false;
+  const base = browser.runtime.getURL('');
+  return typeof sender.url === 'string' && sender.url.startsWith(base);
 }
 
 async function getConfig() {
@@ -188,6 +216,7 @@ async function clearTokens() {
     'subscriptionRequired',
     'vocabPassPlan',
     'accountEmail',
+    'pausedSites',
       ...cacheKeys,
     ]);
   });
@@ -293,7 +322,7 @@ async function completeLoginWithTokens(data, isCurrent = () => true) {
       'vocabWords', 'lastSync', 'wordCount', 'matchableWordCount',
       'pendingEncounters', 'hanziPracticeQueue', 'rotation_salt', 'difficulty',
       'themePacks', 'activeThemeSlug', 'activeThemeName', 'themeTokens',
-      'themeSyncStatus', 'extensionSourceLanguage', 'pageTextLanguage', ...cacheKeys,
+      'themeSyncStatus', 'extensionSourceLanguage', 'pageTextLanguage', 'pausedSites', ...cacheKeys,
     ]);
     await browser.storage.local.set({ authToken: data.access, refreshToken: data.refresh });
     return authGeneration;
@@ -904,22 +933,145 @@ function appendEncountersForSession(encounters, expectedGeneration = authGenerat
   });
 }
 
-// ─── Alarms ──────────────────────────────────────
-async function setupAlarms() {
-  const { syncInterval } = await browser.storage.local.get('syncInterval');
-  const interval = syncInterval || 60;
-  browser.alarms.create('vocab-sync', { periodInMinutes: interval });
-  browser.alarms.create('encounter-flush', { periodInMinutes: 5 });
+// ─── Paused sites ("whitelist") ─────────────────
+// Cached in storage.local so page loads and post-sync re-inits do not refetch it.
+// The content script treats an unknown list (never fetched, API unreachable) as
+// paused, so a site the learner paused is never processed because of an outage.
+const PAUSED_SITES_TTL_MS = 10 * 60 * 1000;
+let pausedSitesRequest = null;
+
+function _pausedSitesAnswer(cache, extra = {}) {
+  const domains = cache && Array.isArray(cache.domains) ? cache.domains : [];
+  return { domains, entries: domains.map(domain => ({ domain })), known: Boolean(cache && Array.isArray(cache.domains)), ...extra };
 }
 
-setupAlarms();
+async function _fetchPausedSites() {
+  const generation = authGeneration;
+  const { apiBase } = await getConfig();
+  const res = await authFetch(`${apiBase}/lessons/vocabpass/whitelist/`);
+  if (!res || !res.ok) return null;
+  const data = await res.json().catch(() => null);
+  if (!Array.isArray(data)) return null;
+  const cache = {
+    domains: data.map(entry => LangslyHosts.normalizeHost(entry && entry.domain)).filter(Boolean),
+    fetchedAt: Date.now(),
+  };
+  if (!await _setSessionStorage({ pausedSites: cache }, generation)) return null;
+  return { cache, entries: data };
+}
+
+async function getPausedSites({ refresh = false } = {}) {
+  const { pausedSites } = await browser.storage.local.get('pausedSites');
+  const fresh = pausedSites && Number.isFinite(pausedSites.fetchedAt)
+    && Date.now() - pausedSites.fetchedAt < PAUSED_SITES_TTL_MS;
+  if (fresh && !refresh) return _pausedSitesAnswer(pausedSites);
+  if (!pausedSitesRequest) {
+    pausedSitesRequest = _fetchPausedSites()
+      .catch(() => null)
+      .finally(() => { pausedSitesRequest = null; });
+  }
+  const fetched = await pausedSitesRequest;
+  if (fetched) return { ..._pausedSitesAnswer(fetched.cache), entries: fetched.entries };
+  return _pausedSitesAnswer(pausedSites, { stale: true });
+}
+
+async function togglePausedSite(rawDomain, pause) {
+  const domain = LangslyHosts.normalizeHost(rawDomain);
+  if (!domain || !/^[a-z0-9.-]{1,253}$/.test(domain)) return { success: false, error: 'invalid_domain' };
+  const { apiBase } = await getConfig();
+  let ok = true;
+  if (pause) {
+    const res = await authFetch(`${apiBase}/lessons/vocabpass/whitelist/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ domain }),
+    });
+    ok = Boolean(res && res.ok);
+  } else {
+    // Remove every entry that pauses this host (the entry itself or a parent
+    // domain) so the learner can re-enable a site from the popup toggle.
+    const listRes = await authFetch(`${apiBase}/lessons/vocabpass/whitelist/`);
+    const entries = listRes && listRes.ok ? await listRes.json().catch(() => null) : null;
+    if (!Array.isArray(entries)) {
+      ok = false;
+    } else {
+      const toDelete = entries.filter(entry => entry && entry.id !== undefined
+        && (LangslyHosts.hostMatchesDomain(domain, entry.domain) || LangslyHosts.hostMatchesDomain(entry.domain, domain)));
+      const results = await Promise.all(toDelete.map(entry => authFetch(
+        `${apiBase}/lessons/vocabpass/whitelist/${encodeURIComponent(entry.id)}/delete/`,
+        { method: 'DELETE' },
+      )));
+      ok = results.every(res => res && (res.ok || res.status === 404));
+    }
+  }
+  // Refresh the cache from the server either way so the popup shows the real state.
+  const state = await getPausedSites({ refresh: true });
+  const paused = state.known ? LangslyHosts.matchesAnyDomain(domain, state.domains) : null;
+  return { success: ok && paused === pause, paused };
+}
+
+// ─── Sync scheduling ─────────────────────────────
+// Automatic triggers share one in-flight sync and skip when the last one is recent.
+// Difficulty, language and sign-in changes call syncVocabulary() directly, because
+// they change what the sync must fetch.
+const AUTOMATIC_SYNC_MIN_AGE_MS = 2 * 60 * 1000;
+let sharedVocabularySync = null;
+
+function _lastSyncAgeMs(lastSync) {
+  const at = Date.parse(lastSync || '');
+  return Number.isFinite(at) ? Date.now() - at : Infinity;
+}
+
+async function requestVocabularySync({ maxAgeMs = 0 } = {}) {
+  if (sharedVocabularySync) return sharedVocabularySync;
+  if (maxAgeMs > 0) {
+    const { lastSync } = await browser.storage.local.get('lastSync');
+    const age = _lastSyncAgeMs(lastSync);
+    if (age >= 0 && age < maxAgeMs) return undefined;
+    if (sharedVocabularySync) return sharedVocabularySync;
+  }
+  sharedVocabularySync = Promise.resolve()
+    .then(() => syncVocabulary())
+    .finally(() => { sharedVocabularySync = null; });
+  return sharedVocabularySync;
+}
+
+// ─── Alarms ──────────────────────────────────────
+const MIN_SYNC_INTERVAL_MINUTES = 15;
+const MAX_SYNC_INTERVAL_MINUTES = 24 * 60;
+function normalizeSyncInterval(value) {
+  const minutes = Number(value);
+  if (!Number.isFinite(minutes) || minutes <= 0) return 60;
+  return Math.min(MAX_SYNC_INTERVAL_MINUTES, Math.max(MIN_SYNC_INTERVAL_MINUTES, Math.round(minutes)));
+}
+
+// alarms.create replaces an alarm and restarts its countdown, so recreating them on
+// every worker wake meant an active browser never reached the hourly sync. Create
+// only what is missing or whose period changed.
+async function ensureAlarm(name, periodInMinutes) {
+  const existing = await browser.alarms.get(name);
+  if (existing && existing.periodInMinutes === periodInMinutes) return false;
+  await browser.alarms.create(name, { periodInMinutes });
+  return true;
+}
+
+async function setupAlarms() {
+  const { syncInterval, authToken, refreshToken } = await browser.storage.local.get(['syncInterval', 'authToken', 'refreshToken']);
+  const interval = normalizeSyncInterval(syncInterval);
+  await ensureAlarm('vocab-sync', interval);
+  await ensureAlarm('encounter-flush', 5);
+  // Catch up at worker start when the scheduled sync is overdue.
+  if (authToken || refreshToken) await requestVocabularySync({ maxAgeMs: interval * 60 * 1000 });
+}
+
+setupAlarms().catch(error => console.warn('[Langsly] alarm setup failed', error));
 migrateLegacyConfig().catch(error => console.warn('[Langsly] config migration failed', error));
 
 browser.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'device-connection') void deviceConnection.resume();
   if (alarm.name === 'vocab-sync') {
-    syncVocabulary();
-    syncThemes();
+    void requestVocabularySync({ maxAgeMs: AUTOMATIC_SYNC_MIN_AGE_MS });
+    void syncThemes();
   }
   if (alarm.name === 'encounter-flush') {
     flushEncounters();
@@ -952,12 +1104,18 @@ browser.runtime.onMessage.addListener((message, sender) => {
     });
   }
 
+  // Account, settings and site-access changes come only from the extension's own
+  // pages. Content scripts run on arbitrary sites and must not reach these.
+  if (EXTENSION_PAGE_ONLY_MESSAGES.has(message.type) && !isExtensionPage(sender)) {
+    return Promise.resolve({ success: false, error: 'untrusted_sender' });
+  }
+
   if (message.type === 'LOGOUT') {
     return clearSession().then(() => ({ success: true }));
   }
 
   if (message.type === 'SYNC_NOW') {
-    return Promise.allSettled([syncVocabulary(), syncThemes()]).then(() => ({ success: true }));
+    return Promise.allSettled([requestVocabularySync(), syncThemes()]).then(() => ({ success: true }));
   }
 
   if (message.type === 'SET_SOURCE_LANGUAGE') {
@@ -969,16 +1127,25 @@ browser.runtime.onMessage.addListener((message, sender) => {
       if (!['en', 'es', 'zh'].includes(sourceLanguage)) {
         return { success: false, error: 'unsupported_source_language' };
       }
+      const { extensionSourceLanguage: current } = await browser.storage.local.get('extensionSourceLanguage');
+      // Unchanged language: nothing to refetch, and the cached words stay on every page.
+      if (normalizeLanguageCode(current || DEFAULT_EXTENSION_SOURCE_LANGUAGE) === sourceLanguage) {
+        return { success: true, unchanged: true };
+      }
       const generation = authGeneration;
       const sourceRevision = ++sourceGeneration;
+      // Chinese targets are never kept across a language switch; English/Spanish
+      // words stay usable until the new language's words arrive (a failed sync
+      // keeps them, like any other transient failure).
+      const blank = sourceLanguage === 'zh' || normalizeLanguageCode(current) === 'zh';
       const stored = await _setSessionStorage({
         extensionSourceLanguage: sourceLanguage,
-        vocabWords: [], wordCount: 0, matchableWordCount: 0,
-        lastSync: null, syncStatus: 'syncing',
+        ...(blank ? { vocabWords: [], wordCount: 0, matchableWordCount: 0, lastSync: null } : {}),
+        syncStatus: 'syncing',
       }, generation, sourceRevision);
       if (!stored) return { success: false, error: 'cancelled' };
       if (sourceRevision !== sourceGeneration) return { success: false, error: 'cancelled' };
-      await broadcastVocabulary([], () => generation === authGeneration && sourceRevision === sourceGeneration);
+      if (blank) await broadcastVocabulary([], () => generation === authGeneration && sourceRevision === sourceGeneration);
       await syncVocabulary();
       return { success: generation === authGeneration };
     })();
@@ -1140,73 +1307,24 @@ browser.runtime.onMessage.addListener((message, sender) => {
   }
 
   if (message.type === 'GET_WHITELIST') {
-    return (async () => {
-      const { apiBase } = await getConfig();
-      const res = await authFetch(`${apiBase}/lessons/vocabpass/whitelist/`);
-      if (res && res.ok) {
-        const data = await res.json();
-        return {
-          domains: data.map(d => d.domain),
-          entries: data,
-        };
-      }
-      return { domains: [], entries: [] };
-    })();
+    return getPausedSites({ refresh: Boolean(message.refresh) && isExtensionPage(sender) });
   }
 
   if (message.type === 'TOGGLE_WHITELIST') {
-    return (async () => {
-      const { apiBase } = await getConfig();
-      const domain = message.domain;
-      if (message.add) {
-        await authFetch(`${apiBase}/lessons/vocabpass/whitelist/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ domain }),
-        });
-      } else {
-        // Remove matching whitelist entries so users can re-enable a site
-        // directly from the popup toggle.
-        const listRes = await authFetch(`${apiBase}/lessons/vocabpass/whitelist/`);
-        if (listRes && listRes.ok) {
-          const entries = await listRes.json();
-          const normalizedDomain = String(domain || '').toLowerCase();
-          const matchesDomain = (entryDomain) => {
-            const d = String(entryDomain || '').toLowerCase();
-            return (
-              normalizedDomain === d ||
-              normalizedDomain.endsWith(`.${d}`) ||
-              d.endsWith(`.${normalizedDomain}`)
-            );
-          };
-
-          const toDelete = entries.filter((entry) => matchesDomain(entry.domain));
-          await Promise.all(
-            toDelete.map((entry) =>
-              authFetch(`${apiBase}/lessons/vocabpass/whitelist/${entry.id}/delete/`, {
-                method: 'DELETE',
-              })
-            )
-          );
-        }
-      }
-      return { success: true };
-    })();
+    if (!isExtensionPage(sender)) return Promise.resolve({ success: false, error: 'untrusted_sender' });
+    return togglePausedSite(message.domain, Boolean(message.add));
   }
 
   if (message.type === 'UPDATE_CONFIG') {
     return (async () => {
-      const updates = {};
-      if (message.apiBase) updates.apiBase = message.apiBase;
-      if (message.frontendUrl) updates.frontendUrl = message.frontendUrl;
-      if (message.syncInterval) {
-        updates.syncInterval = message.syncInterval;
-        // Recreate alarm with new interval
-        await browser.alarms.clear('vocab-sync');
-        browser.alarms.create('vocab-sync', { periodInMinutes: message.syncInterval });
-      }
-      await browser.storage.local.set(updates);
-      return { success: true };
+      // Endpoints are fixed in release builds; only the sync interval is settable.
+      if (message.syncInterval === undefined) return { success: true, changed: false };
+      const syncInterval = normalizeSyncInterval(message.syncInterval);
+      const { syncInterval: stored } = await browser.storage.local.get('syncInterval');
+      if (stored !== syncInterval) await browser.storage.local.set({ syncInterval });
+      // Re-create the alarm only when its period actually changed.
+      const changed = await ensureAlarm('vocab-sync', syncInterval);
+      return { success: true, changed };
     })();
   }
 
@@ -1594,6 +1712,11 @@ const INSTALL_DEFAULTS = { pendingEncounters: [], difficulty: 'normal', syncStat
 // Updates and browser updates keep queued encounters and the learner's difficulty;
 // defaults are only written on first install, and only for keys that are missing.
 async function handleInstalled(details) {
+  if (details?.reason === 'update') {
+    // Keep the learner's queue and words: send what is waiting and refresh.
+    await Promise.allSettled([flushEncounters(), requestVocabularySync()]);
+    return;
+  }
   if (details?.reason !== 'install') return;
   const existing = await browser.storage.local.get(Object.keys(INSTALL_DEFAULTS));
   const missing = Object.fromEntries(Object.entries(INSTALL_DEFAULTS).filter(([key]) => existing[key] === undefined));
@@ -1609,8 +1732,8 @@ browser.runtime.onInstalled.addListener((details) => {
 browser.runtime.onStartup.addListener(() => {
   _ensureRotationSalt();
   ensureAccessToken().catch(error => console.warn('[Langsly] startup token check failed', error));
-  syncVocabulary();
-  syncThemes();
+  void requestVocabularySync({ maxAgeMs: AUTOMATIC_SYNC_MIN_AGE_MS });
+  void syncThemes();
   void deviceConnection.resume();
 });
 
