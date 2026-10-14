@@ -271,10 +271,16 @@ let validationRetryTimer = null;
 let validationRetryDelay = VALIDATION_RETRY_MIN_MS;
 let vocabularySignature = '';
 // Key-order independent: browser.storage hands objects back with sorted keys.
+// Signed audio URLs change on every sync; a fresh signature alone is not a
+// vocabulary change and must not restart the page (the Listen button reads the
+// current URL from storage when an old one has expired).
 function vocabularySignatureOf(words) {
-  return JSON.stringify(words, (key, value) => (value && typeof value === 'object' && !Array.isArray(value)
-    ? Object.fromEntries(Object.keys(value).sort().map(name => [name, value[name]]))
-    : value));
+  return JSON.stringify(words, (key, value) => {
+    if (key === 'pronunciation_audio' && typeof value === 'string') return value.split('?')[0];
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? Object.fromEntries(Object.keys(value).sort().map(name => [name, value[name]]))
+      : value;
+  });
 }
 const LEGACY_FRONTEND_URL = 'http://localhost:3000';
 const DEFAULT_FRONTEND_URL = 'https://langsly.com';

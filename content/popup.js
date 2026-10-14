@@ -274,25 +274,29 @@ const VocabPopup = (() => {
     await playRealAudio(dataUrl);
   }
 
-  async function playAudio(audioUrl, translation, termLanguage) {
-    if (String(audioUrl || '').trim()) {
-      const { apiBase } = await getContentConfig();
-      const fullUrl = resolveAudioUrl(audioUrl, apiBase);
-      if (fullUrl) {
-        try {
-          await playRealAudio(fullUrl);
-          return 'audio';
-        } catch {
-          try {
-            await playAudioThroughExtension(fullUrl);
-            return 'audio';
-          } catch {
-            // Fall through to speech synthesis so the popup remains useful.
-          }
-        }
+  // Plays a recorded pronunciation; false when neither the page nor the extension
+  // could play it (blocked, missing or an expired signed URL).
+  async function tryPlayRecorded(audioUrl) {
+    if (!String(audioUrl || '').trim()) return false;
+    const { apiBase } = await getContentConfig();
+    const fullUrl = resolveAudioUrl(audioUrl, apiBase);
+    if (!fullUrl) return false;
+    try {
+      await playRealAudio(fullUrl);
+      return true;
+    } catch {
+      try {
+        await playAudioThroughExtension(fullUrl);
+        return true;
+      } catch {
+        return false;
       }
     }
+  }
 
+  async function playAudio(audioUrl, translation, termLanguage) {
+    if (await tryPlayRecorded(audioUrl)) return 'audio';
+    // Fall through to speech synthesis so the popup remains useful.
     if (isChineseLanguage(termLanguage)) return 'unavailable';
     speakFallback(translation, termLanguage);
     return 'fallback';
@@ -320,14 +324,21 @@ const VocabPopup = (() => {
       : t('playPronunciationTitleDefault', 'Play pronunciation audio');
   }
 
-  async function syncAudioUrlForWord(wordId) {
+  const isSignedAudioUrl = url => /[?&]signature=/.test(String(url || ''));
+
+  // Reads the word's current recording from the synced vocabulary. Tapping Listen
+  // never starts a full sync; only an expired signed URL asks the worker for a
+  // fresh copy, and the worker throttles that to one refresh per few minutes.
+  async function syncAudioUrlForWord(wordId, { refreshExpired = false } = {}) {
     const normalizedWordId = String(wordId || '').trim();
     if (!normalizedWordId) return '';
 
-    try {
-      await browser.runtime.sendMessage({ type: 'SYNC_NOW' });
-    } catch {
-      // Keep the listen action usable even if sync is unavailable.
+    if (refreshExpired) {
+      try {
+        await browser.runtime.sendMessage({ type: 'REFRESH_WORD_AUDIO', wordId: normalizedWordId });
+      } catch {
+        // Keep the listen action usable even if the worker is unavailable.
+      }
     }
 
     try {
@@ -344,12 +355,28 @@ const VocabPopup = (() => {
     const state = privateData(span);
     const currentAudioUrl = String(state.audioUrl || '').trim();
     if (currentAudioUrl) {
-      return playAudio(currentAudioUrl, translation, termLanguage);
+      if (await tryPlayRecorded(currentAudioUrl)) return 'audio';
+      // Cached words carry signed URLs that expire. Use the newer synced copy, or
+      // ask for one refresh, before falling back to the browser voice. A lemma
+      // recording must never masquerade as a different surface form.
+      if (!state.grammarForm && isSignedAudioUrl(currentAudioUrl) && !state.audioRefreshTried) {
+        setPrivateData(span, { audioRefreshTried: true });
+        let freshUrl = await syncAudioUrlForWord(state.wordId);
+        if (!freshUrl || freshUrl === currentAudioUrl) {
+          freshUrl = await syncAudioUrlForWord(state.wordId, { refreshExpired: true });
+        }
+        if (freshUrl && freshUrl !== currentAudioUrl) {
+          setPrivateData(span, { audioUrl: freshUrl });
+          if (await tryPlayRecorded(freshUrl)) return 'audio';
+        }
+      }
+      return playAudio('', translation, termLanguage);
     }
     if (state.grammarForm) return 'unavailable';
 
-    // A lemma recording must never masquerade as a different surface form.
-    const syncedAudioUrl = state.grammarForm ? '' : await syncAudioUrlForWord(state.wordId);
+    // No recording when the page was scanned: a later background sync may have
+    // added one, so check the stored words (no network) before the browser voice.
+    const syncedAudioUrl = await syncAudioUrlForWord(state.wordId);
     if (syncedAudioUrl) {
       setPrivateData(span, { audioUrl: syncedAudioUrl });
       return playAudio(syncedAudioUrl, translation, termLanguage);

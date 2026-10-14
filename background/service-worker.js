@@ -1015,6 +1015,7 @@ async function togglePausedSite(rawDomain, pause) {
 // Difficulty, language and sign-in changes call syncVocabulary() directly, because
 // they change what the sync must fetch.
 const AUTOMATIC_SYNC_MIN_AGE_MS = 2 * 60 * 1000;
+const AUDIO_REFRESH_MIN_AGE_MS = 10 * 60 * 1000;
 let sharedVocabularySync = null;
 
 function _lastSyncAgeMs(lastSync) {
@@ -1170,6 +1171,14 @@ browser.runtime.onMessage.addListener((message, sender) => {
   }
   if (message.type === 'FETCH_AUDIO') {
     return fetchAudioAsDataUrl(message.url);
+  }
+  if (message.type === 'REFRESH_WORD_AUDIO') {
+    if (!isOwnContentScript(sender)) return Promise.resolve({ success: false, error: 'untrusted_sender' });
+    // A cached signed audio URL expired. Signatures outlive this window, so a sync
+    // newer than it already carries a valid URL; Listen taps cost at most one
+    // shared words request per window.
+    return requestVocabularySync({ maxAgeMs: AUDIO_REFRESH_MIN_AGE_MS })
+      .then(() => ({ success: true }), () => ({ success: false }));
   }
 
   if (message.type === 'SET_DIFFICULTY') {

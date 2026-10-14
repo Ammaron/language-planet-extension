@@ -195,3 +195,10 @@ test('resuming deletes the host entry and parent-domain entries only', async () 
   assert.equal(result.success, true);
   assert.deepEqual(calls.filter(call => call.startsWith('DELETE')), ['DELETE /lessons/vocabpass/whitelist/1/delete/']);
 });
+
+test('expired-audio refreshes come only from content scripts and share the throttled sync', () => {
+  const handler = slice("if (message.type === 'REFRESH_WORD_AUDIO')", "if (message.type === 'SET_DIFFICULTY')");
+  assert.match(handler, /isOwnContentScript\(sender\)/);
+  assert.match(handler, /requestVocabularySync\(\{ maxAgeMs: AUDIO_REFRESH_MIN_AGE_MS \}\)/);
+  assert.doesNotMatch(handler, /syncVocabulary\(\)/);
+});

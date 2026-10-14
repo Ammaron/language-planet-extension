@@ -441,47 +441,62 @@ test('listen button shows fallback styling when no real audio is available', asy
   assert.deepEqual(harness.speechCalls, [{ text: 'hola', lang: 'es' }]);
 });
 
-test('listen button syncs stale words and plays newly available audio before voice fallback', async () => {
+test('listen button never starts a sync: it uses newer stored audio or the browser voice', async () => {
   const storageData = {
     apiBase: 'https://api.langsly.com/api',
-    vocabWords: [
-      {
-        id: 'word_hola',
-        term: 'hola',
-        pronunciation_audio: '',
-      },
-    ],
+    vocabWords: [{ id: 'word_hola', term: 'hola', pronunciation_audio: '/api/media/assets/audio-1/content/' }],
   };
-  const syncMessages = [];
+  const messages = [];
   const harness = createHarness({
     storageData,
+    onMessage: async (message) => { messages.push(message.type); return { success: true }; },
+  });
+
+  await harness.VocabPopup.showWord(harness.makeSpan({ wordId: 'word_hola', audioUrl: '' }));
+  const listenButton = harness.document.body.querySelector('.lp-popup-listen');
+  await listenButton.click();
+  await flushMicrotasks();
+  assert.equal(harness.audioInstances.length, 1);
+  assert.equal(harness.audioInstances[0].src, 'https://api.langsly.com/api/media/assets/audio-1/content/');
+
+  storageData.vocabWords = [{ id: 'word_hola', term: 'hola', pronunciation_audio: '' }];
+  await harness.VocabPopup.showWord(harness.makeSpan({ wordId: 'word_hola', audioUrl: '' }));
+  const fallbackButton = harness.document.body.querySelector('.lp-popup-listen');
+  for (let tap = 0; tap < 11; tap += 1) {
+    await fallbackButton.click();
+    await flushMicrotasks();
+  }
+  assert.equal(harness.speechCalls.length, 11);
+  assert.deepEqual(messages.filter(type => type !== 'FETCH_AUDIO'), [], 'Listen taps must not sync');
+});
+
+test('an expired signed recording is refreshed once before the browser voice', async () => {
+  const expired = '/api/media/assets/audio-1/content/?signature=old';
+  const fresh = '/api/media/assets/audio-1/content/?signature=new';
+  const storageData = {
+    apiBase: 'https://api.langsly.com/api',
+    vocabWords: [{ id: 'word_hola', term: 'hola', pronunciation_audio: expired }],
+  };
+  const messages = [];
+  const harness = createHarness({
+    storageData,
+    playResult: src => (src.includes('signature=new') ? Promise.resolve() : Promise.reject(new Error('403'))),
     onMessage: async (message) => {
-      syncMessages.push(message);
-      if (message.type === 'SYNC_NOW') {
-        storageData.vocabWords = [
-          {
-            id: 'word_hola',
-            term: 'hola',
-            pronunciation_audio: '/api/media/assets/audio-1/content/',
-          },
-        ];
+      messages.push(message.type);
+      if (message.type === 'REFRESH_WORD_AUDIO') {
+        storageData.vocabWords = [{ id: 'word_hola', term: 'hola', pronunciation_audio: fresh }];
       }
-      return { success: true };
+      return { success: false };
     },
   });
 
-  await harness.VocabPopup.showWord(harness.makeSpan({
-    wordId: 'word_hola',
-    audioUrl: '',
-  }));
+  await harness.VocabPopup.showWord(harness.makeSpan({ wordId: 'word_hola', audioUrl: expired }));
   const listenButton = harness.document.body.querySelector('.lp-popup-listen');
-
   await listenButton.click();
   await flushMicrotasks();
 
-  assert.equal(JSON.stringify(syncMessages), JSON.stringify([{ type: 'SYNC_NOW' }]));
-  assert.equal(harness.audioInstances.length, 1);
-  assert.equal(harness.audioInstances[0].src, 'https://api.langsly.com/api/media/assets/audio-1/content/');
+  assert.deepEqual(messages, ['FETCH_AUDIO', 'REFRESH_WORD_AUDIO']);
+  assert.equal(harness.audioInstances.at(-1).src, 'https://api.langsly.com/api/media/assets/audio-1/content/?signature=new');
   assert.equal(harness.speechCalls.length, 0);
 });
 
