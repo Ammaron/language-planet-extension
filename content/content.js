@@ -2,16 +2,11 @@
  * Content Script — DOM scanning, word replacement, and popup UI.
  * Runs on every page, processes text nodes and replaces matched vocabulary.
  */
-/* global browser, VocabMatcher, VocabPopup, GrammarRules, LangslyRequestCoordinator */
+/* global browser, VocabMatcher, VocabPopup, GrammarRules, LangslyRequestCoordinator, LangslyHosts */
 
 // ─── Sensitive Page Exclusion ────────────────────
-const SENSITIVE_PATTERNS = [
-  /(^|[.-])(bank|banking|paypal|stripe|checkout|payment|payments)([.-]|$)/i,
-  /(^|[.-])(health|medical|patient|pharmacy|insurance|medicare|medicaid)([.-]|$)/i,
-  /(^|[.-])(legal|attorney|court|law)([.-]|$)/i,
-  /(^|[.-])(login|signin|auth|account)([.-]|$)/i,
-  /\.(gov|gob)(\.[a-z]{2})?$/i,
-];
+// Banking, card, health, webmail, chat and private-document sites come from the
+// bundled list in shared/hosts.js (exact host or dot-suffix, plus label rules).
 
 function _pageHasPasswordFields() {
   return document.querySelectorAll('input[type="password"]').length > 0;
@@ -23,7 +18,7 @@ function _pageRequiresImmediateExclusion() {
   const host = window.location.hostname.toLowerCase();
   const path = window.location.pathname.toLowerCase();
   if (/\/(login|signin|sign-in|oauth|authorize|checkout|payment|patient|legal)(\/|$)/i.test(path)) return true;
-  return SENSITIVE_PATTERNS.some((pattern) => pattern.test(host));
+  return LangslyHosts.isSensitivePage(host, path);
 }
 
 async function shouldExcludePage() {
@@ -33,7 +28,7 @@ async function shouldExcludePage() {
   // User-configurable blocklist
   const { sensitiveBlocklist = [] } = await browser.storage.local.get('sensitiveBlocklist');
   const host = window.location.hostname.toLowerCase();
-  if (sensitiveBlocklist.some(pattern => host.includes(String(pattern).toLowerCase()))) return true;
+  if (LangslyHosts.matchesAnyDomain(host, sensitiveBlocklist)) return true;
   return false;
 }
 
@@ -356,7 +351,7 @@ function flushEncounterBuffer() {
 // ─── Initialization ──────────────────────────────
 function init() {
   if (extensionActive || initPromise) return initPromise;
-  if (['disabled', 'unavailable', 'logged-out'].includes(lifecycleState)) return null;
+  if (['disabled', 'unavailable', 'logged-out', 'orphaned'].includes(lifecycleState)) return null;
   const generation = lifecycleGeneration;
   lifecycleState = 'initializing';
   const promise = runInit(generation).finally(() => {
@@ -396,16 +391,19 @@ async function runInit(generation) {
   rotationSalt = rotation_salt || '';
   vocabularySignature = vocabularySignatureOf(vocabWords);
 
-  // Check whitelist
+  // Paused sites. The worker answers from its cached list; while the list is
+  // unknown (never fetched and the API unreachable) the page stays paused.
   const domain = window.location.hostname;
-  const response = await browser.runtime.sendMessage({ type: 'GET_WHITELIST' });
+  const response = await browser.runtime.sendMessage({ type: 'GET_WHITELIST' }).catch(() => null);
   if (generation !== lifecycleGeneration) return;
-  if (response && response.domains) {
-    whitelistedDomains = response.domains;
-    if (whitelistedDomains.some(d => domain.includes(d) || d.includes(domain))) {
-      lifecycleState = 'disabled';
-      return;
-    }
+  if (!response || !Array.isArray(response.domains) || response.known === false) {
+    lifecycleState = 'disabled';
+    return;
+  }
+  whitelistedDomains = response.domains;
+  if (LangslyHosts.matchesAnyDomain(domain, whitelistedDomains)) {
+    lifecycleState = 'disabled';
+    return;
   }
 
   await loadPinyinPreferences();
@@ -861,6 +859,7 @@ function requestPendingValidations() {
       });
       span.addEventListener('click', event => {
         if (!event.isTrusted) return;
+        if (extensionContextLost()) return;
         event.preventDefault();
         event.stopPropagation();
         if (chineseIsland) recordPinyinTap(selected.id);
@@ -1063,6 +1062,22 @@ function deactivateForSensitivePage() {
   stopDocumentWork();
 }
 
+// After an extension update or reload the old content script keeps running but can
+// no longer reach the worker ("Extension context invalidated"). Put the page back
+// the way it was and stop every watcher instead of leaving dead swapped words.
+let extensionContextOrphaned = false;
+function extensionContextLost() {
+  if (extensionContextOrphaned) return true;
+  let alive = false;
+  try { alive = Boolean(browser.runtime && browser.runtime.id); } catch { alive = false; }
+  if (alive) return false;
+  extensionContextOrphaned = true;
+  try { stopDocumentWork({ loggedOut: true }); } catch { /* best effort */ }
+  try { stopSafetyController(); } catch { /* best effort */ }
+  lifecycleState = 'orphaned';
+  return true;
+}
+
 let safetyTimer = null;
 let safetyControllerActive = false;
 let lastSafetyHref = window.location.href;
@@ -1074,6 +1089,7 @@ async function evaluateSafety() {
   if (!excluded && !extensionActive && !document.hidden) await init();
 }
 function scheduleSafetyCheck() {
+  if (extensionContextLost()) return;
   lastSafetyHref = window.location.href;
   if (_pageRequiresImmediateExclusion()) {
     if (extensionActive) deactivateForSensitivePage();
@@ -1106,7 +1122,7 @@ const pageNavigation = typeof window.navigation === 'object' && window.navigatio
 
 const safetyObserver = new MutationObserver(scheduleSafetyCheck);
 function handleVisibilityChange() {
-  if (document.hidden) return;
+  if (document.hidden || extensionContextLost()) return;
   scheduleSafetyCheck();
   if (extensionActive) {
     processDocument();
@@ -1153,6 +1169,7 @@ function enterUnavailable() {
 const RESUME_STORAGE_KEYS = ['vocabWords', 'subscriptionRequired'];
 browser.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== 'local' || !RESUME_STORAGE_KEYS.some(key => key in changes)) return;
+  if (extensionContextOrphaned) return;
   if (!['unavailable', 'logged-out'].includes(lifecycleState) || extensionActive) return;
   if ('vocabWords' in changes) {
     const words = changes.vocabWords.newValue;

@@ -336,7 +336,7 @@ export function parseHtml(document, html, parent) {
 }
 
 const ROOT = new URL('../', import.meta.url);
-const SCRIPTS = ['content/request-coordinator.js', 'content/grammar-rules.js', 'content/matcher.js', 'content/popup.js', 'content/content.js'];
+const SCRIPTS = ['shared/hosts.js', 'content/request-coordinator.js', 'content/grammar-rules.js', 'content/matcher.js', 'content/popup.js', 'content/content.js'];
 
 export async function loadContentPage({ html, words, storage = {}, validate, audio = {}, whitelist = [], location, navigation }) {
   const document = new MiniDocument();
@@ -358,6 +358,7 @@ export async function loadContentPage({ html, words, storage = {}, validate, aud
       onChanged: { addListener: listener => storageListeners.push(listener) },
     },
     runtime: {
+      id: 'test',
       getURL: path => `chrome-extension://test/${path}`,
       onMessage: { addListener: listener => { browser.runtime.listener = listener; } },
       sendMessage: async (message) => {
