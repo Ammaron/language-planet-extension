@@ -71,6 +71,9 @@ const LP_CLASS = 'lp-vocab-word';
 let privateState = globalThis.LangslyPrivateState || new WeakMap();
 globalThis.LangslyPrivateState = privateState;
 const getPrivate = (element) => privateState.get(element) || {};
+// Only elements this script created carry private state. A page that reuses the
+// lp-* class names is never flattened, re-rendered or sent for validation.
+const ownElements = (selector, root = document) => [...root.querySelectorAll(selector)].filter(element => privateState.has(element));
 const setPrivate = (element, values) => {
   const next = { ...getPrivate(element), ...values };
   privateState.set(element, next);
@@ -197,8 +200,8 @@ function enforceNoBridges(island) {
   const walker = document.createTreeWalker(block, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
       if (node.nodeType === Node.ELEMENT_NODE) {
-        if (node.classList.contains('lp-zh-island')) return NodeFilter.FILTER_ACCEPT;
-        if (node.classList.contains('lp-validation-pending')) return NodeFilter.FILTER_SKIP;
+        if (node.classList.contains('lp-zh-island') && privateState.has(node)) return NodeFilter.FILTER_ACCEPT;
+        if (node.classList.contains('lp-validation-pending') && privateState.has(node)) return NodeFilter.FILTER_SKIP;
         return node.hasAttribute(LP_PROCESSED) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_SKIP;
       }
       return node.parentElement && node.parentElement.closest('.lp-zh-island')
@@ -773,7 +776,7 @@ function cancelValidationRetry() {
 
 function requestPendingValidations() {
   // The validation budget is small; spend it on what the learner is reading.
-  const spans = [...document.querySelectorAll('.lp-validation-pending')]
+  const spans = ownElements('.lp-validation-pending')
     .filter(span => !getPrivate(span).validationQueued)
     .map(span => ({ span, distance: viewportDistance(span) }))
     .sort((a, b) => a.distance - b.distance);
@@ -919,7 +922,7 @@ function requestPendingValidations() {
         scheduleValidationRetry();
         return;
       }
-      span.parentNode.replaceChild(document.createTextNode(original), span);
+      span.parentNode.replaceChild(document.createTextNode(typeof original === 'string' ? original : span.textContent), span);
     });
   }
 }
@@ -975,7 +978,7 @@ browser.runtime.onMessage.addListener((message) => {
     // The toolbar popup asks what this tab is doing so it can say it in words.
     return {
       lifecycleState,
-      wordCount: document.querySelectorAll(`.${LP_CLASS}, .lp-vocab-phrase`).length,
+      wordCount: ownElements(`.${LP_CLASS}, .lp-vocab-phrase`).length,
     };
   }
 
@@ -1039,15 +1042,15 @@ browser.runtime.onMessage.addListener((message) => {
 // ─── Start ───────────────────────────────────────
 function restoreOriginalPageText() {
   zhIslandBudget = { page: 0, words: new Map(), sentences: new WeakMap() };
-  document.querySelectorAll('.lp-validation-pending').forEach((element) => {
+  ownElements('.lp-validation-pending').forEach((element) => {
     if (!element.parentNode) return;
     element.parentNode.replaceChild(document.createTextNode(getPrivate(element).original || element.textContent), element);
   });
-  document.querySelectorAll('.lp-vocab-phrase').forEach((element) => {
+  ownElements('.lp-vocab-phrase').forEach((element) => {
     if (!element.parentNode) return;
     element.parentNode.replaceChild(document.createTextNode(getPrivate(element).original || element.textContent), element);
   });
-  document.querySelectorAll(`.${LP_CLASS}`).forEach((element) => {
+  ownElements(`.${LP_CLASS}`).forEach((element) => {
     if (!element.parentNode) return;
     element.parentNode.replaceChild(document.createTextNode(getPrivate(element).original || element.textContent), element);
   });
@@ -1203,7 +1206,7 @@ function enterUnavailable() {
 // Chinese words re-render themselves when it changes.
 browser.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== 'local' || !('zhPinyinMode' in changes) || extensionContextOrphaned) return;
-  if (!extensionActive || !matcher || !document.querySelector('.lp-zh-island')) return;
+  if (!extensionActive || !matcher || ownElements('.lp-zh-island').length === 0) return;
   const generation = lifecycleGeneration;
   void Promise.all([loadPinyinPreferences(), browser.storage.local.get('vocabWords')]).then(([, { vocabWords }]) => {
     if (generation !== lifecycleGeneration || !extensionActive || !Array.isArray(vocabWords)) return;

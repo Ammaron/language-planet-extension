@@ -41,3 +41,16 @@ test('a visible sentence next to hidden text sends no context at all', async () 
   assert.doesNotMatch(validationText(loaded), /1234/);
   assert.equal(loaded.islands().length, 1, 'the clean paragraph still gets its word');
 });
+
+test('page elements that reuse extension class names are never flattened', async () => {
+  const loaded = await page('<div><p><b class="lp-validation-pending lp-vocab-word">Menu</b></p><p>He is tall.</p></div>');
+  const own = () => loaded.document.querySelectorAll('b');
+  assert.equal(own().length, 1);
+  assert.equal(loaded.islands().length, 1);
+  assert.doesNotMatch(validationText(loaded), /Menu/);
+  loaded.window.browser.runtime.listener({ type: 'SUBSCRIPTION_REQUIRED' });
+  await loaded.settle(2);
+  assert.equal(loaded.islands().length, 0, 'extension words are restored');
+  assert.equal(own().length, 1, 'the page element survives the restore');
+  assert.equal(own()[0].textContent, 'Menu');
+});
