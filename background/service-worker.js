@@ -36,6 +36,21 @@ function t(key, substitutions, fallback) {
 // ─── Configurable API URLs ──────────────────────
 const LEGACY_DEFAULTS = { apiBase: 'http://localhost:8000/api', frontendUrl: 'http://localhost:3000' };
 const DEFAULTS = { apiBase: 'https://api.langsly.com/api', frontendUrl: 'https://langsly.com' };
+// Every API request names this build (X-Langsly-Client: extension/<version>) so the
+// backend can log which versions are still active and publish minimum versions.
+const CLIENT_HEADER_VALUE = (() => {
+  try {
+    const version = browser.runtime.getManifest().version;
+    return /^[0-9A-Za-z.+-]{1,32}$/.test(version) ? `extension/${version}` : 'extension/0';
+  } catch {
+    return 'extension/0';
+  }
+})();
+function withClientHeader(headers) {
+  return { ...(headers || {}), 'X-Langsly-Client': CLIENT_HEADER_VALUE };
+}
+// For requests that carry no session (device sign-in start/poll).
+const apiFetch = (url, options = {}) => fetch(url, { ...options, headers: withClientHeader(options.headers) });
 const MAX_EXTENSION_AUDIO_FETCH_BYTES = 8 * 1024 * 1024;
 const DEFAULT_EXTENSION_SOURCE_LANGUAGE = 'en';
 const AUTO_BUDGET_WINDOW_MS = 60 * 1000;
@@ -347,7 +362,7 @@ async function broadcastVocabulary(words, isCurrent = () => true) {
   }
 }
 
-const deviceConnection = globalThis.createDeviceConnection({ browser, fetch: (...args) => fetch(...args), getConfig, complete: completeLoginWithTokens });
+const deviceConnection = globalThis.createDeviceConnection({ browser, fetch: apiFetch, getConfig, complete: completeLoginWithTokens });
 
 async function openDeviceConnectionPage() {
   const url = browser.runtime.getURL('popup/connect.html');
@@ -426,7 +441,7 @@ async function _refreshAccessToken({ refresh, generation }) {
       : '/auth/token/refresh/';
     const res = await fetch(`${apiBase}${refreshPath}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: withClientHeader({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ refresh }),
       signal: controller.signal,
     });
@@ -468,7 +483,7 @@ async function authFetch(url, options = {}) {
     return null;
   }
 
-  const headers = { ...options.headers, Authorization: `Bearer ${access}` };
+  const headers = withClientHeader({ ...options.headers, Authorization: `Bearer ${access}` });
   let res;
   try {
     res = await fetch(url, { ...options, headers, signal: controller.signal });
