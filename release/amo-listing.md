@@ -10,7 +10,7 @@ Learn from the websites you already read. Langsly Vocab Pass highlights words an
 
 Vocab Pass connects to your Langsly account through a short-lived device code. Once connected, it synchronizes your vocabulary, difficulty, and theme, then highlights learned terms on supported websites. Tap a highlight for translation, phrase meaning, contextual disambiguation, audio, and feedback controls. Site controls let you pause or block Vocab Pass, and an offline cache preserves recently synchronized vocabulary.
 
-Vocab Pass automatically avoids browser-internal and Langsly pages, pages with password fields, and baseline authentication, banking, payment, government, health, and legal pages. Those baseline protections cannot be disabled.
+Vocab Pass automatically avoids browser-internal and Langsly pages, pages with password fields, and baseline authentication, banking, payment, government, health, and legal pages, plus a bundled list of major banks, card issuers, patient portals, webmail, chat and private-document sites. Those baseline protections cannot be disabled.
 
 Automatic processing may send the current domain, matched phrases, or a short bounded piece of visible sentence context to Langsly and, when translation or disambiguation needs it, OpenRouter. Vocab Pass does not send complete pages, form values, hidden text, or full URLs. See Langsly's privacy policy before connecting.
 

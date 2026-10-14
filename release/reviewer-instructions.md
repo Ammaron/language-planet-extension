@@ -19,7 +19,7 @@ The extension never authorizes automatically. The extension tab polls only while
 
 ## Feature review
 
-On a non-sensitive article page, verify word and phrase highlighting, contextual disambiguation, audio/speech fallback, theme and difficulty controls, site disable/re-enable, and offline cached vocabulary. Then visit a login form containing a password field and representative banking, payment, government, health, and legal URLs; the add-on must not load vocabulary, change the DOM, or send page-derived requests there. Repeat after a same-page navigation.
+On a non-sensitive article page, verify word and phrase highlighting, contextual disambiguation, audio/speech fallback, theme and difficulty controls, site disable/re-enable, and offline cached vocabulary. Then visit a login form containing a password field and representative banking, payment, government, health, and legal URLs (for example a chase.com or bbva.mx sign-in, a MyChart portal, mail.google.com, web.whatsapp.com); the add-on must not load vocabulary, change the DOM, or send page-derived requests there. Repeat after a same-page navigation.
 
 ## Test account
 
