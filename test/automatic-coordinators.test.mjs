@@ -350,11 +350,14 @@ function loadValidateHandler({ status = 200, body = {}, headers = {}, hang = fal
   const handler = slice("if (message.type === 'VALIDATE_REPLACEMENTS')", '// ─── Word Sense Disambiguation');
   const warnings = [];
   const calls = [];
+  const applied = [];
   const context = {
     console: { warn: (...args) => warnings.push(args), log() {}, error() {} },
     Date, Number, Math, Promise, JSON, Array, Set, Object, String, setTimeout, clearTimeout, AbortController,
     authGeneration: 1,
     _consumeAutomaticBudget: () => true,
+    isSubscriptionRequiredResponse: async res => !!res && res.status === 402,
+    applySubscriptionRequired: async generation => { applied.push(generation); },
     getConfig: async () => ({ apiBase: 'https://api.example.test/api' }),
     browser: { storage: { local: { get: async () => ({ difficulty: 'normal', lastSync: 1 }) } } },
     ZH_TARGET_CAPABILITY: 'zh_target_v1',
@@ -366,7 +369,7 @@ function loadValidateHandler({ status = 200, body = {}, headers = {}, hang = fal
   };
   vm.createContext(context);
   vm.runInContext(`${helpers}\nthis.handle = (message, sender) => { ${handler} };`, context);
-  return { handle: context.handle, warnings, calls };
+  return { handle: context.handle, warnings, calls, applied };
 }
 const workerSource = await readFile(new URL('../background/service-worker.js', import.meta.url), 'utf8');
 const ITEMS = [
@@ -394,14 +397,108 @@ test('the worker turns 429 into retryAfterMs from Retry-After, one minute by def
   assert.ok(retryAfterMs > 85_000 && retryAfterMs <= 90_000, String(retryAfterMs));
 });
 
-test('the worker aborts the request at the deadline and keeps 5xx retryable', async () => {
+test('the worker aborts the request at the deadline (retry on backoff) and cools down on 5xx', async () => {
   const { handle, calls } = loadValidateHandler({ hang: true, deadlineMs: 30 });
   const started = Date.now();
-  assert.deepEqual(plain(await handle({ type: 'VALIDATE_REPLACEMENTS', items: ITEMS }, {})), { results: [], error: 'validator_unavailable' });
+  // The client's own deadline: no cooldown, the page asks again on its backoff.
+  assert.deepEqual(plain(await handle({ type: 'VALIDATE_REPLACEMENTS', items: ITEMS }, {})), { results: [], error: 'deadline_exceeded' });
   assert.ok(Date.now() - started < 2000);
   assert.equal(calls[0].init.signal.aborted, true, 'the fetch itself was aborted');
+  // An outage: nothing goes out for five minutes, no attempt spent.
   const outage = loadValidateHandler({ status: 503, body: {} });
-  assert.deepEqual(plain(await outage.handle({ type: 'VALIDATE_REPLACEMENTS', items: ITEMS }, {})), { results: [], error: 'validator_unavailable' });
+  assert.deepEqual(plain(await outage.handle({ type: 'VALIDATE_REPLACEMENTS', items: ITEMS }, {})),
+    { results: [], error: 'validator_unavailable', retryAfterMs: 300_000 });
   const fine = loadValidateHandler({ status: 200, body: { validation_version: 2, results: [{ item_id: '1', decision: 'keep' }] } });
   assert.deepEqual(plain(await fine.handle({ type: 'VALIDATE_REPLACEMENTS', items: ITEMS }, {})), { results: [{ item_id: '1', decision: 'keep' }] });
+});
+
+// ─── 0.2.9: retry only what the server may answer again ───
+const keep = (item_id, reason, extra = {}) => ({ item_id, validation_version: 2, decision: 'keep', reason, method: 'validation_v2', ...extra });
+
+test('the worker marks retryable keeps and reports a cooldown for budget and validator keeps', async () => {
+  const body = reasons => ({ validation_version: 2, results: reasons.map(([id, reason, extra]) => keep(id, reason, extra)) });
+  // Transient keeps retry on the page's backoff; final keeps carry no flag.
+  const transient = loadValidateHandler({ status: 200, body: body([['1', 'deadline_exceeded'], ['2', 'malformed_result'], ['3', 'none_fit'], ['4', 'insufficient_context']]) });
+  const answer = plain(await transient.handle({ type: 'VALIDATE_REPLACEMENTS', items: ITEMS }, {}));
+  assert.equal(answer.retryAfterMs, undefined);
+  assert.deepEqual(answer.results.map(result => [result.reason, result.retryable]),
+    [['deadline_exceeded', true], ['malformed_result', true], ['none_fit', undefined], ['insufficient_context', undefined]]);
+  // A daily budget or a missing validator: five minutes unless the server says otherwise.
+  const budget = loadValidateHandler({ status: 200, body: body([['1', 'budget_exhausted'], ['2', 'none_fit']]) });
+  const cooled = plain(await budget.handle({ type: 'VALIDATE_REPLACEMENTS', items: ITEMS }, {}));
+  assert.equal(cooled.retryAfterMs, 300_000);
+  assert.deepEqual(cooled.results.map(result => result.retryable), [true, undefined]);
+  const offline = loadValidateHandler({ status: 200, body: body([['1', 'validator_unavailable']]) });
+  assert.equal((await offline.handle({ type: 'VALIDATE_REPLACEMENTS', items: ITEMS }, {})).retryAfterMs, 300_000);
+  // retry_after_seconds on the body, retry_after on an item: the longest wins, capped at ten minutes.
+  const onBody = loadValidateHandler({ status: 200, body: { ...body([['1', 'budget_exhausted']]), retry_after_seconds: 90 } });
+  assert.equal((await onBody.handle({ type: 'VALIDATE_REPLACEMENTS', items: ITEMS }, {})).retryAfterMs, 90_000);
+  const onItem = loadValidateHandler({ status: 200, body: body([['1', 'budget_exhausted', { retry_after: 120 }], ['2', 'validator_unavailable', { retry_after_seconds: '30' }]]) });
+  assert.equal((await onItem.handle({ type: 'VALIDATE_REPLACEMENTS', items: ITEMS }, {})).retryAfterMs, 120_000);
+  const tomorrow = loadValidateHandler({ status: 200, body: { ...body([['1', 'budget_exhausted']]), retry_after_seconds: 6 * 3600 } });
+  assert.equal((await tomorrow.handle({ type: 'VALIDATE_REPLACEMENTS', items: ITEMS }, {})).retryAfterMs, 600_000);
+  // A replace is passed through untouched.
+  const replace = { item_id: '1', validation_version: 2, decision: 'replace', replacement_text: 'hola', vocabulary_ids: ['w-hello'] };
+  const fine = loadValidateHandler({ status: 200, body: { validation_version: 2, results: [replace] } });
+  assert.deepEqual(plain(await fine.handle({ type: 'VALIDATE_REPLACEMENTS', items: ITEMS }, {})), { results: [replace] });
+});
+
+test('the worker stops every page on a 402 from the validator', async () => {
+  const { handle, applied } = loadValidateHandler({ status: 402, body: { code: 'vocab_pass_subscription_required' } });
+  assert.deepEqual(plain(await handle({ type: 'VALIDATE_REPLACEMENTS', items: ITEMS }, {})), { results: [], error: 'subscription_required' });
+  assert.deepEqual(applied, [1]);
+});
+
+test('only keeps the server may answer again are retried, a malformed answer once', async () => {
+  // "hello" hits the model deadline twice and is judged on the third try;
+  // "goodbye" comes back malformed twice: asked once more, then final.
+  let round = 0;
+  const loaded = await greetingPage(items => {
+    round += 1;
+    return items.map(item => candidate(item) === 'w-hello'
+      ? (round < 3 ? keep(item.item_id, 'deadline_exceeded', { retryable: true }) : verdict(item))
+      : keep(item.item_id, 'malformed_result', { retryable: true }));
+  }, { maxTimerMs: 20, rounds: 40 });
+  assert.equal(round, 3);
+  assert.deepEqual(plain(validations(loaded).map(batch => batch.items.map(candidate))),
+    [['w-hello', 'w-goodbye'], ['w-hello', 'w-goodbye'], ['w-hello']], 'no third request for the twice-malformed word');
+  assert.equal(bodyText(loaded), 'hola there.Goodbye now.');
+  assert.equal(pendingSpans(loaded).length, 0);
+  // Retryable keeps keep the backoff growing (2 s, then 4 s), nothing after.
+  assert.deepEqual(retryDelays(loaded), [4000]);
+  // A final keep is never asked about again.
+  const final = await greetingPage(items => items.map(item => keep(item.item_id, 'none_fit')), { maxTimerMs: 20, rounds: 20 });
+  assert.equal(validations(final).length, 1);
+  assert.equal(bodyText(final), 'Hello there.Goodbye now.');
+  assert.deepEqual(retryDelays(final), []);
+});
+
+test('an exhausted budget waits out the cooldown and spends an attempt', async () => {
+  const loaded = await greetingPage(items => ({ results: items.map(item => keep(item.item_id, 'budget_exhausted', { retryable: true })), retryAfterMs: 300_000 }),
+    { maxTimerMs: 20, rounds: 20 });
+  // Judged (so an attempt is spent), still pending, and nothing goes out
+  // before the cooldown even though the capped timer fired and a sync woke the page.
+  assert.equal(validations(loaded).length, 1);
+  const spans = pendingSpans(loaded);
+  assert.equal(spans.length, 2);
+  for (const span of spans) assert.equal(loaded.privateState.get(span).validationAttempts, 1);
+  assert.ok(loaded.timeouts.some(ms => ms >= 299_000 && ms <= 300_000), `scheduled ${JSON.stringify(loaded.timeouts)}`);
+  wake(loaded);
+  await loaded.settle(4);
+  assert.equal(validations(loaded).length, 1);
+  assert.equal(pendingSpans(loaded).length, 2);
+});
+
+test('a validator outage waits out the cooldown without spending an attempt', async () => {
+  const loaded = await greetingPage(() => ({ results: [], error: 'validator_unavailable', retryAfterMs: 300_000 }), { maxTimerMs: 20, rounds: 20 });
+  assert.equal(validations(loaded).length, 1);
+  const spans = pendingSpans(loaded);
+  assert.equal(spans.length, 2);
+  for (const span of spans) assert.equal(loaded.privateState.get(span).validationAttempts, 0);
+  assert.ok(loaded.timeouts.some(ms => ms >= 299_000 && ms <= 300_000), `scheduled ${JSON.stringify(loaded.timeouts)}`);
+  // Access lapsed mid-batch: final, the worker is stopping the page anyway.
+  const lapsed = await greetingPage(() => ({ results: [], error: 'subscription_required' }), { maxTimerMs: 20, rounds: 20 });
+  assert.equal(validations(lapsed).length, 1);
+  assert.equal(pendingSpans(lapsed).length, 0);
+  assert.deepEqual(retryDelays(lapsed), []);
 });

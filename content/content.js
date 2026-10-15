@@ -139,6 +139,33 @@ function zhIslandAllowed(textNode, match, context) {
   return true;
 }
 
+// ─── Replacement density (every target language) ───
+// A learner with "you" in the list should not see every "you" on the page
+// swapped: at most DENSITY_SAME_WORD_LIMIT occurrences of one word per page
+// and DENSITY_SENTENCE_LIMIT swaps per sentence (a phrase counts as one swap
+// and one occurrence of each of its words). Counted at scan time, before a
+// span is queued, so a capped occurrence costs no validation budget; reset
+// with the page, like the Chinese island budget, which stays stricter and
+// applies instead of this one to Chinese targets.
+const DENSITY_SAME_WORD_LIMIT = 3;
+const DENSITY_SENTENCE_LIMIT = 1;
+let densityBudget = { words: new Map(), sentences: new WeakMap() };
+
+function densityAllowed(textNode, words, context) {
+  const parent = textNode.parentElement;
+  if (!parent || !context || !context.sentence) return false;
+  const block = parent.closest(BLOCK_SELECTOR) || parent;
+  const ids = [...new Set(words.map(word => String(word.id)))];
+  if (ids.some(id => (densityBudget.words.get(id) || 0) >= DENSITY_SAME_WORD_LIMIT)) return false;
+  const sentenceKey = String(context.sentence);
+  const blockSentences = densityBudget.sentences.get(block) || new Map();
+  if ((blockSentences.get(sentenceKey) || 0) >= DENSITY_SENTENCE_LIMIT) return false;
+  for (const id of ids) densityBudget.words.set(id, (densityBudget.words.get(id) || 0) + 1);
+  blockSentences.set(sentenceKey, (blockSentences.get(sentenceKey) || 0) + 1);
+  densityBudget.sentences.set(block, blockSentences);
+  return true;
+}
+
 function recentTapCount(wordId) {
   const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
   return (Array.isArray(zhPinyinTaps[wordId]) ? zhPinyinTaps[wordId] : []).filter(time => time > weekAgo).length;
@@ -289,13 +316,15 @@ const validationCoordinator = LangslyRequestCoordinator.createBatchCoordinator({
       // unjudged in this batch spends an attempt.
       const retryAfterMs = Number(response?.retryAfterMs);
       if (retryAfterMs > 0) validationRetryNotBefore = Math.max(validationRetryNotBefore, Date.now() + retryAfterMs);
-      // The server rejected the request itself (HTTP 400): no retry can change
-      // that, so every unjudged item is final.
+      // The server rejected the request itself (HTTP 400), or access lapsed
+      // (HTTP 402, the worker is stopping the page): every unjudged item is final.
       const unjudged = retryAfterMs > 0 ? { error: 'retry_after' }
-        : response?.error === 'rejected' ? { error: 'rejected' } : null;
+        : ['rejected', 'subscription_required'].includes(response?.error) ? { error: 'rejected' } : null;
       // Back off only while something is still waiting for a verdict: a batch
-      // judged in full restarts the retry delay, a partial one keeps it.
-      if (items.every(item => byId.has(item.item_id))) validationRetryDelay = VALIDATION_RETRY_MIN_MS;
+      // judged in full restarts the retry delay, a partial one (or one with
+      // keeps the server may answer again) keeps it.
+      const settled = items.every(item => byId.has(item.item_id) && !byId.get(item.item_id).retryable);
+      if (settled) validationRetryDelay = VALIDATION_RETRY_MIN_MS;
       return items.map(item => byId.get(item.item_id) || (unjudged ? { item_id: item.item_id, ...unjudged } : null));
     }),
 });
@@ -636,8 +665,13 @@ function replaceInTextNode(textNode) {
       fragment.appendChild(document.createTextNode(text.substring(lastEnd, event.start)));
     }
 
-    if (event.type === 'single' && isZhTarget(event.data.word) && !zhIslandAllowed(textNode, event.data, event.context)) {
-      fragment.appendChild(document.createTextNode(event.data.original));
+    // Over the page's density (or island) budget: plain text, never queued.
+    const chineseIsland = event.type === 'single' && isZhTarget(event.data.word);
+    const allowed = chineseIsland
+      ? zhIslandAllowed(textNode, event.data, event.context)
+      : densityAllowed(textNode, event.type === 'single' ? [event.data.word] : event.data.matches.map(match => match.word), event.context);
+    if (!allowed) {
+      fragment.appendChild(document.createTextNode(event.type === 'single' ? event.data.original : event.data.sourceText));
     } else if (event.type === 'single') {
       fragment.appendChild(buildPendingSingleSpan(event.data, domain, event.context));
     } else {
@@ -894,6 +928,18 @@ function requestPendingValidations() {
         deferred = attempts < VALIDATION_MAX_ATTEMPTS;
         return;
       }
+      // A keep the server may answer differently next time (model deadline,
+      // malformed answer, daily budget, validator offline): ask again, a
+      // malformed answer once only. Any cooldown the worker reported is
+      // already in validationRetryNotBefore. Every other keep is final.
+      if (result.retryable === true) {
+        if (result.reason === 'malformed_result') {
+          if (state.malformedRetried) return;
+          setPrivate(span, { malformedRetried: true });
+        }
+        deferred = attempts < VALIDATION_MAX_ATTEMPTS;
+        return;
+      }
       if (result.item_id !== item.item_id || result.validation_version !== item.validation_version
         || result?.decision !== 'replace' || !result.replacement_text) return;
       const ids = Array.isArray(result.vocabulary_ids) ? result.vocabulary_ids.map(String) : [];
@@ -1103,6 +1149,7 @@ browser.runtime.onMessage.addListener((message) => {
 // ─── Start ───────────────────────────────────────
 function restoreOriginalPageText() {
   zhIslandBudget = { page: 0, words: new Map(), sentences: new WeakMap() };
+  densityBudget = { words: new Map(), sentences: new WeakMap() };
   ownElements('.lp-validation-pending').forEach((element) => {
     if (!element.parentNode) return;
     element.parentNode.replaceChild(document.createTextNode(getPrivate(element).original || element.textContent), element);
