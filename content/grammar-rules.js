@@ -495,6 +495,12 @@ function composePhrase(matchedWords, targetLang) {
   return null;
 }
 
+// A gap that crosses a line break or a sentence terminator never joins two
+// matches. The sentence sent for validation stops at that character, so a
+// phrase built across it would not fit inside its own sentence and the
+// backend would reject the whole batch (HTTP 400).
+const PHRASE_BREAK_RE = /[\r\n.!?。！？]/;
+
 /**
  * Check if a text gap between two matches contains only whitespace and glue words.
  *
@@ -503,6 +509,7 @@ function composePhrase(matchedWords, targetLang) {
  * @returns {boolean}
  */
 function isGlueGap(gapText, sourceLang) {
+  if (PHRASE_BREAK_RE.test(gapText)) return false; // line break or sentence end
   const trimmed = gapText.trim();
   if (trimmed === '') return true; // pure whitespace
 
@@ -519,6 +526,7 @@ if (typeof window !== 'undefined') {
     MAX_GAP_CHARS,
     MIN_PHRASE_WORDS,
     CONFIDENCE_THRESHOLD,
+    PHRASE_BREAK_RE,
     composePhrase,
     isGlueGap,
   };
