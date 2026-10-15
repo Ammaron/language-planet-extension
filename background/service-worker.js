@@ -476,6 +476,14 @@ async function authFetch(url, options = {}) {
   const { generation } = snapshot;
   const controller = new AbortController();
   activeAuthControllers.add(controller);
+  // A caller's own deadline (options.signal) aborts the same request.
+  const linkDeadline = target => {
+    const deadline = options.signal;
+    if (!deadline) return;
+    if (deadline.aborted) target.abort();
+    else deadline.addEventListener('abort', () => target.abort(), { once: true });
+  };
+  linkDeadline(controller);
 
   if (generation !== authGeneration) {
     activeAuthControllers.delete(controller);
@@ -505,6 +513,7 @@ async function authFetch(url, options = {}) {
     headers.Authorization = `Bearer ${access}`;
     const retryController = new AbortController();
     activeAuthControllers.add(retryController);
+    linkDeadline(retryController);
     try {
       res = await fetch(url, { ...options, headers, signal: retryController.signal });
     } catch (error) {
@@ -732,6 +741,51 @@ async function failVocabularySync(sourceLanguage, generation, sourceRevision, sy
 // Chinese as a target (English pages) is gated server-side by a switch, this
 // capability and a per-user allowlist. Older builds never send it.
 const ZH_TARGET_CAPABILITY = 'zh_target_v1';
+
+// ─── Validation responses ──────────────────────
+// A validation call is abandoned (and the request aborted) at this deadline.
+const VALIDATION_DEADLINE_MS = 8000;
+const RETRY_AFTER_DEFAULT_MS = 60_000;
+const RETRY_AFTER_MAX_MS = 600_000;
+
+// Milliseconds the server asked us to wait (429 Retry-After: seconds or an
+// HTTP date); one minute when the header is missing or unreadable.
+function _retryAfterMs(res) {
+  const header = String(res?.headers?.get?.('Retry-After') || '').trim();
+  let ms = 0;
+  if (/^\d+$/.test(header)) ms = Number(header) * 1000;
+  else if (header) ms = Date.parse(header) - Date.now();
+  if (!Number.isFinite(ms) || ms <= 0) ms = RETRY_AFTER_DEFAULT_MS;
+  return Math.min(ms, RETRY_AFTER_MAX_MS);
+}
+
+// The field names a 400 body complains about ("items[3].match_offset"), for
+// the console only. Never the messages, never the text that was sent.
+async function _responseErrorFields(res) {
+  let body;
+  try {
+    body = await res.json();
+  } catch {
+    return [];
+  }
+  const fields = [];
+  const walk = (value, path) => {
+    if (fields.length >= 40) return;
+    if (Array.isArray(value)) {
+      if (value.every(entry => typeof entry === 'string')) {
+        if (path) fields.push(path);
+        return;
+      }
+      value.forEach((entry, index) => walk(entry, `${path}[${index}]`));
+    } else if (value && typeof value === 'object') {
+      for (const [key, entry] of Object.entries(value)) walk(entry, path ? `${path}.${key}` : key);
+    } else if (path) {
+      fields.push(path);
+    }
+  };
+  walk(body, '');
+  return fields;
+}
 
 function withoutChineseTargets(words) {
   return words.filter(word => !globalThis.LangslySourceLanguage.isChineseTargetWord(word));
@@ -1491,13 +1545,27 @@ browser.runtime.onMessage.addListener((message, sender) => {
         const versions = [...new Set(items.map(item => item.validation_version))];
         if (versions.some(version => ![2, 3].includes(version))) return { results: [], error: 'unsupported_version' };
         const responses = await Promise.all(versions.map(async version => {
-        const deadline = new Promise(resolve => setTimeout(() => resolve(null), 8000));
-        const res = await Promise.race([authFetch(`${apiBase}/lessons/vocabpass/disambiguate/?capabilities=${ZH_TARGET_CAPABILITY}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ validation_version: version, difficulty: difficulty || 'normal', items: items.filter(item => item.validation_version === version) }),
-        }), deadline]);
-        if (!res || !res.ok || generation !== authGeneration) return { results: [], error: 'validator_unavailable' };
+        // The deadline aborts the request itself: a late answer is never paid
+        // for twice by a retry that overlaps it.
+        const deadline = new AbortController();
+        const res = await new Promise(resolve => {
+          const timer = setTimeout(() => { deadline.abort(); resolve(null); }, VALIDATION_DEADLINE_MS);
+          authFetch(`${apiBase}/lessons/vocabpass/disambiguate/?capabilities=${ZH_TARGET_CAPABILITY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ validation_version: version, difficulty: difficulty || 'normal', items: items.filter(item => item.validation_version === version) }),
+            signal: deadline.signal,
+          }).then(resolve, () => resolve(null)).finally(() => clearTimeout(timer));
+        });
+        if (!res || generation !== authGeneration) return { results: [], error: 'validator_unavailable' };
+        // Rejected request (bad item, unsupported pair): final, no retry.
+        if (res.status === 400) {
+          console.warn('[Langsly] validation batch rejected', await _responseErrorFields(res));
+          return { results: [], error: 'rejected' };
+        }
+        // Rate limited: come back when the server says, not before.
+        if (res.status === 429) return { results: [], retryAfterMs: _retryAfterMs(res) };
+        if (!res.ok) return { results: [], error: 'validator_unavailable' };
         const data = await res.json();
         const current = await browser.storage.local.get(['difficulty', 'lastSync']);
         if (generation !== authGeneration || data.validation_version !== version
@@ -1505,7 +1573,12 @@ browser.runtime.onMessage.addListener((message, sender) => {
           || current.lastSync !== lastSync) return { results: [], error: 'cancelled' };
         return { results: Array.isArray(data.results) ? data.results : [] };
         }));
-        return { results: responses.flatMap(response => response.results || []) };
+        const results = responses.flatMap(response => response.results || []);
+        const retryAfterMs = Math.max(0, ...responses.map(response => response.retryAfterMs || 0));
+        if (retryAfterMs > 0) return { results, retryAfterMs };
+        if (responses.some(response => response.error === 'rejected')) return { results, error: 'rejected' };
+        const error = results.length ? null : responses.find(response => response.error)?.error;
+        return error ? { results, error } : { results };
       } catch {
         return { results: [], error: 'validator_unavailable' };
       }

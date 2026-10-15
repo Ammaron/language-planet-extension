@@ -285,7 +285,18 @@ const validationCoordinator = LangslyRequestCoordinator.createBatchCoordinator({
     .then(response => {
       const byId = new Map((response && Array.isArray(response.results) ? response.results : [])
         .map(result => [result.item_id, result]));
-      return items.map(item => byId.get(item.item_id) || null);
+      // Rate limited (HTTP 429): the server said when to come back. Nothing
+      // unjudged in this batch spends an attempt.
+      const retryAfterMs = Number(response?.retryAfterMs);
+      if (retryAfterMs > 0) validationRetryNotBefore = Math.max(validationRetryNotBefore, Date.now() + retryAfterMs);
+      // The server rejected the request itself (HTTP 400): no retry can change
+      // that, so every unjudged item is final.
+      const unjudged = retryAfterMs > 0 ? { error: 'retry_after' }
+        : response?.error === 'rejected' ? { error: 'rejected' } : null;
+      // Back off only while something is still waiting for a verdict: a batch
+      // judged in full restarts the retry delay, a partial one keeps it.
+      if (items.every(item => byId.has(item.item_id))) validationRetryDelay = VALIDATION_RETRY_MIN_MS;
+      return items.map(item => byId.get(item.item_id) || (unjudged ? { item_id: item.item_id, ...unjudged } : null));
     }),
 });
 // A pending word that could not be judged yet (budget, rate limit, slow
@@ -295,6 +306,9 @@ const VALIDATION_RETRY_MAX_MS = 30_000;
 const VALIDATION_MAX_ATTEMPTS = 6;
 let validationRetryTimer = null;
 let validationRetryDelay = VALIDATION_RETRY_MIN_MS;
+// Earliest time the server allows the next validation request (Retry-After).
+let validationRetryNotBefore = 0;
+let validationRetryDueAt = 0;
 let vocabularySignature = '';
 // Key-order independent: browser.storage hands objects back with sorted keys.
 // Signed audio URLs change on every sync; a fresh signature alone is not a
@@ -758,9 +772,18 @@ function viewportDistance(element) {
 }
 
 function scheduleValidationRetry() {
-  if (validationRetryTimer || !extensionActive) return;
-  const delay = Math.max(validationRetryDelay, validationCoordinator.msUntilCapacity());
-  validationRetryDelay = Math.min(validationRetryDelay * 2, VALIDATION_RETRY_MAX_MS);
+  if (!extensionActive) return;
+  const now = Date.now();
+  // The server's Retry-After (429) overrides the local backoff.
+  const delay = Math.max(validationRetryDelay, validationCoordinator.msUntilCapacity(), validationRetryNotBefore - now);
+  if (validationRetryTimer) {
+    // A pending timer stands unless the server asked for a later time.
+    if (validationRetryNotBefore <= validationRetryDueAt) return;
+    clearTimeout(validationRetryTimer);
+  } else {
+    validationRetryDelay = Math.min(validationRetryDelay * 2, VALIDATION_RETRY_MAX_MS);
+  }
+  validationRetryDueAt = now + delay;
   validationRetryTimer = setTimeout(() => {
     validationRetryTimer = null;
     // Hidden tabs resume from handleVisibilityChange.
@@ -771,10 +794,35 @@ function scheduleValidationRetry() {
 function cancelValidationRetry() {
   if (validationRetryTimer) clearTimeout(validationRetryTimer);
   validationRetryTimer = null;
+  validationRetryDueAt = 0;
   validationRetryDelay = VALIDATION_RETRY_MIN_MS;
 }
 
+// Mirror of the server's span check (serializers: the sentence must contain
+// matched_text at match_offset, counted in UTF-16 units). One failing item
+// rejects the whole batch, so an item that cannot pass never leaves the page.
+function validationSpanFits(state) {
+  const sentence = String(state.sentence || '');
+  const matched = String(state.original || '');
+  const offset = Number(state.offset);
+  if (!matched || !Number.isInteger(offset) || offset < 0) return false;
+  // The sentence never crosses a line break, and a terminator may only close
+  // an authored form ("¿Qué tal?"), never sit inside the match.
+  if (/[\r\n]/.test(matched) || /[.!?。！？](?!$)/.test(matched)) return false;
+  return sentence.slice(offset, offset + matched.length) === matched;
+}
+
+function restorePendingSpan(span, original) {
+  if (!span.parentNode) return;
+  span.parentNode.replaceChild(document.createTextNode(typeof original === 'string' ? original : span.textContent), span);
+}
+
 function requestPendingValidations() {
+  // Rate limited: nothing goes out before the server's Retry-After.
+  if (validationRetryNotBefore > Date.now()) {
+    scheduleValidationRetry();
+    return;
+  }
   // The validation budget is small; spend it on what the learner is reading.
   const spans = ownElements('.lp-validation-pending')
     .filter(span => !getPrivate(span).validationQueued)
@@ -788,6 +836,12 @@ function requestPendingValidations() {
       break;
     }
     const state = getPrivate(span);
+    // A span the server would reject goes back to plain text now instead of
+    // failing the batch it would have joined.
+    if (!validationSpanFits(state)) {
+      restorePendingSpan(span, state.original);
+      continue;
+    }
     const attempts = (state.validationAttempts || 0) + 1;
     setPrivate(span, { validationQueued: true, validationAttempts: attempts });
     const item = {
@@ -827,12 +881,19 @@ function requestPendingValidations() {
       if (result && result.item_id !== item.item_id) result = { ...result, item_id: item.item_id };
       if (stale || generation !== lifecycleGeneration || revision !== vocabularyRevision
         || !extensionActive || !span.isConnected || span.textContent !== original) return;
-      // No verdict (over budget, rate limited, validator slow/offline): ask again later.
+      // The server rejected the batch (HTTP 400): final, back to plain text.
+      if (result?.error === 'rejected') return;
+      // Rate limited: ask again after Retry-After without spending an attempt.
+      if (result?.error === 'retry_after') {
+        setPrivate(span, { validationAttempts: attempts - 1 });
+        deferred = true;
+        return;
+      }
+      // No verdict (over budget, validator slow/offline): ask again later.
       if (!result) {
         deferred = attempts < VALIDATION_MAX_ATTEMPTS;
         return;
       }
-      validationRetryDelay = VALIDATION_RETRY_MIN_MS;
       if (result.item_id !== item.item_id || result.validation_version !== item.validation_version
         || result?.decision !== 'replace' || !result.replacement_text) return;
       const ids = Array.isArray(result.vocabulary_ids) ? result.vocabulary_ids.map(String) : [];
@@ -922,7 +983,7 @@ function requestPendingValidations() {
         scheduleValidationRetry();
         return;
       }
-      span.parentNode.replaceChild(document.createTextNode(typeof original === 'string' ? original : span.textContent), span);
+      restorePendingSpan(span, original);
     });
   }
 }

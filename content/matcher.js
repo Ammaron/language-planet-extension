@@ -362,7 +362,11 @@ class VocabMatcher {
       const curr = matches[i];
       const gapText = text.substring(prev.end, curr.start);
 
-      const isAdjacent = gapText.length <= MAX_GAP_CHARS && isGlueGap(gapText, sourceLang);
+      // Never group across a line break or a sentence terminator: the
+      // validation sentence ends there (see _extractSentence), so a phrase
+      // spanning it could not be located inside its own sentence.
+      const crossesBreak = /[\r\n.!?。！？]/.test(gapText);
+      const isAdjacent = !crossesBreak && gapText.length <= MAX_GAP_CHARS && isGlueGap(gapText, sourceLang);
       const containsContextualVerb = sourceLang === 'es'
         && currentGroup.some(match => this.isContextualVerbMatch(match));
 

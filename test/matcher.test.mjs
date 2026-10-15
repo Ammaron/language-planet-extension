@@ -368,6 +368,58 @@ test('single-word vocab with no part of speech is not treated as a formula', () 
   assert.deepEqual(plain(engine.findMatches('I saw a cat.').singles.map(match => match.word.id)), ['cat']);
 });
 
+// The shipped glue rule, not a stub: pure whitespace between two learner words
+// is glue, so only the line-break guard can keep them apart.
+const grammarSource = fs.readFileSync(path.join(process.cwd(), 'content/grammar-rules.js'), 'utf8');
+function realGrammarRules() {
+  const sandbox = { window: {}, console, Set, Map, Math, String, Number, Array, Object, RegExp };
+  vm.runInNewContext(grammarSource, sandbox, { filename: 'grammar-rules.js' });
+  return sandbox.window.GrammarRules;
+}
+const GREETINGS = [
+  { id: 'hello', term: 'hola', translation: 'hello', search_language: 'en', term_language: 'es', part_of_speech: 'interjection', source_forms: ['hello'] },
+  { id: 'goodbye', term: 'adiós', translation: 'goodbye', search_language: 'en', term_language: 'es', part_of_speech: 'interjection', source_forms: ['goodbye'] },
+];
+// Every single must sit inside its own validation sentence at the reported
+// offset (UTF-16 units): that is the backend's span check.
+function assertSinglesFitTheirSentence(engine, text, singles) {
+  for (const match of singles) {
+    const { sentence, offset } = engine._extractSentence(text, match.start);
+    assert.equal(sentence.slice(offset, offset + match.original.length), match.original, `${JSON.stringify(match.original)} in ${JSON.stringify(sentence)}`);
+  }
+}
+
+test('adjacent learner words across a line break stay singles', () => {
+  const rules = realGrammarRules();
+  assert.equal(rules.isGlueGap('   ', 'en'), true, 'spaces are glue');
+  assert.equal(rules.isGlueGap('\n        ', 'en'), false, 'a soft line break is not glue');
+  assert.equal(rules.isGlueGap('. ', 'en'), false, 'a sentence end is not glue');
+  const engine = createMatcher(GREETINGS, rules);
+  // Same line: the two words do form a phrase.
+  const sameLine = engine.findMatches('We said hello goodbye to everyone there.');
+  assert.equal(sameLine.phrases.length, 1);
+  assert.equal(sameLine.phrases[0].sourceText, 'hello goodbye');
+  // Soft line break inside one text node (markdown-rendered lists): two singles.
+  const text = 'We said hello\n        goodbye to everyone there.';
+  const broken = engine.findMatches(text);
+  assert.deepEqual(plain(broken.phrases), []);
+  assert.deepEqual(plain(broken.singles.map(match => match.word.id)), ['hello', 'goodbye']);
+  assertSinglesFitTheirSentence(engine, text, broken.singles);
+});
+
+test('adjacent learner words across a CRLF line break stay singles', () => {
+  const engine = createMatcher(GREETINGS, realGrammarRules());
+  const text = 'We said hello\r\n        goodbye to everyone there.';
+  const broken = engine.findMatches(text);
+  assert.deepEqual(plain(broken.phrases), []);
+  assert.deepEqual(plain(broken.singles.map(match => match.word.id)), ['hello', 'goodbye']);
+  assertSinglesFitTheirSentence(engine, text, broken.singles);
+  // The matcher holds the line even when a grammar module glues everything.
+  const glueAll = createMatcher(GREETINGS, { isGlueGap: () => true });
+  assert.deepEqual(plain(glueAll.findMatches(text).phrases), []);
+  assert.deepEqual(plain(glueAll.findMatches('Say hello. Goodbye now.').phrases), [], 'a sentence end never joins two words');
+});
+
 test('an unaccented trigger never turns the Spanish article "el" into "he"', () => {
   const engine = createMatcher([
     { id: 'he', term: 'He', translation: 'Él', search_language: 'es', term_language: 'en', part_of_speech: 'pronoun',

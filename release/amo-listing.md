@@ -14,6 +14,8 @@ Vocab Pass automatically avoids browser-internal and Langsly pages, pages with p
 
 Automatic processing may send the current domain, matched phrases, or a short bounded piece of visible sentence context to Langsly and, when translation or disambiguation needs it, OpenRouter. Vocab Pass does not send complete pages, form values, hidden text, or full URLs. See Langsly's privacy policy before connecting.
 
+Vocab Pass is a paid subscription: US$5 per month, billed by Langsly through Stripe after any free trial shown at sign-up, cancel anytime from your Langsly account. Langsly lessons stay free; the extension needs a Langsly account with an active Vocab Pass subscription.
+
 ## Compatibility
 
 - Firefox Desktop 140.0 or later

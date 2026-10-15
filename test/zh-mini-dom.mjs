@@ -338,7 +338,7 @@ export function parseHtml(document, html, parent) {
 const ROOT = new URL('../', import.meta.url);
 const SCRIPTS = ['shared/hosts.js', 'content/request-coordinator.js', 'content/grammar-rules.js', 'content/matcher.js', 'content/popup.js', 'content/content.js'];
 
-export async function loadContentPage({ html, words, storage = {}, validate, audio = {}, whitelist = [], location, navigation }) {
+export async function loadContentPage({ html, words, storage = {}, validate, audio = {}, whitelist = [], location, navigation, maxTimerMs = Infinity }) {
   const document = new MiniDocument();
   parseHtml(document, html, document.body);
   const state = { vocabWords: words, rotation_salt: '', frontendUrl: 'https://langsly.com', ...storage };
@@ -364,7 +364,12 @@ export async function loadContentPage({ html, words, storage = {}, validate, aud
       sendMessage: async (message) => {
         sent.push(message);
         if (message.type === 'GET_WHITELIST') return { domains: whitelist };
-        if (message.type === 'VALIDATE_REPLACEMENTS') return { results: await validate(message.items) };
+        if (message.type === 'VALIDATE_REPLACEMENTS') {
+          // A stub may answer with the worker's full response shape
+          // ({ results, error, retryAfterMs }) or just the results array.
+          const outcome = await validate(message.items);
+          return Array.isArray(outcome) ? { results: outcome } : outcome;
+        }
         if (message.type === 'FETCH_AUDIO') return { success: false };
         return { success: true };
       },
@@ -381,6 +386,10 @@ export async function loadContentPage({ html, words, storage = {}, validate, aud
   }
   const observers = new Set();
   const intervals = new Set();
+  // Every delay the content script asks for, in order (retry backoff, scans).
+  // `maxTimerMs` caps the real wait so a backoff can fire inside settle();
+  // timers never hold the test process open.
+  const timeouts = [];
   const window = {
     document, browser, NodeFilter, Node: { ELEMENT_NODE, TEXT_NODE },
     location: location || { href: 'https://news.example.test/article', hostname: 'news.example.test', pathname: '/article' },
@@ -400,7 +409,13 @@ export async function loadContentPage({ html, words, storage = {}, validate, aud
     Audio: FakeAudio,
     SpeechSynthesisUtterance: class { constructor(text) { this.text = text; } },
     speechSynthesis: { speak: utterance => spoken.push(utterance) },
-    setTimeout, clearTimeout, queueMicrotask, Promise, console, URL, Intl, Date, Math, JSON,
+    setTimeout: (handler, ms, ...args) => {
+      timeouts.push(ms);
+      const id = setTimeout(handler, Math.min(ms || 0, maxTimerMs), ...args);
+      id.unref?.();
+      return id;
+    },
+    clearTimeout, queueMicrotask, Promise, console, URL, Intl, Date, Math, JSON,
   };
   window.window = window;
   window.globalThis = window;
@@ -410,7 +425,9 @@ export async function loadContentPage({ html, words, storage = {}, validate, aud
     vm.runInContext(await readFile(new URL(script, ROOT), 'utf8'), context, { filename: script });
   }
   return {
-    document, window, state, sent, spoken, played, observers, intervals,
+    document, window, state, sent, spoken, played, observers, intervals, timeouts,
+    // The content script's per-element state (what getPrivate/setPrivate see).
+    privateState: window.LangslyPrivateState,
     changeStorage: (values) => {
       const changes = Object.fromEntries(Object.entries(values).map(([key, newValue]) => [key, { oldValue: state[key], newValue }]));
       Object.assign(state, values);
