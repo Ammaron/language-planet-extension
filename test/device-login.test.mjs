@@ -7,7 +7,7 @@ const readJson = async (path) => JSON.parse(await readText(path));
 
 test('base manifest removes identity and activeTab and uses full-tab options', async () => {
   const manifest = await readJson('manifest.json');
-  assert.equal(manifest.version, '0.2.8');
+  assert.equal(manifest.version, '0.2.9');
   // scripting is only for the packaged writer, injected after an explicit practice click.
   assert.deepEqual(manifest.permissions.sort(), ['alarms', 'scripting', 'storage']);
   assert.equal(manifest.options_ui.page, 'popup/options.html');

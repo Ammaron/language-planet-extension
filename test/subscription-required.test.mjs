@@ -91,6 +91,64 @@ test('sync rechecks access and clears the flag after a successful sync; logout c
   assert.match(worker, /\$\{frontendUrl\}\/vocab-pass\/subscribe/);
 });
 
+// A worker slice with the real 402 detector and a recording applySubscriptionRequired.
+function sliceOf(source, startMarker, endMarker) {
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf(endMarker, start);
+  assert.ok(start >= 0 && end > start, `${startMarker} .. ${endMarker} missing`);
+  return source.slice(start, end);
+}
+
+async function loadPaywalledPaths(status, body) {
+  const worker = await readText('background/service-worker.js');
+  const applied = [];
+  const context = {
+    console: { warn() {}, log() {}, error() {} },
+    Date, Number, Math, Promise, JSON, Array, Set, Object, String, Boolean, setTimeout, clearTimeout, AbortController,
+    authGeneration: 3,
+    _consumeAutomaticBudget: () => true,
+    getConfig: async () => ({ apiBase: 'https://api.example.test/api' }),
+    browser: { storage: { local: { get: async () => ({ difficulty: 'normal', lastSync: 1, pendingEncounters: [] }), set: async () => {} } } },
+    ZH_TARGET_CAPABILITY: 'zh_target_v1',
+    getTokens: async () => ({ access: 'access' }),
+    authFetch: async () => ({ ok: status < 400, status, headers: { get: () => null },
+      json: async () => body, clone() { return this; } }),
+    applySubscriptionRequired: async generation => { applied.push(generation); },
+    LangslyEncounterCoordinator: { create: config => config },
+  };
+  vm.createContext(context);
+  vm.runInContext(`const SUBSCRIPTION_REQUIRED_CODE = 'vocab_pass_subscription_required';
+${extractFunction(worker, 'isSubscriptionRequiredResponse')}
+${sliceOf(worker, '// ─── Validation responses', 'function withoutChineseTargets')}
+${sliceOf(worker, 'encounterCoordinator = LangslyEncounterCoordinator.create({', '// ─── Character-writing practice')}
+this.encounterSend = encounterCoordinator.send;
+this.validate = (message, sender) => { ${sliceOf(worker, "if (message.type === 'VALIDATE_REPLACEMENTS')", '// ─── Word Sense Disambiguation')} };`, context);
+  return { context, applied };
+}
+
+const ITEMS = [{ item_id: '1', validation_version: 2, sentence: 'We said hello', matched_text: 'hello', match_offset: 8 }];
+
+test('a 402 on the validation path stops every page at once', async () => {
+  const { context, applied } = await loadPaywalledPaths(402, { code: 'vocab_pass_subscription_required' });
+  const answer = await context.validate({ type: 'VALIDATE_REPLACEMENTS', items: ITEMS }, {});
+  assert.deepEqual(JSON.parse(JSON.stringify(answer)), { results: [], error: 'subscription_required' });
+  assert.deepEqual(applied, [3]);
+  // A 402 without the code is an ordinary failure: cooldown, no paywall.
+  const other = await loadPaywalledPaths(402, { code: 'other' });
+  const plain = await other.context.validate({ type: 'VALIDATE_REPLACEMENTS', items: ITEMS }, {});
+  assert.equal(plain.error, 'validator_unavailable');
+  assert.deepEqual(other.applied, []);
+});
+
+test('a 402 on the encounter path stops every page at once and keeps the queue', async () => {
+  const { context, applied } = await loadPaywalledPaths(402, { code: 'vocab_pass_subscription_required' });
+  assert.equal(await context.encounterSend([{ word_id: 'w1', domain: 'news.example.test', interaction: 'automatic_view' }]), false);
+  assert.deepEqual(applied, [3]);
+  const fine = await loadPaywalledPaths(200, { success: true });
+  assert.equal(await fine.context.encounterSend([{ word_id: 'w1' }]), true);
+  assert.deepEqual(fine.applied, []);
+});
+
 test('content script stops page work on SUBSCRIPTION_REQUIRED and restarts on VOCAB_UPDATED', async () => {
   const content = await readText('content/content.js');
   assert.match(content, /message\.type === 'SUBSCRIPTION_REQUIRED'[\s\S]{0,200}stopDocumentWork\(\);[\s\S]{0,60}enterUnavailable\(\)/);

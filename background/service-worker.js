@@ -747,6 +747,39 @@ const ZH_TARGET_CAPABILITY = 'zh_target_v1';
 const VALIDATION_DEADLINE_MS = 8000;
 const RETRY_AFTER_DEFAULT_MS = 60_000;
 const RETRY_AFTER_MAX_MS = 600_000;
+// Keep reasons the server may answer differently next time. A model deadline
+// or a malformed model answer is transient, so the page asks again on its
+// usual backoff. An exhausted daily budget or a missing validator is not: the
+// page waits out a cooldown first (the server's retry_after_seconds when it
+// sends one, VALIDATION_COOLDOWN_MS otherwise). Every other keep is final.
+const RETRYABLE_KEEP_REASONS = new Set(['deadline_exceeded', 'malformed_result']);
+const COOLDOWN_KEEP_REASONS = new Set(['budget_exhausted', 'validator_unavailable']);
+const VALIDATION_COOLDOWN_MS = 5 * 60_000;
+
+// A server-provided wait in seconds (`retry_after_seconds` or `retry_after`
+// on a response body or on one result), in milliseconds; 0 when absent.
+function _serverRetryAfterMs(source) {
+  const raw = source && typeof source === 'object' ? (source.retry_after_seconds ?? source.retry_after) : undefined;
+  const seconds = Number(raw);
+  if (!Number.isFinite(seconds) || seconds <= 0) return 0;
+  return Math.min(seconds * 1000, RETRY_AFTER_MAX_MS);
+}
+
+// Marks the keeps the page may ask about again and reports the cooldown the
+// batch asks for: the longest retry_after the server sent, else
+// VALIDATION_COOLDOWN_MS when a keep ran out of budget or had no validator.
+function _withRetryPolicy(results, body) {
+  let retryAfterMs = _serverRetryAfterMs(body);
+  const annotated = results.map(result => {
+    if (!result || typeof result !== 'object' || result.decision !== 'keep') return result;
+    const reason = String(result.reason || '');
+    if (RETRYABLE_KEEP_REASONS.has(reason)) return { ...result, retryable: true };
+    if (!COOLDOWN_KEEP_REASONS.has(reason)) return result;
+    retryAfterMs = Math.max(retryAfterMs, _serverRetryAfterMs(result) || _serverRetryAfterMs(body) || VALIDATION_COOLDOWN_MS);
+    return { ...result, retryable: true };
+  });
+  return retryAfterMs > 0 ? { results: annotated, retryAfterMs } : { results: annotated };
+}
 
 // Milliseconds the server asked us to wait (429 Retry-After: seconds or an
 // HTTP date); one minute when the header is missing or unreadable.
@@ -952,12 +985,18 @@ encounterCoordinator = LangslyEncounterCoordinator.create({
   },
   save: (pendingEncounters) => browser.storage.local.set({ pendingEncounters }),
   send: async (encounters) => {
+    const generation = authGeneration;
     const { apiBase } = await getConfig();
     const res = await authFetch(`${apiBase}/lessons/vocabpass/encounters/batch/?capabilities=${ZH_TARGET_CAPABILITY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ encounters }),
     });
+    // Access lapsed: stop every page now; the queue waits for the next sync.
+    if (await isSubscriptionRequiredResponse(res)) {
+      await applySubscriptionRequired(generation);
+      return false;
+    }
     return !!(res && res.ok);
   },
 });
@@ -1557,7 +1596,18 @@ browser.runtime.onMessage.addListener((message, sender) => {
             signal: deadline.signal,
           }).then(resolve, () => resolve(null)).finally(() => clearTimeout(timer));
         });
-        if (!res || generation !== authGeneration) return { results: [], error: 'validator_unavailable' };
+        if (generation !== authGeneration) return { results: [], error: 'cancelled' };
+        // Our own deadline: ask again on the usual backoff. No response for
+        // another reason (offline, no session): wait out a cooldown first.
+        if (!res) {
+          return deadline.signal.aborted ? { results: [], error: 'deadline_exceeded' }
+            : { results: [], error: 'validator_unavailable', retryAfterMs: VALIDATION_COOLDOWN_MS };
+        }
+        // Access lapsed: stop every page now, not at the next sync.
+        if (await isSubscriptionRequiredResponse(res)) {
+          await applySubscriptionRequired(generation);
+          return { results: [], error: 'subscription_required' };
+        }
         // Rejected request (bad item, unsupported pair): final, no retry.
         if (res.status === 400) {
           console.warn('[Langsly] validation batch rejected', await _responseErrorFields(res));
@@ -1565,19 +1615,23 @@ browser.runtime.onMessage.addListener((message, sender) => {
         }
         // Rate limited: come back when the server says, not before.
         if (res.status === 429) return { results: [], retryAfterMs: _retryAfterMs(res) };
-        if (!res.ok) return { results: [], error: 'validator_unavailable' };
+        // Server-side failure: an outage, so cool down rather than hammer it.
+        if (!res.ok) return { results: [], error: 'validator_unavailable', retryAfterMs: VALIDATION_COOLDOWN_MS };
         const data = await res.json();
         const current = await browser.storage.local.get(['difficulty', 'lastSync']);
         if (generation !== authGeneration || data.validation_version !== version
           || (current.difficulty || 'normal') !== (difficulty || 'normal')
           || current.lastSync !== lastSync) return { results: [], error: 'cancelled' };
-        return { results: Array.isArray(data.results) ? data.results : [] };
+        return _withRetryPolicy(Array.isArray(data.results) ? data.results : [], data);
         }));
+        if (responses.some(response => response.error === 'subscription_required')) {
+          return { results: [], error: 'subscription_required' };
+        }
         const results = responses.flatMap(response => response.results || []);
         const retryAfterMs = Math.max(0, ...responses.map(response => response.retryAfterMs || 0));
-        if (retryAfterMs > 0) return { results, retryAfterMs };
-        if (responses.some(response => response.error === 'rejected')) return { results, error: 'rejected' };
         const error = results.length ? null : responses.find(response => response.error)?.error;
+        if (retryAfterMs > 0) return error ? { results, error, retryAfterMs } : { results, retryAfterMs };
+        if (responses.some(response => response.error === 'rejected')) return { results, error: 'rejected' };
         return error ? { results, error } : { results };
       } catch {
         return { results: [], error: 'validator_unavailable' };
@@ -1807,6 +1861,21 @@ async function _evictContextualCacheIfNeeded(expectedGeneration = authGeneration
   }
 }
 
+// ─── Uninstall page ─────────────────────────────
+// The Langsly page the browser opens after the extension is removed, on the
+// configured site in the learner's UI language. Set whenever the worker
+// starts, so a changed frontendUrl takes effect without a reinstall.
+async function setUninstallUrl() {
+  if (typeof browser.runtime.setUninstallURL !== 'function') return;
+  try {
+    const { frontendUrl } = await getConfig();
+    const spanish = /^es(-|$)/i.test(String(browser.i18n?.getUILanguage?.() || ''));
+    await browser.runtime.setUninstallURL(`${frontendUrl}${spanish ? '/es' : ''}/extension/uninstalled`);
+  } catch (error) {
+    console.warn('[Langsly] uninstall page not set', error);
+  }
+}
+
 // ─── Install / Startup ──────────────────────────
 const INSTALL_DEFAULTS = { pendingEncounters: [], difficulty: 'normal', syncStatus: 'unknown' };
 
@@ -1840,3 +1909,4 @@ browser.runtime.onStartup.addListener(() => {
 
 // Runs whenever the background event page/service worker is recreated.
 void deviceConnection.resume();
+void setUninstallUrl();
