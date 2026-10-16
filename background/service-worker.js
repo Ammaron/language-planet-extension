@@ -834,10 +834,14 @@ function readyVocabularyRows(words, data) {
 }
 
 // Key-order independent: browser.storage hands objects back with sorted keys.
+// Signed media links get a fresh timestamp on every sync; compare their paths.
 function _stableJson(value) {
-  return JSON.stringify(value, (key, entry) => (entry && typeof entry === 'object' && !Array.isArray(entry)
-    ? Object.fromEntries(Object.keys(entry).sort().map(name => [name, entry[name]]))
-    : entry));
+  return JSON.stringify(value, (key, entry) => {
+    if (typeof entry === 'string' && /[?&]signature=/.test(entry)) return entry.split('?')[0];
+    return entry && typeof entry === 'object' && !Array.isArray(entry)
+      ? Object.fromEntries(Object.keys(entry).sort().map(name => [name, entry[name]]))
+      : entry;
+  });
 }
 
 function _resetAutomaticBudget(type) {

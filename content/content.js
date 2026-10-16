@@ -343,9 +343,11 @@ let vocabularySignature = '';
 // Signed audio URLs change on every sync; a fresh signature alone is not a
 // vocabulary change and must not restart the page (the Listen button reads the
 // current URL from storage when an old one has expired).
+// Every sync re-signs media links (audio, images) with a fresh timestamp, so
+// only the link's path says whether a word changed.
 function vocabularySignatureOf(words) {
   return JSON.stringify(words, (key, value) => {
-    if (key === 'pronunciation_audio' && typeof value === 'string') return value.split('?')[0];
+    if (typeof value === 'string' && /[?&]signature=/.test(value)) return value.split('?')[0];
     return value && typeof value === 'object' && !Array.isArray(value)
       ? Object.fromEntries(Object.keys(value).sort().map(name => [name, value[name]]))
       : value;
@@ -695,10 +697,27 @@ function sentenceContextForNode(textNode, matchStart) {
   const block = textNode.parentElement.closest(blockSelector) || textNode.parentElement;
   if (!block || block.querySelector('script,style,code,pre,input,textarea,select,button,[contenteditable]')) return null;
   if (elementIsHidden(block)) return null;
-  const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+  // A word this script already swapped reads as its original page text, so a
+  // block with one swap (or one restored into split text nodes) still gives
+  // the words after it their sentence.
+  const insideSwap = node => Boolean(node.parentElement && node.parentElement.closest(`[${LP_PROCESSED}]`));
+  const walker = document.createTreeWalker(block, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, (node) => {
+    if (insideSwap(node)) return NodeFilter.FILTER_REJECT;
+    if (node.nodeType === Node.TEXT_NODE) return NodeFilter.FILTER_ACCEPT;
+    return node.hasAttribute(LP_PROCESSED) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+  });
   let combined = '';
   let position = -1;
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    if (node.nodeType !== Node.TEXT_NODE) {
+      const original = getPrivate(node).original;
+      const host = node.parentElement;
+      if (typeof original !== 'string' || !host || (host !== block && host.closest(blockSelector) !== block)) return null;
+      if (original.trim() && host !== block && elementIsHidden(host)) return null;
+      combined += original;
+      if (combined.length > 500) return null;
+      continue;
+    }
     const parent = node.parentElement;
     if (!parent || parent.closest(`[${LP_PROCESSED}]`) || SKIP_TAGS.has(parent.tagName)
       || parent.isContentEditable || (parent !== block && parent.closest(blockSelector) !== block)) return null;
