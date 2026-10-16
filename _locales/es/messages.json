@@ -1,10 +1,10 @@
 {
   "extName": {
-    "message": "Aprende vocabulario en inglés · Langsly Vocab Pass",
+    "message": "Aprende vocabulario · Langsly Vocab Pass",
     "description": "Nombre de la extensión que se muestra en el navegador y en las tiendas de extensiones."
   },
   "extDescription": {
-    "message": "Lee sitios en español y descubre las palabras en inglés que aprendes en Langsly. Toca una para ver su significado y audio.",
+    "message": "Aprende tus palabras de Langsly en los sitios que ya lees. Toca una palabra resaltada para ver su significado y audio.",
     "description": "Descripción de la extensión que se muestra en el navegador y en las tiendas de extensiones."
   },
   "popupTitle": {

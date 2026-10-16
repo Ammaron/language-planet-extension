@@ -1,10 +1,10 @@
 {
   "extName": {
-    "message": "English Vocabulary Builder · Langsly Vocab Pass",
+    "message": "Vocabulary Builder · Langsly Vocab Pass",
     "description": "Extension name shown in the browser and extension stores."
   },
   "extDescription": {
-    "message": "Read Spanish websites and see the English words you're learning in Langsly. Tap a word for its meaning and audio.",
+    "message": "Learn your Langsly words on the websites you already read. Tap a highlighted word for its meaning and audio.",
     "description": "Extension description shown in the browser and extension stores."
   },
   "popupTitle": {
