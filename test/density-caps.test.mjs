@@ -51,8 +51,7 @@ test('a phrase counts as one swap in its sentence and one occurrence of each wor
 });
 
 test('the caps start over when the page restarts for new vocabulary', async () => {
-  // One block per sentence: a restored block keeps split text nodes, and only
-  // the first of them gets sentence context on a rescan (pre-existing).
+  // (A restored block with several sentences is covered in reswap-context.)
   const loaded = await page('<p>Hello one.</p><p>Hello two.</p><p>Hello three.</p><p>Hello four.</p>');
   assert.equal(validations(loaded).length, 1);
   assert.equal(validations(loaded)[0].items.length, 3);
