@@ -1102,10 +1102,11 @@ function observeMutations() {
 browser.runtime.onMessage.addListener((message) => {
   if (message.type === 'GET_PAGE_STATE') {
     // The toolbar popup asks what this tab is doing so it can say it in words.
-    return {
+    // Must be a Promise: a plain return value is dropped and the popup reads "Unavailable".
+    return Promise.resolve({
       lifecycleState,
       wordCount: ownElements(`.${LP_CLASS}, .lp-vocab-phrase`).length,
-    };
+    });
   }
 
   if (message.type === 'AUTH_CLEARED') {

@@ -55,6 +55,17 @@ test('subscription required stops watchers until access returns', async () => {
   assert.equal(loaded.islands().length, 1);
 });
 
+test('page state reaches the toolbar popup as a Promise reply', async () => {
+  // webextension-polyfill and Firefox both drop plain return values from
+  // onMessage listeners, which made the popup say "Unavailable" everywhere.
+  const loaded = await page();
+  const reply = loaded.window.browser.runtime.listener({ type: 'GET_PAGE_STATE' });
+  assert.equal(typeof reply?.then, 'function', 'GET_PAGE_STATE must reply with a Promise');
+  const state = await reply;
+  assert.equal(typeof state.lifecycleState, 'string');
+  assert.equal(state.wordCount, 1);
+});
+
 test('logout stops watchers and a fresh vocabulary write after sign-in resumes', async () => {
   const loaded = await page();
   loaded.window.browser.runtime.listener({ type: 'AUTH_CLEARED' });
