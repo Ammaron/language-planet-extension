@@ -213,11 +213,11 @@ test('expired-audio refreshes come only from content scripts and share the throt
 
 test('API requests name the extension build in X-Langsly-Client', () => {
   const block = slice('const CLIENT_HEADER_VALUE', 'const MAX_EXTENSION_AUDIO_FETCH_BYTES');
-  const context = { fetch: (url, init) => ({ url, init }), browser: { runtime: { getManifest: () => ({ version: '0.2.9' }) } } };
+  const context = { fetch: (url, init) => ({ url, init }), browser: { runtime: { getManifest: () => ({ version: '0.2.10' }) } } };
   vm.createContext(context);
   vm.runInContext(`${block}\nthis.withClientHeader = withClientHeader; this.apiFetch = apiFetch;`, context);
-  assert.deepEqual({ ...context.withClientHeader({ Authorization: 'Bearer x' }) }, { Authorization: 'Bearer x', 'X-Langsly-Client': 'extension/0.2.9' });
-  assert.equal(context.apiFetch('u', { headers: { 'Content-Type': 'application/json' } }).init.headers['X-Langsly-Client'], 'extension/0.2.9');
+  assert.deepEqual({ ...context.withClientHeader({ Authorization: 'Bearer x' }) }, { Authorization: 'Bearer x', 'X-Langsly-Client': 'extension/0.2.10' });
+  assert.equal(context.apiFetch('u', { headers: { 'Content-Type': 'application/json' } }).init.headers['X-Langsly-Client'], 'extension/0.2.10');
   assert.match(worker, /const headers = withClientHeader\(\{ \.\.\.options\.headers, Authorization/);
   assert.match(worker, /createDeviceConnection\(\{ browser, fetch: apiFetch/);
   assert.match(slice('const refreshPath = isExtensionRefreshToken', 'signal: controller.signal'), /withClientHeader\(/);
