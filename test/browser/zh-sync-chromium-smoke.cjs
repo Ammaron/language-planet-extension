@@ -3,9 +3,10 @@ const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
 const { chromium } = require(process.env.LANGSLY_PLAYWRIGHT_MODULE || 'playwright');
+const { prepareExtension, assertUsingMock, removeExtensionCopy } = require('./prepare-extension.cjs');
 
-const extensionPath = path.resolve(__dirname, '../../dist/chrome');
-const outputPath = path.resolve(__dirname, '../../output/playwright/zh-sync-live');
+const extensionPath = prepareExtension(path.resolve(__dirname, '../../dist/chrome'));
+const outputPath = path.resolve(process.env.LANGSLY_SMOKE_OUTPUT || path.resolve(__dirname, '../../output/playwright/zh-sync-live'));
 const profilePath = path.resolve(outputPath, process.env.LANGSLY_BROWSER_PROFILE || 'profile-portable');
 const chromePath = process.env.LANGSLY_CHROMIUM_EXECUTABLE;
 const word = {
@@ -100,6 +101,7 @@ const server = http.createServer((request, response) => {
       vocabWords: [], wordCount: 0, matchableWordCount: 0,
       lastSync: null, syncStatus: 'syncing',
     }), { token, apiBase: `http://127.0.0.1:${port}/api` });
+    await assertUsingMock(worker, `http://127.0.0.1:${port}/api`);
     await worker.evaluate(() => syncVocabulary());
     const initial = await worker.evaluate(async () => browser.storage.local.get(['vocabWords', 'syncStatus']));
     if (initial.syncStatus !== 'success') {
@@ -165,5 +167,6 @@ const server = http.createServer((request, response) => {
   } finally {
     if (context) await context.close();
     await new Promise(resolve => server.close(resolve));
+    removeExtensionCopy(extensionPath);
   }
 })().catch(error => { console.error(error); process.exitCode = 1; });

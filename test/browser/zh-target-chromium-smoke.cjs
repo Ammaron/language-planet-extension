@@ -8,8 +8,9 @@ const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
 const { chromium } = require(process.env.LANGSLY_PLAYWRIGHT_MODULE || 'playwright');
+const { prepareExtension, assertUsingMock, removeExtensionCopy } = require('./prepare-extension.cjs');
 
-const extensionPath = path.resolve(__dirname, '../../dist/chrome');
+const extensionPath = prepareExtension(path.resolve(__dirname, '../../dist/chrome'));
 const outputPath = path.resolve(process.env.LANGSLY_SMOKE_OUTPUT || path.resolve(__dirname, '../../output/playwright/zh-target-smoke'));
 const profilePath = path.resolve(outputPath, 'profile');
 
@@ -84,8 +85,20 @@ ${TRAPS.map(([id, sentence]) => `<p id="${id}">${sentence}</p>`).join('\n')}
 <section class="glyphs"><span id="glyph-none">直骨角</span><span id="glyph-ja" lang="ja">直骨角</span><span id="glyph-hans" lang="zh-Hans">直骨角</span></section>
 </main></body></html>`;
 
+const paragraphs = sentences => `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Limits</title></head>
+<body><main>${sentences.map(sentence => `<p>${sentence}</p>`).join('\n')}</main></body></html>`;
+const WITH_TRIGGERS = ['she is tall', 'I am happy', 'it is good', 'turn at the corner', 'they eat', 'bring the book'];
+const lines = (count, prefix) => Array.from({ length: count }, (_, index) => `${prefix} ${index}: ${WITH_TRIGGERS[index % WITH_TRIGGERS.length]}.`);
+const PAGES = {
+  '/rejections': paragraphs([...lines(10, 'Skip'), ...lines(3, 'See')]),
+  '/same-paragraph': paragraphs(['Skip this corner now. She is tall.']),
+  '/many-rejections': paragraphs(lines(60, 'Skip')),
+  '/in-app': paragraphs(lines(24, 'See')),
+};
+
 let validationRequests = 0;
 const seenItems = [];
+const feedbackPosts = [];
 let syncUrl = '';
 const server = http.createServer((request, response) => {
   const url = new URL(request.url, 'http://127.0.0.1');
@@ -93,6 +106,19 @@ const server = http.createServer((request, response) => {
   if (url.pathname === '/') {
     response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
     response.end(html);
+  } else if (PAGES[url.pathname]) {
+    response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+    response.end(PAGES[url.pathname]);
+  } else if (url.pathname === '/api/lessons/vocabpass/disambiguate/feedback/') {
+    let body = '';
+    request.on('data', chunk => { body += chunk; });
+    request.on('end', () => {
+      const payload = JSON.parse(body);
+      // The real serializer refuses a blank sentence.
+      const status = String(payload.sentence || '').trim() ? 201 : 400;
+      feedbackPosts.push({ status, payload });
+      json(status, {});
+    });
   } else if (url.pathname === '/api/lessons/vocabpass/whitelist/') json(200, []);
   else if (url.pathname === '/api/lessons/vocabpass/words/') {
     syncUrl = request.url;
@@ -108,6 +134,9 @@ const server = http.createServer((request, response) => {
       // Approve everything (the client guards must still hold). For "know",
       // pick 认识 because the object is a person.
       json(200, { validation_version: 2, results: payload.items.map(item => {
+        if (/skip/i.test(item.sentence)) {
+          return { item_id: item.item_id, validation_version: 2, decision: 'keep', reason: 'none_fit', method: 'validation_v2' };
+        }
         const id = item.candidate_ids.includes('c-renshi') ? 'c-renshi' : item.candidate_ids[0];
         return { item_id: item.item_id, validation_version: 2, decision: 'replace', replacement_text: TERMS[id],
           vocabulary_ids: [id], method: 'model:smoke' };
@@ -147,6 +176,7 @@ const server = http.createServer((request, response) => {
       difficulty: 'normal', rotation_salt: 'zh-smoke', zhPinyinMode: 'auto',
       vocabWords: [], wordCount: 0, matchableWordCount: 0, lastSync: null, syncStatus: 'syncing',
     }), { token, apiBase: `http://127.0.0.1:${port}/api` });
+    await assertUsingMock(worker, `http://127.0.0.1:${port}/api`);
     await worker.evaluate(() => syncVocabulary());
     const stored = await worker.evaluate(async () => browser.storage.local.get(['vocabWords', 'syncStatus']));
     assert.equal(stored.syncStatus, 'success');
@@ -215,9 +245,63 @@ const server = http.createServer((request, response) => {
     await page.waitForTimeout(400);
     await page.screenshot({ path: path.join(outputPath, 'popup-jiao.png'), clip: { x: 0, y: 0, width: 900, height: 1400 } });
 
+    // "Wrong meaning?" reports the sentence and says "Flagged" once it is saved.
+    const popup = page.locator('.lp-zh-popup');
+    await popup.getByText('Wrong meaning?').click();
+    await popup.getByText('Flagged').waitFor({ timeout: 5000 });
+    assert.equal(feedbackPosts.length, 1);
+    assert.equal(feedbackPosts[0].status, 201);
+    assert.equal(feedbackPosts[0].payload.sentence, 'Turn left at the corner.');
+    assert.equal(feedbackPosts[0].payload.match_offset, 'Turn left at the '.length);
+
+    const open = async route => {
+      const opened = await context.newPage();
+      await opened.goto(`http://127.0.0.1:${port}${route}`);
+      await opened.waitForTimeout(2500);
+      await opened.waitForFunction(() => document.querySelectorAll('.lp-validation-pending').length === 0, null, { timeout: 15000 });
+      return opened;
+    };
+    const islandCount = target => target.locator('.lp-zh-island').count();
+
+    // Rejected words give their slots to later sentences.
+    const rejections = await open('/rejections');
+    assert.equal(await islandCount(rejections), 3, 'three approved sentences after ten rejected ones');
+    await rejections.close();
+
+    // A rejected sentence does not cost the next sentence in its paragraph.
+    const sameParagraph = await open('/same-paragraph');
+    assert.deepEqual(await sameParagraph.locator('.lp-zh-island').evaluateAll(nodes => nodes.map(node => node.getAttribute('lang'))), ['zh-Hans']);
+    assert.match(await sameParagraph.locator('p').innerText(), /^Skip this corner now\. She is /);
+    await sameParagraph.close();
+
+    // Rejections alone cannot send a long page to the paid validator.
+    seenItems.length = 0;
+    const manyRejections = await open('/many-rejections');
+    await manyRejections.waitForTimeout(2500);
+    const attempts = seenItems.length;
+    assert.ok(attempts > 10 && attempts <= 30, `${attempts} validation attempts`);
+    assert.equal(await islandCount(manyRejections), 0);
+    await manyRejections.close();
+
+    // In-app navigation is a new page for the limits, with or without the old content.
+    const inApp = await open('/in-app');
+    const firstPage = await islandCount(inApp);
+    assert.ok(firstPage > 0 && firstPage <= 10, `${firstPage} islands`);
+    await inApp.evaluate(() => {
+      history.pushState({}, '', '/in-app/two');
+      document.querySelector('main').insertAdjacentHTML('beforeend', '<p>Added: she is tall today.</p>');
+    });
+    await inApp.waitForFunction(() => [...document.querySelectorAll('p')].at(-1).querySelector('.lp-zh-island'), null, { timeout: 8000 });
+    await inApp.evaluate(() => {
+      history.pushState({}, '', '/in-app/three');
+      document.querySelector('main').innerHTML = '<p>New: I am happy.</p><p>New: it is good.</p><p>New: turn at the corner.</p>';
+    });
+    await inApp.waitForFunction(() => document.querySelectorAll('.lp-zh-island').length === 3, null, { timeout: 8000 });
+    await inApp.close();
+
     const result = {
       passed: true, browser: 'Chromium', islands: islands.map(island => `${island.paragraph}:${island.term}`),
-      validationRequests, glyphFonts, japaneseAndSimplifiedGlyphsDiffer: japaneseDiffers,
+      validationRequests, glyphFonts, japaneseAndSimplifiedGlyphsDiffer: japaneseDiffers, attemptsOnLongRejectedPage: attempts,
       screenshots: fs.readdirSync(outputPath).filter(name => name.endsWith('.png')),
     };
     fs.writeFileSync(path.join(outputPath, 'result.json'), JSON.stringify(result, null, 2));
@@ -225,5 +309,6 @@ const server = http.createServer((request, response) => {
   } finally {
     if (context) await context.close();
     await new Promise(resolve => server.close(resolve));
+    removeExtensionCopy(extensionPath);
   }
 })().catch(error => { console.error(error); process.exitCode = 1; });
