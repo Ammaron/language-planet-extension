@@ -88,13 +88,26 @@ const BLOCK_SELECTOR = 'p,li,div,h1,h2,h3,h4,h5,h6,blockquote,td,th,article,sect
 // never composed, and never touching another island or Chinese text.
 const ZH_PAGE_ISLAND_LIMIT = 10;
 const ZH_SAME_WORD_LIMIT = 2;
+// A freed slot lets the page try again, so rejections alone must not be able
+// to send every occurrence on a long page to the paid validator.
+const ZH_PAGE_ATTEMPT_LIMIT = 30;
+const ZH_RESCAN_DELAY_MS = 400;
 const ZH_BLOCKED_PAGE_LANGUAGE = /^(zh|ja|ko)(-|$)/i;
 const CJK_TEXT = /[\u2e80-\u2fdf\u3000-\u30ff\u3100-\u31ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af\uf900-\ufaff\uff00-\uffef]|[\u{20000}-\u{3ffff}]/u;
 const BRIDGE_GAP = /^[\s\p{P}\p{S}]*$/u;
 const PINYIN_MODES = new Set(['auto', 'always', 'popup']);
 let zhPinyinMode = 'auto';
 let zhPinyinTaps = {};
-let zhIslandBudget = { page: 0, words: new Map(), sentences: new WeakMap() };
+function newZhIslandBudget() {
+  // reserved: the spans holding a slot (waiting for a verdict or on show).
+  // skipped: an occurrence was left out only because every slot was taken.
+  return { reserved: new Set(), attempts: 0, skipped: false, sentences: new WeakMap() };
+}
+let zhIslandBudget = newZhIslandBudget();
+let zhRescanTimer = null;
+// In-app navigation changes this without reloading the content script.
+const currentBudgetPage = () => String(window.location.href).split('#')[0];
+let budgetPage = currentBudgetPage();
 
 function isZhTarget(word) {
   const code = String(word && word.term_language || '').toLowerCase().replace(/_/g, '-');
@@ -128,15 +141,64 @@ function zhIslandAllowed(textNode, match, context) {
   if (CJK_TEXT.test(ownBlockText(block))) return false;
   const wordId = String(match.word.id);
   const sentenceKey = String(context.sentence);
-  if (zhIslandBudget.page >= ZH_PAGE_ISLAND_LIMIT) return false;
-  if ((zhIslandBudget.words.get(wordId) || 0) >= ZH_SAME_WORD_LIMIT) return false;
+  if (zhIslandBudget.attempts >= ZH_PAGE_ATTEMPT_LIMIT) return false;
+  if (zhIslandBudget.reserved.size >= ZH_PAGE_ISLAND_LIMIT || zhWordSlotsInUse(wordId) >= ZH_SAME_WORD_LIMIT) {
+    zhIslandBudget.skipped = true;
+    return false;
+  }
+  // A sentence stays used after a rejection, so a later scan never asks again.
   const blockSentences = zhIslandBudget.sentences.get(block) || new Set();
   if (blockSentences.has(sentenceKey)) return false;
-  zhIslandBudget.page += 1;
-  zhIslandBudget.words.set(wordId, (zhIslandBudget.words.get(wordId) || 0) + 1);
+  zhIslandBudget.attempts += 1;
   blockSentences.add(sentenceKey);
   zhIslandBudget.sentences.set(block, blockSentences);
   return true;
+}
+
+function zhWordSlotsInUse(wordId) {
+  let count = 0;
+  for (const span of zhIslandBudget.reserved) {
+    const state = getPrivate(span);
+    if (String(state.wordId ?? state.components?.[0]) === wordId) count += 1;
+  }
+  return count;
+}
+
+// A span that left the page (rejected, reverted, or removed by the site) no
+// longer holds a slot. Only safe between scans: a span being built is not
+// connected until its fragment goes in.
+function releaseFinishedZhSlots() {
+  for (const span of zhIslandBudget.reserved) {
+    if (!span.isConnected) zhIslandBudget.reserved.delete(span);
+  }
+}
+
+// Text skipped while the slots were taken gets its turn once one is free.
+function scheduleZhRescan() {
+  if (!zhIslandBudget.skipped || zhRescanTimer) return;
+  zhRescanTimer = setTimeout(() => {
+    zhRescanTimer = null;
+    if (!extensionActive) return;
+    zhIslandBudget.skipped = false;
+    processDocument();
+  }, ZH_RESCAN_DELAY_MS);
+}
+
+function cancelZhRescan() {
+  if (zhRescanTimer) clearTimeout(zhRescanTimer);
+  zhRescanTimer = null;
+}
+
+// In-app navigation is a new page for the limits. Used sentences stay used, so
+// a header that survives the navigation is not validated again.
+function resetBudgetsAfterNavigation() {
+  const page = currentBudgetPage();
+  if (page === budgetPage) return;
+  budgetPage = page;
+  zhIslandBudget.reserved = new Set();
+  zhIslandBudget.attempts = 0;
+  densityBudget.words = new Map();
+  scheduleZhRescan();
 }
 
 // ─── Replacement density (every target language) ───
@@ -145,8 +207,7 @@ function zhIslandAllowed(textNode, match, context) {
 // and DENSITY_SENTENCE_LIMIT swaps per sentence (a phrase counts as one swap
 // and one occurrence of each of its words). Counted at scan time, before a
 // span is queued, so a capped occurrence costs no validation budget; reset
-// with the page, like the Chinese island budget, which stays stricter and
-// applies instead of this one to Chinese targets.
+// with the page. Chinese targets use the stricter island limits above instead.
 const DENSITY_SAME_WORD_LIMIT = 3;
 const DENSITY_SENTENCE_LIMIT = 1;
 let densityBudget = { words: new Map(), sentences: new WeakMap() };
@@ -217,6 +278,7 @@ function renderChineseIsland(span, word) {
 function revertIsland(island) {
   if (!island.parentNode) return;
   island.parentNode.replaceChild(document.createTextNode(getPrivate(island).original || island.textContent), island);
+  scheduleZhRescan();
 }
 
 // Leftmost island wins. Whitespace and punctuation between two islands, or
@@ -643,6 +705,7 @@ function replaceInTextNode(textNode) {
   const text = textNode.textContent;
   const { singles, phrases } = matcher.findMatches(text);
   if (singles.length === 0 && phrases.length === 0) return;
+  releaseFinishedZhSlots();
 
   // Merge singles and phrases into a unified sorted event list
   // Each event: { start, end, type: 'single'|'phrase', data }
@@ -658,6 +721,7 @@ function replaceInTextNode(textNode) {
 
   const fragment = document.createDocumentFragment();
   let lastEnd = 0;
+  let queuedSwap = false;
   const domain = window.location.hostname;
 
   for (const event of events) {
@@ -674,14 +738,23 @@ function replaceInTextNode(textNode) {
       : densityAllowed(textNode, event.type === 'single' ? [event.data.word] : event.data.matches.map(match => match.word), event.context);
     if (!allowed) {
       fragment.appendChild(document.createTextNode(event.type === 'single' ? event.data.original : event.data.sourceText));
-    } else if (event.type === 'single') {
-      fragment.appendChild(buildPendingSingleSpan(event.data, domain, event.context));
     } else {
-      fragment.appendChild(buildPendingPhraseSpan(event.data, text, domain, event.context));
+      const node = event.type === 'single'
+        ? buildPendingSingleSpan(event.data, domain, event.context)
+        : buildPendingPhraseSpan(event.data, text, domain, event.context);
+      if (privateState.has(node)) {
+        queuedSwap = true;
+        if (chineseIsland) zhIslandBudget.reserved.add(node);
+      }
+      fragment.appendChild(node);
     }
 
     lastEnd = event.end;
   }
+
+  // Nothing to swap: leave the page's text node alone. Rescans must not touch
+  // text that only went back to plain words.
+  if (!queuedSwap) return;
 
   // Add remaining text
   if (lastEnd < text.length) {
@@ -868,6 +941,7 @@ function validationSpanFits(state) {
 function restorePendingSpan(span, original) {
   if (!span.parentNode) return;
   span.parentNode.replaceChild(document.createTextNode(typeof original === 'string' ? original : span.textContent), span);
+  scheduleZhRescan();
 }
 
 function requestPendingValidations() {
@@ -1168,8 +1242,10 @@ browser.runtime.onMessage.addListener((message) => {
 
 // ─── Start ───────────────────────────────────────
 function restoreOriginalPageText() {
-  zhIslandBudget = { page: 0, words: new Map(), sentences: new WeakMap() };
+  cancelZhRescan();
+  zhIslandBudget = newZhIslandBudget();
   densityBudget = { words: new Map(), sentences: new WeakMap() };
+  budgetPage = currentBudgetPage();
   ownElements('.lp-validation-pending').forEach((element) => {
     if (!element.parentNode) return;
     element.parentNode.replaceChild(document.createTextNode(getPrivate(element).original || element.textContent), element);
@@ -1255,6 +1331,7 @@ async function evaluateSafety() {
 function scheduleSafetyCheck() {
   if (extensionContextLost()) return;
   lastSafetyHref = window.location.href;
+  resetBudgetsAfterNavigation();
   if (_pageRequiresImmediateExclusion()) {
     if (extensionActive) deactivateForSensitivePage();
     return;

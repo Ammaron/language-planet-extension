@@ -537,9 +537,9 @@ const VocabPopup = (() => {
     const state = privateData(span);
     return browser.runtime.sendMessage({
       type: 'DISAMBIG_FEEDBACK',
-      sentence: String(state.disambigSentence || '').slice(0, 320),
+      sentence: String(state.sentence || '').slice(0, 320),
       matched_text: state.matchedForm || state.original || '',
-      match_offset: Number(state.disambigOffset) || 0,
+      match_offset: Number(state.offset) || 0,
       candidate_ids: payload.candidateIds || [],
       source_language: state.sourceLanguage || state.disambigSourceLang || '',
       target_language: state.targetLanguage || '',
@@ -549,7 +549,15 @@ const VocabPopup = (() => {
       // The feedback API knows spacy/llm/fallback; validator results say "model:<version>".
       method_used: ['spacy', 'llm', 'fallback'].includes(state.method) ? state.method
         : String(state.method || '').startsWith('model:') ? 'llm' : 'fallback',
-    }).catch(() => {});
+    }).catch(() => null);
+  }
+
+  // "Flagged" only once the report is really saved; otherwise it can be sent again.
+  async function reportWrongMeaning(span, button, payload) {
+    button.disabled = true;
+    const response = await sendDisambigFeedback(span, payload);
+    if (response && response.success) setActionButtonContent(button, 'check-circle', t('flagged', 'Flagged'));
+    else button.disabled = false;
   }
 
   function applyWordDatasetFromMatch(el, match) {
@@ -748,9 +756,7 @@ const VocabPopup = (() => {
       if (!e.isTrusted) return;
       e.stopPropagation();
       const shownWordId = String(state.wordId || '');
-      sendDisambigFeedback(span, { candidateIds: [shownWordId], shownWordId, chosenWordId: shownWordId });
-      setActionButtonContent(wrongBtn, 'check-circle', t('flagged', 'Flagged'));
-      wrongBtn.disabled = true;
+      void reportWrongMeaning(span, wrongBtn, { candidateIds: [shownWordId], shownWordId, chosenWordId: shownWordId });
     });
     actions.appendChild(wrongBtn);
     popupEl.appendChild(actions);
@@ -951,12 +957,10 @@ const VocabPopup = (() => {
       reportOnly.addEventListener('click', (e) => {
         if (!e.isTrusted) return;
         e.stopPropagation();
-        setActionButtonContent(wrongBtn, 'check-circle', t('flagged', 'Flagged'));
-        wrongBtn.disabled = true;
         chooser.style.display = 'none';
         if (safeCandidateIds.length >= 2) {
           const shownWordId = privateData(span).wordId || '';
-          sendDisambigFeedback(span, {
+          void reportWrongMeaning(span, wrongBtn, {
             candidateIds: safeCandidateIds,
             shownWordId,
             chosenWordId: shownWordId,

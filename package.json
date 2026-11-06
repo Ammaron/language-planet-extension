@@ -7,6 +7,7 @@
   },
   "scripts": {
     "test": "node --test test/*.test.mjs *.test.mjs",
+    "test:browser": "node test/browser/zh-target-chromium-smoke.cjs && node test/browser/zh-sync-chromium-smoke.cjs",
     "build": "node build.mjs",
     "lint:firefox": "web-ext lint --source-dir dist/firefox --warnings-as-errors",
     "release": "npm run build && npm test && npm run lint:firefox && node test/artifact-content.test.mjs"
