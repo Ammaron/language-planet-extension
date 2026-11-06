@@ -2,7 +2,7 @@
 // "Wrong meaning?" report says "Flagged" only after it was really saved.
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { loadContentPage } from './zh-mini-dom.mjs';
+import { loadContentPage, parseHtml } from './zh-mini-dom.mjs';
 
 const AUDIO = 'https://api.example.test/media/clip.mp3';
 
@@ -143,6 +143,124 @@ test('the browser language detector blocks a page only when it is confident', as
   assert.equal(english.islands().length, 1);
   const broken = await load(page, { detectLanguage: async () => { throw new Error('unavailable'); } });
   assert.equal(broken.islands().length, 1);
+});
+
+// Answers like the real detector: confident with enough text, unsure with little.
+const SPANISH_TEXT = 'La mañana estaba tranquila en el pueblo y todos caminaban por la plaza. See the apple.';
+const ENGLISH_TEXT = 'People walk along the road every morning and talk about their day. See the apple.';
+function detectorLog() {
+  const samples = [];
+  const detectLanguage = async sample => {
+    samples.push(sample);
+    if (sample.length < 40) return { isReliable: false, languages: [{ language: 'en', percentage: 30 }] };
+    return { isReliable: true, languages: [{ language: /mañana/.test(sample) ? 'es' : 'en', percentage: 99 }] };
+  };
+  return { samples, detectLanguage };
+}
+const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+function addText(loaded, text) {
+  const holder = loaded.document.createElement('div');
+  parseHtml(loaded.document, `<p>${text}</p>`, holder);
+  loaded.document.body.appendChild(holder);
+  for (const observer of loaded.observers) observer.callback([{ addedNodes: [holder] }]);
+}
+
+test('the language check reads what a person sees, not code or hidden text', async () => {
+  const { samples, detectLanguage } = detectorLog();
+  await load(`<script>var english = "the quick brown fox jumps over the lazy dog";</script>
+    <style>.apple { color: red; }</style><p hidden="hidden">Hidden words here.</p><pre>some code here</pre><p>${SPANISH_TEXT}</p>`, { detectLanguage });
+  assert.ok(samples.length > 0);
+  for (const sample of samples) {
+    assert.match(sample, /La mañana/);
+    assert.doesNotMatch(sample, /quick brown|color: red|Hidden words|some code/);
+  }
+});
+
+test('page code ahead of the text cannot crowd the real text out of the sample', async () => {
+  const { detectLanguage } = detectorLog();
+  const seen = [];
+  const code = `<script>var blob = "${'the quick brown fox '.repeat(200)}";</script>`;
+  const loaded = await load(`${code}<p>${SPANISH_TEXT}</p>`, { detectLanguage, seen });
+  assert.equal(loaded.islands().length, 0);
+  assert.equal(seen.length, 0, 'nothing sent for checking');
+});
+
+test('a page that loads Spanish text late gets no Chinese words', async () => {
+  const { detectLanguage } = detectorLog();
+  const seen = [];
+  const loaded = await loadContentPage({ html: '<p>Loading</p>', words: WORDS, validate: validator(seen), detectLanguage });
+  await pause(1700); // longer than the wait: the page looked empty and unsure
+  addText(loaded, SPANISH_TEXT);
+  await pause(400);
+  assert.equal(loaded.islands().length, 0);
+  assert.equal(seen.length, 0, 'nothing sent for checking');
+});
+
+test('a page that loads English text late still gets its words', async () => {
+  const { detectLanguage } = detectorLog();
+  const loaded = await loadContentPage({ html: '<p>Loading</p>', words: WORDS, validate: validator(), detectLanguage });
+  await pause(100);
+  addText(loaded, ENGLISH_TEXT);
+  await pause(600);
+  assert.equal(loaded.islands().length, 1);
+});
+
+test('words already shown come off if more text proves the page is not English', async () => {
+  const { detectLanguage } = detectorLog();
+  const loaded = await loadContentPage({ html: `<p>${ENGLISH_TEXT}</p>`, words: WORDS, validate: validator(), detectLanguage });
+  await pause(150);
+  assert.equal(loaded.islands().length, 1);
+  addText(loaded, `${'Más texto para llenar la página con palabras nuevas y más frases largas. '.repeat(4)}${SPANISH_TEXT}`);
+  await pause(400);
+  assert.equal(loaded.islands().length, 0);
+  assert.match(loaded.document.body.textContent, /See the apple/);
+});
+
+test('a very short English page still gets its word once the wait is over', async () => {
+  const { detectLanguage } = detectorLog();
+  const loaded = await loadContentPage({ html: '<p>See the apple.</p>', words: WORDS, validate: validator(), detectLanguage });
+  await pause(200);
+  assert.equal(loaded.islands().length, 0, 'unsure, so waiting');
+  await pause(1500);
+  assert.equal(loaded.islands().length, 1);
+});
+
+test('in-app navigation to a Spanish page takes the words off', async () => {
+  const { detectLanguage } = detectorLog();
+  const location = { href: 'https://news.example.test/one', hostname: 'news.example.test', pathname: '/one' };
+  const listeners = new Set();
+  const navigation = { addEventListener: (_type, handler) => listeners.add(handler), removeEventListener: (_type, handler) => listeners.delete(handler) };
+  const seen = [];
+  const loaded = await loadContentPage({ html: `<p id="old">${ENGLISH_TEXT}</p>`, words: WORDS, validate: validator(seen), detectLanguage, location, navigation });
+  await pause(150);
+  assert.equal(loaded.islands().length, 1);
+  const before = seen.length;
+  location.href = 'https://news.example.test/two';
+  location.pathname = '/two';
+  for (const handler of listeners) handler();
+  // The new page's text replaces the old one a moment after the address changes.
+  const oldParagraph = loaded.document.querySelector('p');
+  oldParagraph.parentNode.removeChild(oldParagraph);
+  addText(loaded, SPANISH_TEXT);
+  await pause(1800);
+  assert.equal(loaded.islands().length, 0);
+  assert.equal(seen.length, before, 'nothing new sent for checking');
+});
+
+test('text added during the wait after in-app navigation is first in line for words', async () => {
+  const { detectLanguage } = detectorLog();
+  const location = { href: 'https://news.example.test/one', hostname: 'news.example.test', pathname: '/one' };
+  const listeners = new Set();
+  const navigation = { addEventListener: (_type, handler) => listeners.add(handler), removeEventListener: (_type, handler) => listeners.delete(handler) };
+  const loaded = await loadContentPage({ html: paragraphs(lines(24, 'See')), words: WORDS, validate: validator(), detectLanguage, location, navigation });
+  await pause(800);
+  location.href = 'https://news.example.test/two';
+  location.pathname = '/two';
+  for (const handler of listeners) handler();
+  addText(loaded, 'Added words about the morning: the apple today.');
+  await pause(1900);
+  const added = loaded.document.body.childNodes.at(-1);
+  assert.ok(added.querySelector('.lp-zh-island'), 'the new paragraph got its word');
 });
 
 test('a scan that swaps nothing leaves the page text nodes untouched', async () => {

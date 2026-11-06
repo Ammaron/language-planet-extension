@@ -89,6 +89,10 @@ const paragraphs = sentences => `<!doctype html><html lang="en"><head><meta char
 <body><main>${sentences.map(sentence => `<p>${sentence}</p>`).join('\n')}</main></body></html>`;
 const WITH_TRIGGERS = ['she is tall', 'I am happy', 'it is good', 'turn at the corner', 'they eat', 'bring the book'];
 const lines = (count, prefix) => Array.from({ length: count }, (_, index) => `${prefix} ${index}: ${WITH_TRIGGERS[index % WITH_TRIGGERS.length]}.`);
+const SPANISH_PARAGRAPHS = Array.from({ length: 30 }, () => '<p>La mañana estaba tranquila en el pueblo y todos los vecinos caminaban por la plaza mientras hablaban del tiempo, de la cosecha y de las fiestas que se acercaban. The book is here.</p>').join('');
+// An app-style page: nothing to read when it opens, the text is fetched afterwards.
+const lateShell = (title, source) => `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title></head><body><main id="app"></main>
+<script>setTimeout(() => fetch('${source}').then(response => response.text()).then(html => { document.getElementById('app').innerHTML = html; }), 2500);</script></body></html>`;
 const PAGES = {
   '/rejections': paragraphs([...lines(10, 'Skip'), ...lines(3, 'See')]),
   '/same-paragraph': paragraphs(['Skip this corner now. She is tall.']),
@@ -96,6 +100,13 @@ const PAGES = {
   '/in-app': paragraphs(lines(24, 'See')),
   '/long-page': paragraphs(Array.from({ length: 400 }, (_, index) => `Filler words about the weather and the road ahead go here so that each block takes room on the screen. Line ${index}: ${WITH_TRIGGERS[index % WITH_TRIGGERS.length]}.`)),
   '/spanish-no-lang': paragraphs(Array.from({ length: 30 }, () => 'La mañana estaba tranquila en el pueblo y todos los vecinos caminaban por la plaza mientras hablaban del tiempo, de la cosecha y de las fiestas que se acercaban. The book is here.')),
+  '/script-first-spanish': `<!doctype html><html><head><meta charset="utf-8"><title>Noticias</title></head><body>
+<script>window.pageData = ${JSON.stringify(Array.from({ length: 120 }, () => 'the people of the town walk along the road and talk about the weather every morning').join(' '))};</script>
+<main>${SPANISH_PARAGRAPHS}</main></body></html>`,
+  '/late-spanish': lateShell('Cargando', '/text-spanish'),
+  '/text-spanish': SPANISH_PARAGRAPHS,
+  '/late-english': lateShell('Loading', '/text-english'),
+  '/text-english': Array.from({ length: 12 }, (_, index) => `<p>Everyone in the town walks along the road each morning and talks about the weather. Line ${index}: bring the book.</p>`).join(''),
   '/glued': paragraphs(["The book's cover is blue.", 'A book-lover came by.', 'She read the book today.']),
 };
 
@@ -316,6 +327,26 @@ const server = http.createServer((request, response) => {
     const spanish = await open('/spanish-no-lang');
     assert.equal(await islandCount(spanish), 0, 'browser language detection blocks Spanish pages');
     await spanish.close();
+
+    // Page code in front of the text must not stand in for the page's language.
+    const beforeScriptFirst = seenItems.length;
+    const scriptFirst = await open('/script-first-spanish');
+    assert.equal(await islandCount(scriptFirst), 0, 'English in a script does not make a Spanish page English');
+    assert.equal(seenItems.length, beforeScriptFirst, 'nothing from the script-first page was sent');
+    await scriptFirst.close();
+
+    // Text that arrives after the page opened, as on an app-style site.
+    const beforeLate = seenItems.length;
+    const lateSpanish = await open('/late-spanish');
+    await lateSpanish.waitForFunction(() => document.querySelectorAll('main p').length > 0, null, { timeout: 8000 });
+    await lateSpanish.waitForTimeout(2500);
+    assert.equal(await islandCount(lateSpanish), 0, 'late Spanish text gets no Chinese words');
+    assert.equal(seenItems.length, beforeLate, 'nothing from the late Spanish page was sent');
+    await lateSpanish.close();
+
+    const lateEnglish = await open('/late-english');
+    await lateEnglish.waitForFunction(() => document.querySelectorAll('.lp-zh-island').length > 0, null, { timeout: 8000 });
+    await lateEnglish.close();
 
     // "book's" and "book-lover" stay in English.
     const glued = await open('/glued');

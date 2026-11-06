@@ -99,6 +99,11 @@ const ZH_RESCAN_DELAY_MS = 400;
 // Chinese words replace reviewed English triggers, so only English text qualifies.
 const ENGLISH_LANGUAGE_TAG = /^en(-|$)/i;
 const LANGUAGE_SAMPLE_CHARS = 2000;
+// How long an unsure page holds Chinese words back while its text loads. After
+// that, unsure means allowed, so a short English page still gets its words.
+const LANGUAGE_WAIT_MS = 1500;
+// New text worth asking the detector about again, while the sample has room.
+const LANGUAGE_RECHECK_GROWTH = 50;
 const CJK_TEXT = /[\u2e80-\u2fdf\u3000-\u30ff\u3100-\u31ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af\uf900-\ufaff\uff00-\uffef]|[\u{20000}-\u{3ffff}]/u;
 const BRIDGE_GAP = /^[\s\p{P}\p{S}]*$/u;
 const PINYIN_MODES = new Set(['auto', 'always', 'popup']);
@@ -116,6 +121,16 @@ function newZhIslandBudget() {
 }
 let zhIslandBudget = newZhIslandBudget();
 let zhForeignPage = false;
+// Chinese words wait while the page's language is still being worked out.
+let zhLanguageHold = false;
+let languageWatching = false;
+let languageConfident = false;
+let languageNavigating = false;
+let languageCheckRun = 0;
+let languageTimer = null;
+let languageCheckedChars = 0;
+let languageNewChars = 0;
+let languageHeldNodes = [];
 let zhRescanTimer = null;
 // In-app navigation changes this without reloading the content script.
 const currentBudgetPage = () => String(window.location.href).split('#')[0];
@@ -146,7 +161,7 @@ function ownBlockText(block) {
 
 function zhIslandAllowed(textNode, match, context) {
   const parent = textNode.parentElement;
-  if (!parent || !context || zhForeignPage) return false;
+  if (!parent || !context || zhForeignPage || zhLanguageHold) return false;
   const marked = parent.closest('[lang]');
   if (marked && !ENGLISH_LANGUAGE_TAG.test(marked.getAttribute('lang') || '')) return false;
   const block = parent.closest(BLOCK_SELECTOR) || parent;
@@ -196,21 +211,119 @@ function zhSlotsInUse(screen, wordId) {
   return inUse;
 }
 
-// A page may not say what language it is in. The browser's own detector decides,
-// on this device; only a confident answer of another language blocks Chinese words.
-async function detectForeignPage() {
-  zhForeignPage = false;
-  const detect = browser.i18n && browser.i18n.detectLanguage;
+// A page may not say what language it is in, or may say it wrongly. The browser's
+// own detector decides, on this device, from the text a person can see: page code
+// and hidden text say nothing about that. Only a confident answer of another
+// language blocks Chinese words.
+function visibleTextSample() {
   const root = document.body;
-  if (typeof detect !== 'function' || !root) return;
+  if (!root) return '';
+  const parts = [document.title || ''];
+  let length = parts[0].length;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node && length < LANGUAGE_SAMPLE_CHARS; node = walker.nextNode()) {
+    const parent = node.parentElement;
+    if (!parent || SKIP_TAGS.has(parent.tagName) || parent.closest(`[${LP_PROCESSED}]`)) continue;
+    const text = node.textContent.replace(/\s+/g, ' ').trim();
+    if (text.length < 2 || elementIsHidden(parent)) continue;
+    parts.push(text);
+    length += text.length + 1;
+  }
+  return parts.join(' ').slice(0, LANGUAGE_SAMPLE_CHARS);
+}
+
+async function askLanguageDetector(sample) {
   try {
-    const sample = `${document.title || ''} ${root.textContent || ''}`.slice(0, LANGUAGE_SAMPLE_CHARS);
     const result = await browser.i18n.detectLanguage(sample);
     const top = result && result.isReliable && Array.isArray(result.languages) ? result.languages[0] : null;
-    zhForeignPage = !!top && !ENGLISH_LANGUAGE_TAG.test(String(top.language || ''));
+    return { confident: !!top, foreign: !!top && !ENGLISH_LANGUAGE_TAG.test(String(top.language || '')) };
   } catch {
-    zhForeignPage = false;
+    return null;
   }
+}
+
+function clearChineseWordsFromPage() {
+  if (ownElements('.lp-zh-island, .lp-validation-pending').length === 0) return;
+  cancelValidationRetry();
+  vocabularyRevision += 1;
+  validationCoordinator.cancel();
+  restoreOriginalPageText();
+}
+
+async function checkPageLanguage() {
+  const run = ++languageCheckRun;
+  const sample = visibleTextSample();
+  languageCheckedChars = sample.length;
+  languageNewChars = 0;
+  const answer = await askLanguageDetector(sample);
+  if (run !== languageCheckRun) return;
+  const wasForeign = zhForeignPage;
+  const wasBlocked = zhForeignPage || zhLanguageHold;
+  languageConfident = !!answer && answer.confident;
+  zhForeignPage = !!answer && answer.foreign;
+  const sampleFull = sample.length >= LANGUAGE_SAMPLE_CHARS;
+  zhLanguageHold = !!answer && languageTimer !== null
+    && (languageNavigating || (!languageConfident && !sampleFull));
+  if (!extensionActive) return;
+  if (zhForeignPage && !wasForeign) clearChineseWordsFromPage();
+  else if (wasBlocked && !zhForeignPage && !zhLanguageHold) releaseHeldPageText();
+}
+
+// What arrived during the wait goes first, ahead of older text further up the
+// page that may still have sentences unused. Otherwise those would take the slots.
+function releaseHeldPageText() {
+  for (const node of languageHeldNodes.splice(0)) processNode(node);
+  processDocument();
+}
+
+function armLanguageTimer() {
+  if (languageTimer) clearTimeout(languageTimer);
+  languageTimer = setTimeout(() => {
+    languageTimer = null;
+    languageNavigating = false;
+    void checkPageLanguage();
+  }, LANGUAGE_WAIT_MS);
+}
+
+// After in-app navigation the old page's text is still there for a moment, so
+// nothing is decided until the wait is over.
+function startLanguageWatch({ navigated = false } = {}) {
+  stopLanguageWatch();
+  if (!browser.i18n || typeof browser.i18n.detectLanguage !== 'function' || !document.body) return Promise.resolve();
+  languageWatching = true;
+  languageNavigating = navigated;
+  zhLanguageHold = true;
+  armLanguageTimer();
+  return checkPageLanguage();
+}
+
+function stopLanguageWatch() {
+  languageCheckRun += 1;
+  if (languageTimer) clearTimeout(languageTimer);
+  languageTimer = null;
+  languageWatching = false;
+  languageNavigating = false;
+  languageConfident = false;
+  languageCheckedChars = 0;
+  languageNewChars = 0;
+  languageHeldNodes = [];
+  zhLanguageHold = false;
+  zhForeignPage = false;
+}
+
+// Called with new page content before it is scanned, so a late-loading page in
+// another language is held back rather than swapped and then cleaned up. Counts
+// the new text first: sampling asks the browser for layout, and a page with a
+// busy clock or ticker should not pay for that on every change.
+function noteNewPageText(nodes) {
+  if (!languageWatching || languageCheckedChars >= LANGUAGE_SAMPLE_CHARS) return;
+  for (const node of nodes) languageNewChars += (node.textContent || '').length;
+  if (languageNewChars < LANGUAGE_RECHECK_GROWTH) return;
+  if (!languageConfident) {
+    zhLanguageHold = true;
+    armLanguageTimer();
+  }
+  void checkPageLanguage();
 }
 
 // A span that left the page (rejected, reverted, or removed by the site) no
@@ -248,7 +361,7 @@ function resetBudgetsAfterNavigation() {
   zhIslandBudget.attempts = new Map();
   densityBudget.words = new Map();
   scheduleZhRescan();
-  void detectForeignPage();
+  if (languageWatching) void startLanguageWatch({ navigated: true });
 }
 
 // ─── Replacement density (every target language) ───
@@ -598,8 +711,10 @@ async function runInit(generation) {
   await loadPinyinPreferences();
   if (generation !== lifecycleGeneration) return;
   if (vocabWords.some(isZhTarget)) {
-    await detectForeignPage();
+    await startLanguageWatch();
     if (generation !== lifecycleGeneration) return;
+  } else {
+    stopLanguageWatch();
   }
   matcher = new VocabMatcher(vocabularyForPage(vocabWords), { rotationSalt: rotationSalt });
   extensionActive = true;
@@ -1251,6 +1366,11 @@ function observeMutations() {
     mutationDebounceTimer = setTimeout(() => {
       mutationDebounceTimer = null;
       const nodes = pendingMutationNodes.splice(0);
+      noteNewPageText(nodes);
+      if (zhLanguageHold) {
+        languageHeldNodes.push(...nodes.slice(0, Math.max(0, MAX_MUTATION_NODES - languageHeldNodes.length)));
+        return;
+      }
       for (const n of nodes) {
         processNode(n);
       }
@@ -1319,6 +1439,9 @@ browser.runtime.onMessage.addListener((message) => {
       rotationSalt = rotation_salt || '';
       if (extensionActive) {
         matcher = new VocabMatcher(vocabularyForPage(message.words), { rotationSalt });
+        // Words can turn Chinese on a page that was opened before the course changed.
+        if (message.words.some(isZhTarget)) void startLanguageWatch();
+        else stopLanguageWatch();
         processDocument();
       } else {
         lifecycleGeneration += 1;
@@ -1379,6 +1502,7 @@ function stopDocumentWork({ loggedOut = false } = {}) {
   encounterBuffer.splice(0);
   encounterGeneration += 1;
   if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
+  stopLanguageWatch();
   restoreOriginalPageText();
   VocabPopup.reset();
   privateState = globalThis.LangslyPrivateState;
