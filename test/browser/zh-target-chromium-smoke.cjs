@@ -94,6 +94,9 @@ const PAGES = {
   '/same-paragraph': paragraphs(['Skip this corner now. She is tall.']),
   '/many-rejections': paragraphs(lines(60, 'Skip')),
   '/in-app': paragraphs(lines(24, 'See')),
+  '/long-page': paragraphs(Array.from({ length: 400 }, (_, index) => `Filler words about the weather and the road ahead go here so that each block takes room on the screen. Line ${index}: ${WITH_TRIGGERS[index % WITH_TRIGGERS.length]}.`)),
+  '/spanish-no-lang': paragraphs(Array.from({ length: 30 }, () => 'La mañana estaba tranquila en el pueblo y todos los vecinos caminaban por la plaza mientras hablaban del tiempo, de la cosecha y de las fiestas que se acercaban. The book is here.')),
+  '/glued': paragraphs(["The book's cover is blue.", 'A book-lover came by.', 'She read the book today.']),
 };
 
 let validationRequests = 0;
@@ -254,11 +257,11 @@ const server = http.createServer((request, response) => {
     assert.equal(feedbackPosts[0].payload.sentence, 'Turn left at the corner.');
     assert.equal(feedbackPosts[0].payload.match_offset, 'Turn left at the '.length);
 
-    const open = async route => {
+    const open = async (route, { everythingNearby = true } = {}) => {
       const opened = await context.newPage();
       await opened.goto(`http://127.0.0.1:${port}${route}`);
       await opened.waitForTimeout(2500);
-      await opened.waitForFunction(() => document.querySelectorAll('.lp-validation-pending').length === 0, null, { timeout: 15000 });
+      if (everythingNearby) await opened.waitForFunction(() => document.querySelectorAll('.lp-validation-pending').length === 0, null, { timeout: 15000 });
       return opened;
     };
     const islandCount = target => target.locator('.lp-zh-island').count();
@@ -282,6 +285,43 @@ const server = http.createServer((request, response) => {
     assert.ok(attempts > 10 && attempts <= 30, `${attempts} validation attempts`);
     assert.equal(await islandCount(manyRejections), 0);
     await manyRejections.close();
+
+    // Writing practice has stroke data for the whole course, checked against its hash.
+    const strokes = await worker.evaluate(async () => {
+      const manifest = await (await fetch(browser.runtime.getURL('vendor/hanzi-writing-manifest.json'))).json();
+      const entry = manifest.characters.find(row => row.character === '学');
+      const loaded = await hanziPractice.characterData({ character: '学', data_version: entry.data_version, sha256: entry.sha256 });
+      const tampered = await hanziPractice.characterData({ character: '学', data_version: entry.data_version, sha256: 'x' });
+      return { packaged: manifest.characters.length, success: loaded.success, strokes: loaded.data?.strokes?.length, tampered: tampered.error };
+    });
+    assert.ok(strokes.packaged > 200, `${strokes.packaged} characters packaged`);
+    assert.equal(strokes.success, true);
+    assert.equal(strokes.strokes, 8);
+    assert.equal(strokes.tampered, 'version_mismatch');
+
+    // A long page: only text near the screen is validated, and words keep coming as the reader scrolls.
+    seenItems.length = 0;
+    const longPage = await open('/long-page', { everythingNearby: false });
+    const firstScreen = await islandCount(longPage);
+    const checkedAtFirst = seenItems.length;
+    assert.ok(firstScreen > 0, 'words near the top');
+    assert.ok(checkedAtFirst < 120, `${checkedAtFirst} occurrences checked before any scrolling`);
+    await longPage.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await longPage.waitForFunction(count => document.querySelectorAll('.lp-zh-island').length > count, firstScreen, { timeout: 8000 });
+    assert.ok(seenItems.length > checkedAtFirst, 'scrolling asks about more');
+    assert.ok(await islandCount(longPage) > 10, 'more than ten on a long page');
+    await longPage.close();
+
+    // A page in another language with no lang attribute.
+    const spanish = await open('/spanish-no-lang');
+    assert.equal(await islandCount(spanish), 0, 'browser language detection blocks Spanish pages');
+    await spanish.close();
+
+    // "book's" and "book-lover" stay in English.
+    const glued = await open('/glued');
+    assert.equal(await islandCount(glued), 1);
+    assert.match(await glued.locator('p').first().innerText(), /^The book's cover/);
+    await glued.close();
 
     // In-app navigation is a new page for the limits, with or without the old content.
     const inApp = await open('/in-app');

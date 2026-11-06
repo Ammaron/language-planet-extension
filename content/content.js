@@ -86,13 +86,19 @@ const BLOCK_SELECTOR = 'p,li,div,h1,h2,h3,h4,h5,h6,blockquote,td,th,article,sect
 // ─── Chinese islands (English pages, reviewed words only) ───
 // Islands, not bridges: one reviewed Chinese word or course phrase at a time,
 // never composed, and never touching another island or Chinese text.
-const ZH_PAGE_ISLAND_LIMIT = 10;
+// The limits are per screenful of text, so a long article or feed keeps showing
+// words as the reader goes. Measured in characters read, never in layout, so
+// scanning a long page forces no reflows. About 300 English words.
+const ZH_TEXT_PER_SCREEN = 1800;
+const ZH_SCREEN_ISLAND_LIMIT = 10;
 const ZH_SAME_WORD_LIMIT = 2;
-// A freed slot lets the page try again, so rejections alone must not be able
+// A freed slot lets the screen try again, so rejections alone must not be able
 // to send every occurrence on a long page to the paid validator.
-const ZH_PAGE_ATTEMPT_LIMIT = 30;
+const ZH_SCREEN_ATTEMPT_LIMIT = 30;
 const ZH_RESCAN_DELAY_MS = 400;
-const ZH_BLOCKED_PAGE_LANGUAGE = /^(zh|ja|ko)(-|$)/i;
+// Chinese words replace reviewed English triggers, so only English text qualifies.
+const ENGLISH_LANGUAGE_TAG = /^en(-|$)/i;
+const LANGUAGE_SAMPLE_CHARS = 2000;
 const CJK_TEXT = /[\u2e80-\u2fdf\u3000-\u30ff\u3100-\u31ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af\uf900-\ufaff\uff00-\uffef]|[\u{20000}-\u{3ffff}]/u;
 const BRIDGE_GAP = /^[\s\p{P}\p{S}]*$/u;
 const PINYIN_MODES = new Set(['auto', 'always', 'popup']);
@@ -100,10 +106,16 @@ let zhPinyinMode = 'auto';
 let zhPinyinTaps = {};
 function newZhIslandBudget() {
   // reserved: the spans holding a slot (waiting for a verdict or on show).
+  // attempts: occurrences tried, per screen.
   // skipped: an occurrence was left out only because every slot was taken.
-  return { reserved: new Set(), attempts: 0, skipped: false, sentences: new WeakMap() };
+  // textSeen / countedText / screens: how far through the page's text a block is.
+  return {
+    reserved: new Set(), attempts: new Map(), skipped: false, sentences: new WeakMap(),
+    textSeen: 0, countedText: new WeakSet(), screens: new WeakMap(),
+  };
 }
 let zhIslandBudget = newZhIslandBudget();
+let zhForeignPage = false;
 let zhRescanTimer = null;
 // In-app navigation changes this without reloading the content script.
 const currentBudgetPage = () => String(window.location.href).split('#')[0];
@@ -134,34 +146,71 @@ function ownBlockText(block) {
 
 function zhIslandAllowed(textNode, match, context) {
   const parent = textNode.parentElement;
-  if (!parent || !context) return false;
+  if (!parent || !context || zhForeignPage) return false;
   const marked = parent.closest('[lang]');
-  if (marked && ZH_BLOCKED_PAGE_LANGUAGE.test(marked.getAttribute('lang') || '')) return false;
+  if (marked && !ENGLISH_LANGUAGE_TAG.test(marked.getAttribute('lang') || '')) return false;
   const block = parent.closest(BLOCK_SELECTOR) || parent;
   if (CJK_TEXT.test(ownBlockText(block))) return false;
   const wordId = String(match.word.id);
   const sentenceKey = String(context.sentence);
-  if (zhIslandBudget.attempts >= ZH_PAGE_ATTEMPT_LIMIT) return false;
-  if (zhIslandBudget.reserved.size >= ZH_PAGE_ISLAND_LIMIT || zhWordSlotsInUse(wordId) >= ZH_SAME_WORD_LIMIT) {
+  const screen = zhScreenOf(block);
+  const attempts = zhIslandBudget.attempts.get(screen) || 0;
+  if (attempts >= ZH_SCREEN_ATTEMPT_LIMIT) return false;
+  const inUse = zhSlotsInUse(screen, wordId);
+  if (inUse.screen >= ZH_SCREEN_ISLAND_LIMIT || inUse.word >= ZH_SAME_WORD_LIMIT) {
     zhIslandBudget.skipped = true;
     return false;
   }
   // A sentence stays used after a rejection, so a later scan never asks again.
   const blockSentences = zhIslandBudget.sentences.get(block) || new Set();
   if (blockSentences.has(sentenceKey)) return false;
-  zhIslandBudget.attempts += 1;
+  zhIslandBudget.attempts.set(screen, attempts + 1);
   blockSentences.add(sentenceKey);
   zhIslandBudget.sentences.set(block, blockSentences);
   return true;
 }
 
-function zhWordSlotsInUse(wordId) {
-  let count = 0;
+function zhScreenOf(block) {
+  let screen = zhIslandBudget.screens.get(block);
+  if (screen === undefined) {
+    screen = Math.floor(zhIslandBudget.textSeen / ZH_TEXT_PER_SCREEN);
+    zhIslandBudget.screens.set(block, screen);
+  }
+  return screen;
+}
+
+function countScannedText(textNode, length) {
+  if (zhIslandBudget.countedText.has(textNode)) return;
+  zhIslandBudget.countedText.add(textNode);
+  zhIslandBudget.textSeen += length;
+}
+
+function zhSlotsInUse(screen, wordId) {
+  const inUse = { screen: 0, word: 0 };
   for (const span of zhIslandBudget.reserved) {
     const state = getPrivate(span);
-    if (String(state.wordId ?? state.components?.[0]) === wordId) count += 1;
+    if (state.zhScreen !== screen) continue;
+    inUse.screen += 1;
+    if (String(state.wordId ?? state.components?.[0]) === wordId) inUse.word += 1;
   }
-  return count;
+  return inUse;
+}
+
+// A page may not say what language it is in. The browser's own detector decides,
+// on this device; only a confident answer of another language blocks Chinese words.
+async function detectForeignPage() {
+  zhForeignPage = false;
+  const detect = browser.i18n && browser.i18n.detectLanguage;
+  const root = document.body;
+  if (typeof detect !== 'function' || !root) return;
+  try {
+    const sample = `${document.title || ''} ${root.textContent || ''}`.slice(0, LANGUAGE_SAMPLE_CHARS);
+    const result = await browser.i18n.detectLanguage(sample);
+    const top = result && result.isReliable && Array.isArray(result.languages) ? result.languages[0] : null;
+    zhForeignPage = !!top && !ENGLISH_LANGUAGE_TAG.test(String(top.language || ''));
+  } catch {
+    zhForeignPage = false;
+  }
 }
 
 // A span that left the page (rejected, reverted, or removed by the site) no
@@ -196,9 +245,10 @@ function resetBudgetsAfterNavigation() {
   if (page === budgetPage) return;
   budgetPage = page;
   zhIslandBudget.reserved = new Set();
-  zhIslandBudget.attempts = 0;
+  zhIslandBudget.attempts = new Map();
   densityBudget.words = new Map();
   scheduleZhRescan();
+  void detectForeignPage();
 }
 
 // ─── Replacement density (every target language) ───
@@ -367,7 +417,7 @@ const scanTimeoutHandles = new Set();
 const automaticEncounterWordIds = new Set();
 const validationCoordinator = LangslyRequestCoordinator.createBatchCoordinator({
   maxBatch: 20,
-  maxPerWindow: 60,
+  maxPerWindow: 240,
   windowMs: 60_000,
   keyOf: ({ item_id, ...item }) => JSON.stringify(item),
   send: (items) => browser.runtime.sendMessage({ type: 'VALIDATE_REPLACEMENTS', items })
@@ -547,6 +597,10 @@ async function runInit(generation) {
 
   await loadPinyinPreferences();
   if (generation !== lifecycleGeneration) return;
+  if (vocabWords.some(isZhTarget)) {
+    await detectForeignPage();
+    if (generation !== lifecycleGeneration) return;
+  }
   matcher = new VocabMatcher(vocabularyForPage(vocabWords), { rotationSalt: rotationSalt });
   extensionActive = true;
   lifecycleState = 'active';
@@ -703,6 +757,7 @@ function runProcessNode(root, complete) {
 function replaceInTextNode(textNode) {
   if (!textNode || !textNode.isConnected || !textNode.parentNode) return;
   const text = textNode.textContent;
+  countScannedText(textNode, text.length);
   const { singles, phrases } = matcher.findMatches(text);
   if (singles.length === 0 && phrases.length === 0) return;
   releaseFinishedZhSlots();
@@ -744,7 +799,11 @@ function replaceInTextNode(textNode) {
         : buildPendingPhraseSpan(event.data, text, domain, event.context);
       if (privateState.has(node)) {
         queuedSwap = true;
-        if (chineseIsland) zhIslandBudget.reserved.add(node);
+        if (chineseIsland) {
+          const block = textNode.parentElement.closest(BLOCK_SELECTOR) || textNode.parentElement;
+          setPrivate(node, { zhScreen: zhScreenOf(block) });
+          zhIslandBudget.reserved.add(node);
+        }
       }
       fragment.appendChild(node);
     }
@@ -938,7 +997,38 @@ function validationSpanFits(state) {
   return sentence.slice(offset, offset + matched.length) === matched;
 }
 
+// Text the reader is not near yet stays as it is and costs nothing. A word is
+// checked once it comes within half a screen of the viewport.
+const NEAR_VIEWPORT_MARGIN = '50% 0px';
+let nearViewportObserver = null;
+let nearViewport = new WeakSet();
+
+function isNearViewport(span) {
+  if (typeof IntersectionObserver !== 'function' || nearViewport.has(span)) return true;
+  if (!nearViewportObserver) {
+    nearViewportObserver = new IntersectionObserver((entries) => {
+      let reached = false;
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        nearViewport.add(entry.target);
+        nearViewportObserver.unobserve(entry.target);
+        reached = true;
+      }
+      if (reached && extensionActive && !document.hidden) requestPendingValidations();
+    }, { rootMargin: NEAR_VIEWPORT_MARGIN });
+  }
+  nearViewportObserver.observe(span);
+  return false;
+}
+
+function stopNearViewportWatch() {
+  if (nearViewportObserver) nearViewportObserver.disconnect();
+  nearViewportObserver = null;
+  nearViewport = new WeakSet();
+}
+
 function restorePendingSpan(span, original) {
+  if (nearViewportObserver) nearViewportObserver.unobserve(span);
   if (!span.parentNode) return;
   span.parentNode.replaceChild(document.createTextNode(typeof original === 'string' ? original : span.textContent), span);
   scheduleZhRescan();
@@ -956,6 +1046,7 @@ function requestPendingValidations() {
     .map(span => ({ span, distance: viewportDistance(span) }))
     .sort((a, b) => a.distance - b.distance);
   for (const { span } of spans) {
+    if (!isNearViewport(span)) continue;
     // Out of budget for now: leave the rest unqueued (no attempt spent) and
     // come back when the window has room.
     if (validationCoordinator.msUntilCapacity() > 0) {
@@ -1243,6 +1334,7 @@ browser.runtime.onMessage.addListener((message) => {
 // ─── Start ───────────────────────────────────────
 function restoreOriginalPageText() {
   cancelZhRescan();
+  stopNearViewportWatch();
   zhIslandBudget = newZhIslandBudget();
   densityBudget = { words: new Map(), sentences: new WeakMap() };
   budgetPage = currentBudgetPage();

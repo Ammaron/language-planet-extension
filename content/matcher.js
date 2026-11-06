@@ -210,8 +210,18 @@ class VocabMatcher {
       }
     }
 
-    const resolved = this.withoutCountedChineseNouns(this.postProcess(rawMatches, text), text);
+    const resolved = this.withoutGluedChineseWords(this.withoutCountedChineseNouns(this.postProcess(rawMatches, text), text), text);
     return this.groupAdjacentMatches(this.expandGrammarMatches(resolved, text), text);
+  }
+
+  // "book's" would read 书's and "book-keeping" 书-keeping. The word boundary
+  // check allows both for other languages; a Chinese word has to stand alone.
+  withoutGluedChineseWords(matches, text) {
+    return matches.filter((match) => {
+      if (!this.isChineseTarget(match.word)) return true;
+      return !/^['’\-‐‑]/u.test(text.slice(match.end, match.end + 1))
+        && !/[\-‐‑]$/u.test(text.slice(Math.max(0, match.start - 1), match.start));
+    });
   }
 
   // "three books" needs a measure word (三本书); an island would prime 三书.

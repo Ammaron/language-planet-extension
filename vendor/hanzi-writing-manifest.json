@@ -39,17 +39,1511 @@
       "sha256": "5590533436c70f10f2f524ee61456238c290175c6662fbe1c700b5f038a6d328"
     },
     {
+      "path": "vendor/hanzi-writer-data/2.0.1/4e00.json",
+      "upstream": "hanzi-writer-data@2.0.1/一.json",
+      "sha256": "ed728673d86fb9aa559c5b150e59ffbee666b085d4a55597c524079a91ebc8ce"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4e03.json",
+      "upstream": "hanzi-writer-data@2.0.1/七.json",
+      "sha256": "03b69a950dffb72be4dafb6226641d9182858d439af9c945f2b0d52b5bc55510"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4e09.json",
+      "upstream": "hanzi-writer-data@2.0.1/三.json",
+      "sha256": "917763e15ac14a5ece5067913da4156f3060f33ae0e172d3533275a494cec99c"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4e0a.json",
+      "upstream": "hanzi-writer-data@2.0.1/上.json",
+      "sha256": "9eed5643ff92171f9bf1ae5d4b70d717f2a3fd6961f72e81c0245ce13523d865"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4e0b.json",
+      "upstream": "hanzi-writer-data@2.0.1/下.json",
+      "sha256": "34984a2541baae9132f32e3dfe758ca29df64829558dc5a1c553c3d3011da880"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4e0d.json",
+      "upstream": "hanzi-writer-data@2.0.1/不.json",
+      "sha256": "2b4d1cabdf4af0788cba2d2e4645b87b4a56cdcc33907d2f61205bfd607572b6"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4e1c.json",
+      "upstream": "hanzi-writer-data@2.0.1/东.json",
+      "sha256": "80c3dfd836941d9507af3bfbc2257564483e134954f11d412d165f445e4f5a20"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4e24.json",
+      "upstream": "hanzi-writer-data@2.0.1/两.json",
+      "sha256": "d0a75c5e35abf6e97f381e02092d46f4c64ad53eb507b925cfb09f42094c79a7"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4e2a.json",
+      "upstream": "hanzi-writer-data@2.0.1/个.json",
+      "sha256": "d8c4bbbbd3fe835eeb07441afb37e19045797ce664aa0078204571c6597b6101"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4e2d.json",
+      "upstream": "hanzi-writer-data@2.0.1/中.json",
+      "sha256": "6982c8c16e7e7f769011edef0608289443711dbb34046dd9ca763e79ec29192f"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4e48.json",
+      "upstream": "hanzi-writer-data@2.0.1/么.json",
+      "sha256": "9bdbdeb1694fa92721c6f1d210a688a1db74b78a8888c99bbeeae5e0b45e5178"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4e5d.json",
+      "upstream": "hanzi-writer-data@2.0.1/九.json",
+      "sha256": "ec8fa16237207544c76a014c552c5f7c227813e300875a287f07a0b8b86dbe54"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4e5f.json",
+      "upstream": "hanzi-writer-data@2.0.1/也.json",
+      "sha256": "b382d98d228813ea32074caf8fee764b136593b5094579f4c00b2dd407c38dd3"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4e60.json",
+      "upstream": "hanzi-writer-data@2.0.1/习.json",
+      "sha256": "c990f81baacb5b6ebd333f0a8c95eaf2e52847765622001f1c71c058105f021c"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4e66.json",
+      "upstream": "hanzi-writer-data@2.0.1/书.json",
+      "sha256": "d913959d55b2bc53bec49bf50e44d6cf6df84d664cad9940c3983f061e4a6704"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4e70.json",
+      "upstream": "hanzi-writer-data@2.0.1/买.json",
+      "sha256": "bc317b3af63af2e775ba0f0dd1086a5eed65abb98f726f86acbfe35740572174"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4e86.json",
+      "upstream": "hanzi-writer-data@2.0.1/了.json",
+      "sha256": "63e33d9aece5d5a55d890793025d4964342f80ae92dee94232687deee76538be"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4e8b.json",
+      "upstream": "hanzi-writer-data@2.0.1/事.json",
+      "sha256": "98b2e3488270e7bfa6b2d2ac9cc0254786ffef5d2fd75af7ab25b356aabaa752"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4e8c.json",
+      "upstream": "hanzi-writer-data@2.0.1/二.json",
+      "sha256": "24d4225b8514e5b169f44230ba38169f63e9d9875f31b478457841114dbe1faa"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4e94.json",
+      "upstream": "hanzi-writer-data@2.0.1/五.json",
+      "sha256": "c2d064e88c2acde1faecc4ff45f0d4ec7cd5889a3e4b7e8145019150ad6db7bd"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4e9b.json",
+      "upstream": "hanzi-writer-data@2.0.1/些.json",
+      "sha256": "67e9de28e8ea417c45c94b7cac97aaaa2e18eb4ceadffab109a46ea00fe2253d"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4eae.json",
+      "upstream": "hanzi-writer-data@2.0.1/亮.json",
+      "sha256": "5bd3e9921530588754ba63b062674b26482fd240e95d67d2943f3fde1449edda"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4eba.json",
+      "upstream": "hanzi-writer-data@2.0.1/人.json",
+      "sha256": "18ffb9fb727576b0c3e7dc44914be7ffd43164de9ba121710824b83f27bd3bb1"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4ec0.json",
+      "upstream": "hanzi-writer-data@2.0.1/什.json",
+      "sha256": "9bc6bb09b416264a378bd94f848b6a295b081d641f51ea6ced53927a66350e4a"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4eca.json",
+      "upstream": "hanzi-writer-data@2.0.1/今.json",
+      "sha256": "09dc680091ec729b8a214c59099cb1dcbc0eabe51d5b4c4b5465ca2ff8fc9b6d"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4ed6.json",
+      "upstream": "hanzi-writer-data@2.0.1/他.json",
+      "sha256": "93c72a3fb00f00e9d7c3da8e2bf25e913bd3eba3c71eaafacc69f55891dc5625"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4ee5.json",
+      "upstream": "hanzi-writer-data@2.0.1/以.json",
+      "sha256": "90bcd05b200e7335bcbc6677f715dfe67b7d15ebb4ea083256a4bfdd377ca030"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4eec.json",
+      "upstream": "hanzi-writer-data@2.0.1/们.json",
+      "sha256": "0a25764ae60803a9958ae3cade375c57d8743d7db0e0bf2031e73b0d0449609e"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4ef6.json",
+      "upstream": "hanzi-writer-data@2.0.1/件.json",
+      "sha256": "f3c7a57d23ec650db9147ea34732ef3d57c1eddb8ded94125172921f46442e6a"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4f11.json",
+      "upstream": "hanzi-writer-data@2.0.1/休.json",
+      "sha256": "38d9571fe1ec07e7563fbae70241a75ed42785dd1ba8c1162708d6c156c978bc"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4f1a.json",
+      "upstream": "hanzi-writer-data@2.0.1/会.json",
+      "sha256": "0eb3173ca95ffa3b8dfcf2f5ea11b312b3af7290dbf674c2dab04338351d09e4"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4f4f.json",
+      "upstream": "hanzi-writer-data@2.0.1/住.json",
+      "sha256": "dfb9531477f68c78f709729d9fc1a0700621fe649322113e99cf2e64ae1e81db"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/4f5c.json",
+      "upstream": "hanzi-writer-data@2.0.1/作.json",
+      "sha256": "546808c69ae8980719427a33a6b10a785dc4e51ff5900c3b3a4558ac4c2a2113"
+    },
+    {
       "path": "vendor/hanzi-writer-data/2.0.1/4f60.json",
       "upstream": "hanzi-writer-data@2.0.1/你.json",
       "sha256": "21057a26cb5c1753ea710d503b759cc17948263501ffd76ef1737cb2b5d5f966"
     },
     {
+      "path": "vendor/hanzi-writer-data/2.0.1/4fbf.json",
+      "upstream": "hanzi-writer-data@2.0.1/便.json",
+      "sha256": "ce0a14a78ac9c2d2fcc2562d0b38c49bd6fe563ab3a8ee6db5b58083da567cc0"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5019.json",
+      "upstream": "hanzi-writer-data@2.0.1/候.json",
+      "sha256": "9b69049cabf23133ffac7e20245f70bd5200ee5901b76303d7e2a36652ba52c3"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/505a.json",
+      "upstream": "hanzi-writer-data@2.0.1/做.json",
+      "sha256": "d1beaea85e2d7fe88662573226ffc5ceb6700c24c4d364d0628c6088dae6cc5c"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/513f.json",
+      "upstream": "hanzi-writer-data@2.0.1/儿.json",
+      "sha256": "9f1e8515ba0fbf39f3b03e0fdd2342771f0c7197fff7c2ceee64674b95bf2c68"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5143.json",
+      "upstream": "hanzi-writer-data@2.0.1/元.json",
+      "sha256": "3853b0c44be20d7e40e467d0ee7636bc20e2408620230ec0ddba2c6695a67581"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5148.json",
+      "upstream": "hanzi-writer-data@2.0.1/先.json",
+      "sha256": "20b7475d7a76d3e2233ef9bd28c1239392630fb1407565c325d3efbdc0445c19"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/516b.json",
+      "upstream": "hanzi-writer-data@2.0.1/八.json",
+      "sha256": "650e961eefa88d95cc119146ff6606275ecad54c3f8ad1442c08889f928ec5af"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/516c.json",
+      "upstream": "hanzi-writer-data@2.0.1/公.json",
+      "sha256": "f486cccfeb549f77756de2d5086c83c1ebfcb7ce4cfafa2ba332b9700d1c8738"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/516d.json",
+      "upstream": "hanzi-writer-data@2.0.1/六.json",
+      "sha256": "54216db5e4bcd45583584fbff169a25d10c3a34e0fa64f3c7a2267bc94398f86"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5173.json",
+      "upstream": "hanzi-writer-data@2.0.1/关.json",
+      "sha256": "28d1c30ed1cda1ac8e0618bfe53010b6dc5bb5537670905a760a51d4d5a81399"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5174.json",
+      "upstream": "hanzi-writer-data@2.0.1/兴.json",
+      "sha256": "4138d58275de5a75c66be925ce5f789a1e90cad3bf897deaa454c5054f660713"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/518d.json",
+      "upstream": "hanzi-writer-data@2.0.1/再.json",
+      "sha256": "63c13624816b79b2edb3f6d04c494a1bc8fe89175e06c4f1e7452e2016e5224c"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5199.json",
+      "upstream": "hanzi-writer-data@2.0.1/写.json",
+      "sha256": "803022b32271801f05bd0931a18608b3319f7a9ffe0ea88093b19d539cf1941f"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/51b7.json",
+      "upstream": "hanzi-writer-data@2.0.1/冷.json",
+      "sha256": "21d62c3489dcf2cd434ba6d5e10d62fa46f15fa2d196b2f465f8c6342db23283"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/51e0.json",
+      "upstream": "hanzi-writer-data@2.0.1/几.json",
+      "sha256": "b730f3432a2e0697863f512fe5fbf8bef705a296fe657be4c7433102e1961a37"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/51fa.json",
+      "upstream": "hanzi-writer-data@2.0.1/出.json",
+      "sha256": "1b7e7176d1c5ca47f340e9ce28937f33929b6768ee20ea79f9129118b87f00a2"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5206.json",
+      "upstream": "hanzi-writer-data@2.0.1/分.json",
+      "sha256": "9bcdcf1103921fb4ab942c08d05ca9b4cf363cea0cb92f91a6c8da8c40344587"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5230.json",
+      "upstream": "hanzi-writer-data@2.0.1/到.json",
+      "sha256": "6aa5dd0897e0717edeae53ac983a92b81d22845423b59c5d7afe579f8096764d"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/524d.json",
+      "upstream": "hanzi-writer-data@2.0.1/前.json",
+      "sha256": "8126272afc54ca3a5bd512086901f4b3b40fcc43bcdf391fb60de3cb0dcd5c62"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5305.json",
+      "upstream": "hanzi-writer-data@2.0.1/包.json",
+      "sha256": "06c5b55a0acfd21621f9eef34bfb18c9de54320913d6b5f0aea44b36c6117d78"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/533b.json",
+      "upstream": "hanzi-writer-data@2.0.1/医.json",
+      "sha256": "a46207024347cd188a40d7056edf6e4d8b8e870b1d69464aa36444244381ea7e"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5341.json",
+      "upstream": "hanzi-writer-data@2.0.1/十.json",
+      "sha256": "257a0939af5742ca31a980adfa1421d0302d5e90491ab3215c1934bea9a59bef"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5343.json",
+      "upstream": "hanzi-writer-data@2.0.1/千.json",
+      "sha256": "f18da1869ef65a45deb8dca2eb558febc6b573abd420498d408ea3ae6455f06f"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5348.json",
+      "upstream": "hanzi-writer-data@2.0.1/午.json",
+      "sha256": "9a520ddf8ad36f8ddece42e7bbc28b3cd9572d810d369c9e36e089913672a714"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/534a.json",
+      "upstream": "hanzi-writer-data@2.0.1/半.json",
+      "sha256": "7f3a9c1766ccd8a44224babb7e106ad95e831b9a6f850fc89c6fd6f41e7b7099"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5356.json",
+      "upstream": "hanzi-writer-data@2.0.1/卖.json",
+      "sha256": "de66316a09d6203d2a1a39761e5d491b1e82842bbacef43dbfcb1a05d864f842"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/53bb.json",
+      "upstream": "hanzi-writer-data@2.0.1/去.json",
+      "sha256": "96e01168e8c76add5a05de734f18ef282451ca9107757977e5d83d8eea2bc281"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/53cb.json",
+      "upstream": "hanzi-writer-data@2.0.1/友.json",
+      "sha256": "71a33320fedcb2d37b92c5bcc4b7d6aa9bd94dbd022719561711b5eb2338547b"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/53e3.json",
+      "upstream": "hanzi-writer-data@2.0.1/口.json",
+      "sha256": "ac208865e3166fc35214cec326f00a4b6788a8cac9b4c5a6a37745077e32ddab"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/53ea.json",
+      "upstream": "hanzi-writer-data@2.0.1/只.json",
+      "sha256": "ec97976657b097708528825c2b48ee6e5436f38982f279c9c79bcf77281cf274"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/53eb.json",
+      "upstream": "hanzi-writer-data@2.0.1/叫.json",
+      "sha256": "a5cc36373dc1a8ee08e4d3f1eb05ce1048c9a6d7dfc1936ce5ae17833c927278"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/53ef.json",
+      "upstream": "hanzi-writer-data@2.0.1/可.json",
+      "sha256": "70e04def3d8d3048392138b4c38132f9307eee194cfa2779b446baebf8163f12"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/53f7.json",
+      "upstream": "hanzi-writer-data@2.0.1/号.json",
+      "sha256": "b70263ecc4e57909087d83873337cecb8b642220761be8083636c4a9e6e212be"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/53f8.json",
+      "upstream": "hanzi-writer-data@2.0.1/司.json",
+      "sha256": "17963d4ce5fb97b6588d832e3ba1345498894ddab9895756a62491972be70ba8"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5403.json",
+      "upstream": "hanzi-writer-data@2.0.1/吃.json",
+      "sha256": "7030e0da002dbc77d79821e9b78ab848777a8b9c0dabd1340b41b5fc1dd63a36"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/540c.json",
+      "upstream": "hanzi-writer-data@2.0.1/同.json",
+      "sha256": "ebac44738a64a0f7cb202363be8abfafe4aed2fc20965dd66f9b1f7555766967"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/540d.json",
+      "upstream": "hanzi-writer-data@2.0.1/名.json",
+      "sha256": "3dc8c37774349653b6e4732d505bcdd84585f092ab461221ef77984cffb7e98d"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/540e.json",
+      "upstream": "hanzi-writer-data@2.0.1/后.json",
+      "sha256": "1db954c5aa12b7c8efab666a716899c98e27c2b20312ae75df405bcf68cc5c91"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5417.json",
+      "upstream": "hanzi-writer-data@2.0.1/吗.json",
+      "sha256": "fd15dc345d5413ebf4bb3517b7b616890b0a948f62a70a21a2a8eed4eed78583"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5427.json",
+      "upstream": "hanzi-writer-data@2.0.1/吧.json",
+      "sha256": "1fbe8a6edb50ccf565fc6bac3e9ba17f6402631f46708fb87591a564e6e83dca"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/542c.json",
+      "upstream": "hanzi-writer-data@2.0.1/听.json",
+      "sha256": "f4be99b28792eb4915420affcc4ce6e73f1c7e0f8dd458b75095b24ca841bd51"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5462.json",
+      "upstream": "hanzi-writer-data@2.0.1/呢.json",
+      "sha256": "258288d04eca768919eaa16a095a3ea2407139fefeda74772efcf408d3f92fa6"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/548c.json",
+      "upstream": "hanzi-writer-data@2.0.1/和.json",
+      "sha256": "bf6e21b489970be6af9bb0e8337920632072b1dbbe0e9d216c314623cbd1c0e8"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/54e5.json",
+      "upstream": "hanzi-writer-data@2.0.1/哥.json",
+      "sha256": "0a0ccb90dba97ea99d1850523f46a7731bc0754e24b2fde3b880f00816e4edfa"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/54ea.json",
+      "upstream": "hanzi-writer-data@2.0.1/哪.json",
+      "sha256": "726b6fc78897b2164f79a564d54ada987cf8cdb960ed1ce9f848e8e787bae509"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5531.json",
+      "upstream": "hanzi-writer-data@2.0.1/唱.json",
+      "sha256": "474d06fd4fd9ba7b070603274c97854e0daf787bc2cc26f9a472454549f018d4"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5546.json",
+      "upstream": "hanzi-writer-data@2.0.1/商.json",
+      "sha256": "75bd5dc4f2d847527a0dd0f8674a4fa0b3cce132af72ca1d3234240b383850c1"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5582.json",
+      "upstream": "hanzi-writer-data@2.0.1/喂.json",
+      "sha256": "6707bfe48946f449db5d031c1cec74b52b011869b9147d5546b288a994395a45"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/559c.json",
+      "upstream": "hanzi-writer-data@2.0.1/喜.json",
+      "sha256": "779326b147f56c81159f2d732347e50549a994e0b0b190845dc6355a74215a43"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/559d.json",
+      "upstream": "hanzi-writer-data@2.0.1/喝.json",
+      "sha256": "bf7840cc0811e59e4db4a35f476af88054625cac10e87b0338c2c267b37dca9a"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/56db.json",
+      "upstream": "hanzi-writer-data@2.0.1/四.json",
+      "sha256": "8aa7b3e16a0c3f67fc4ed3b08c7f24e80b2e90d8f6ade512d20109a625bea3b9"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/56de.json",
+      "upstream": "hanzi-writer-data@2.0.1/回.json",
+      "sha256": "2987e137d9a4bdbb061bd78dd315fe0d520eaa6d65dc5e48e3d6f8c907a06e8b"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/56fd.json",
+      "upstream": "hanzi-writer-data@2.0.1/国.json",
+      "sha256": "40b46b7cbe5c292abcf79507dc544c5424c9cfa4df0376aa3b8fa42e535c2f7f"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5728.json",
+      "upstream": "hanzi-writer-data@2.0.1/在.json",
+      "sha256": "ec45f668f3181cd2c612797ff557f5b53f8823f120eca5d9a68e0fd8b1b0f21c"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5750.json",
+      "upstream": "hanzi-writer-data@2.0.1/坐.json",
+      "sha256": "b01ef6333805198f5b9d9443b6a157ae94d3233a30fa9d090a72e586b116d255"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5757.json",
+      "upstream": "hanzi-writer-data@2.0.1/块.json",
+      "sha256": "8617e40d636a86f106819470b0bb3d1a17500ee2ea4427935c2a880596b352f8"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/58eb.json",
+      "upstream": "hanzi-writer-data@2.0.1/士.json",
+      "sha256": "9ef5774bf258ffa9d75d25b5598cbeccdc0bc36634e536b4b54f0fe3ef028006"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5916.json",
+      "upstream": "hanzi-writer-data@2.0.1/外.json",
+      "sha256": "bab290c36ee093d6c2df1b9d95d3dbbcdf492dc108f3a7e81f0ac13cd8726d5c"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/591a.json",
+      "upstream": "hanzi-writer-data@2.0.1/多.json",
+      "sha256": "d7bc212fe60eaa766209b36e5e9642940892cf43b472accedaf55f517d8313dc"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5927.json",
+      "upstream": "hanzi-writer-data@2.0.1/大.json",
+      "sha256": "83c82950e903c915aa50d0d62b084a2d31c85fe68dce21e0acf39e2f9607e611"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5929.json",
+      "upstream": "hanzi-writer-data@2.0.1/天.json",
+      "sha256": "8cacde3b91b815c7c667e80e6d4838e3b7dc30ab457763e32d29c1586b0d2446"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/592a.json",
+      "upstream": "hanzi-writer-data@2.0.1/太.json",
+      "sha256": "b71a20e1c0c68563b8a58a75749f48ac4a095c7d05136c5dbd858a318fbe234e"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5973.json",
+      "upstream": "hanzi-writer-data@2.0.1/女.json",
+      "sha256": "8a17d3644493617f0090476873c0e01c25d83271e586c097e40ef0256ced5ac8"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5976.json",
+      "upstream": "hanzi-writer-data@2.0.1/奶.json",
+      "sha256": "151460436d8c0f29b05af02b03e456d0232f4dc9f1bfae3b2b551aa8a99d3aa9"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5979.json",
+      "upstream": "hanzi-writer-data@2.0.1/她.json",
+      "sha256": "4e69fc6340529cfbdf572a98f3bd6f934233186943b931b59e1a3c65464518c2"
+    },
+    {
       "path": "vendor/hanzi-writer-data/2.0.1/597d.json",
       "upstream": "hanzi-writer-data@2.0.1/好.json",
       "sha256": "c9f085fe6519e2b2c9653c7edf51bdbc78339fcc0b10f94c1f33c7f4f4d4a3a5"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5988.json",
+      "upstream": "hanzi-writer-data@2.0.1/妈.json",
+      "sha256": "0b288b695765e1294ca2cbc2b463227b637047932ebdab2ff9cddba6c1d576b2"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/59b9.json",
+      "upstream": "hanzi-writer-data@2.0.1/妹.json",
+      "sha256": "10b03e84339e4b9033d1bd9a4b1fba91ab872f810af3f6633c667872e606a7c3"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/59d0.json",
+      "upstream": "hanzi-writer-data@2.0.1/姐.json",
+      "sha256": "e4fcebaec74b9a53077e2d6e067fdfdca4470aa36f23246c7a03f96e5ab000c6"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5b50.json",
+      "upstream": "hanzi-writer-data@2.0.1/子.json",
+      "sha256": "f5b7ff9aa3de64ec676e3f06e7c22795aa834eb11eec43b9423f355db5f46474"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5b57.json",
+      "upstream": "hanzi-writer-data@2.0.1/字.json",
+      "sha256": "d4e20f90c64acc1427d41e693c7151f3ea389eb10d8ce7f2c98613b01c6d1baf"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5b66.json",
+      "upstream": "hanzi-writer-data@2.0.1/学.json",
+      "sha256": "9f2bdcab70ecf93632b6cf1ce9b5339cc8018d742eed7839037d146f8c294193"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5b69.json",
+      "upstream": "hanzi-writer-data@2.0.1/孩.json",
+      "sha256": "6fa9400ce8f719a6a6fb46784fb92faacd0244e2096adacaab36412cae755950"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5b83.json",
+      "upstream": "hanzi-writer-data@2.0.1/它.json",
+      "sha256": "a0928b9f0c278b71354633c9b3f3b57279c6bc2bf055beefc9589fde6951f524"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5b9c.json",
+      "upstream": "hanzi-writer-data@2.0.1/宜.json",
+      "sha256": "680b27a6f00851dce5d750e02947e94e7ae1ac0eaa2f00020c702887d1c0a91d"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5ba2.json",
+      "upstream": "hanzi-writer-data@2.0.1/客.json",
+      "sha256": "372961044841f9f6829d9152419b7081c9378621dfd55215c3cd067ad76368e5"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5bb6.json",
+      "upstream": "hanzi-writer-data@2.0.1/家.json",
+      "sha256": "390ad42ee60491df2ae9ddfd59358d4d6ff69208ccdac902aae0431b7e5f9aef"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5bf9.json",
+      "upstream": "hanzi-writer-data@2.0.1/对.json",
+      "sha256": "34cb1a64ee2a7794faec417b950b8a026efe6fc3779d09e363d6b383461f569a"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5c0f.json",
+      "upstream": "hanzi-writer-data@2.0.1/小.json",
+      "sha256": "72bf769c8c3426bffa578502eb8b1532fb1e622ddb6f40ded04e484290c0fe8c"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5c11.json",
+      "upstream": "hanzi-writer-data@2.0.1/少.json",
+      "sha256": "de5cd9d5b1bbd468411f82f7d57881b11b3a9b9c7bb812ff891ac66c06b31ef7"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5c81.json",
+      "upstream": "hanzi-writer-data@2.0.1/岁.json",
+      "sha256": "b35bac3e29ec6b1b7d1525232bd8f820900fcb857cf10a70154f218db49cbb2c"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5de5.json",
+      "upstream": "hanzi-writer-data@2.0.1/工.json",
+      "sha256": "a1d8521d2b9c64ed6818fc9314dea0b59499b2652dad15a4cf361d37893c4bcb"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5e02.json",
+      "upstream": "hanzi-writer-data@2.0.1/市.json",
+      "sha256": "ef79fe1efa67b4592ca7feaa156474a2bf3bf4588774ae9ba8a60bda396b6b51"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5e08.json",
+      "upstream": "hanzi-writer-data@2.0.1/师.json",
+      "sha256": "80d528921fbb75b21ed1737f622adbb8e9da7b71b143a64382568f22ff812093"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5e38.json",
+      "upstream": "hanzi-writer-data@2.0.1/常.json",
+      "sha256": "e2adfad55f16edc7de6c7dff6cf78cd79b874f7387aa63d61971900fc3d09db0"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5e74.json",
+      "upstream": "hanzi-writer-data@2.0.1/年.json",
+      "sha256": "2da9f7d7526442de1cad442cce66970ac1b41f72c2a388dc851d503ebab554c0"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5e8a.json",
+      "upstream": "hanzi-writer-data@2.0.1/床.json",
+      "sha256": "61e32987825856552772bfaf429cc5ef9a9f4b7a7a61b415b749670c07cb1954"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5e97.json",
+      "upstream": "hanzi-writer-data@2.0.1/店.json",
+      "sha256": "1d5d0424731bf4b7f76f38258b575d1c8c209ed2055ae59810745e12b6119878"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5f00.json",
+      "upstream": "hanzi-writer-data@2.0.1/开.json",
+      "sha256": "0b4efab7fc994927f4244f1c6d79a7012668a9c7cbdbc40a45d0bcf9b4cbbd49"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5f1f.json",
+      "upstream": "hanzi-writer-data@2.0.1/弟.json",
+      "sha256": "9a89eaf0eef53c73f69bd3cd9f53fd0e628c4c663b13f6c0a4c3773b3071a735"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5f71.json",
+      "upstream": "hanzi-writer-data@2.0.1/影.json",
+      "sha256": "41b27a6aa001477b3a27aaabae5306c86e6d50f28cef825cea2869acc85cd1d1"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5f88.json",
+      "upstream": "hanzi-writer-data@2.0.1/很.json",
+      "sha256": "b34ddabdd9034dfa73a413d9f83aec96451f97d75e8a553505a7fbe442c57356"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5f97.json",
+      "upstream": "hanzi-writer-data@2.0.1/得.json",
+      "sha256": "46fe32f6570275a05e5a8de5b78e847e8d8c2c6b1d20e45c9f9e77a183c73f68"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/5fd9.json",
+      "upstream": "hanzi-writer-data@2.0.1/忙.json",
+      "sha256": "18bea80c64cb21470e90361694ba1dc3ca3edfa1c44365e44429c691776cc3aa"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/600e.json",
+      "upstream": "hanzi-writer-data@2.0.1/怎.json",
+      "sha256": "a3f5b3be91848f0396185458d9810ab0c037e6d99bb4a2f3cb38b3475e79ee2d"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/606f.json",
+      "upstream": "hanzi-writer-data@2.0.1/息.json",
+      "sha256": "429a66a7e77a9e35885f4a27c526c5f9199351068840ced9bbedb5ace41d05ac"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/60a8.json",
+      "upstream": "hanzi-writer-data@2.0.1/您.json",
+      "sha256": "a60e0990ebe31bdad5defa50c9e94af61a3aa8982d8e7460f935aa798e51db39"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/60f3.json",
+      "upstream": "hanzi-writer-data@2.0.1/想.json",
+      "sha256": "9e3bf868a8170c4deb5c1fc39ffd42ef1a119bb55d742028777fb7ebfb23e885"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/6211.json",
+      "upstream": "hanzi-writer-data@2.0.1/我.json",
+      "sha256": "08616462fc64b4c18c76a3f68a992305e98946f468bf42ec76ca9be1cd6c5ac8"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/623f.json",
+      "upstream": "hanzi-writer-data@2.0.1/房.json",
+      "sha256": "8f595e59111f1bd1044fb117f7d26485885367982c49ed044c9536bc42633718"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/624b.json",
+      "upstream": "hanzi-writer-data@2.0.1/手.json",
+      "sha256": "7964eac3bced473343f5741f98fea3eb2dd842eecd57ec20b4369912570964a7"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/6253.json",
+      "upstream": "hanzi-writer-data@2.0.1/打.json",
+      "sha256": "d87d2a216a25000dd03a25c69365ab4780a432f81edba42c1671d60f9872afe9"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/627e.json",
+      "upstream": "hanzi-writer-data@2.0.1/找.json",
+      "sha256": "b7c89c6071338aa348a62a1051dbbb0a1ef2b97477ae531db4825ea1b764d098"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/6587.json",
+      "upstream": "hanzi-writer-data@2.0.1/文.json",
+      "sha256": "da58df874e176b10cbda075bb800aaa486fc716476a563fcc83f8f06b2169dbe"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/65b0.json",
+      "upstream": "hanzi-writer-data@2.0.1/新.json",
+      "sha256": "8f631d5c3b6bce07807edcbd80f38c6966c0e982f8d051b56b3fe73642e3503c"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/65e5.json",
+      "upstream": "hanzi-writer-data@2.0.1/日.json",
+      "sha256": "5c6bad210149abac8bd645cb12b1394edea5681f224154c27f422134299520fb"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/65e9.json",
+      "upstream": "hanzi-writer-data@2.0.1/早.json",
+      "sha256": "4d6b2979bd1167355372cf73800a2ce13032febb989b8bf5901e6a7dbe773454"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/65f6.json",
+      "upstream": "hanzi-writer-data@2.0.1/时.json",
+      "sha256": "c5f769e6b0df9b9ca252c43220cc339b2e8cd88dce12933f2f204f33db4b78b0"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/660e.json",
+      "upstream": "hanzi-writer-data@2.0.1/明.json",
+      "sha256": "15468d4fcd2c430aa5b57e8765ce043f6965d421e24cabdf66d2c899b16c6943"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/661f.json",
+      "upstream": "hanzi-writer-data@2.0.1/星.json",
+      "sha256": "21780a0d4c52c4e5f236bd18d3aacb4101d5ce17375442cdc64564a000330945"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/6628.json",
+      "upstream": "hanzi-writer-data@2.0.1/昨.json",
+      "sha256": "6e5daca94483c96d1e4c2cadf281d196a498d0159a7801a725f9c73ed5721c18"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/662f.json",
+      "upstream": "hanzi-writer-data@2.0.1/是.json",
+      "sha256": "73249157dc9e08c1eb3fb029ca12288b15c597f85eb4a6c72f5bdc6893ded27b"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/665a.json",
+      "upstream": "hanzi-writer-data@2.0.1/晚.json",
+      "sha256": "b545c3866d2705e569fe1784f74f505ae6f10eaa7a7fdb4068bc539569485085"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/6708.json",
+      "upstream": "hanzi-writer-data@2.0.1/月.json",
+      "sha256": "441949321eb706def6e8d0c1eeca6b461141703dcc07619939a32d681e08fc46"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/6709.json",
+      "upstream": "hanzi-writer-data@2.0.1/有.json",
+      "sha256": "cee2fb732f41de30a7b0c84880d2d47af0a9fda6fda795d99c77a57f2ee4c8e4"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/670b.json",
+      "upstream": "hanzi-writer-data@2.0.1/朋.json",
+      "sha256": "f67483634bf14bcd59db35d94c7e1f560ee78be33c14754c43ad201cf98d7622"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/670d.json",
+      "upstream": "hanzi-writer-data@2.0.1/服.json",
+      "sha256": "b6b4c141c9abab48aa7b7e9d00d159cf922cf8627783921d81288df95bfe7115"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/671f.json",
+      "upstream": "hanzi-writer-data@2.0.1/期.json",
+      "sha256": "806ca46deb664ece4372b7201d1eca656d34c38848537fb8adbae719170e227a"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/672c.json",
+      "upstream": "hanzi-writer-data@2.0.1/本.json",
+      "sha256": "1507bfab8ff404936abc31790252d16b5eddf769b85791d89bc9c61c668fa838"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/673a.json",
+      "upstream": "hanzi-writer-data@2.0.1/机.json",
+      "sha256": "42a5a786f303e3e08b268ecd35c872ae3668e170261b4109fbffc4a0a55c6bbc"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/6761.json",
+      "upstream": "hanzi-writer-data@2.0.1/条.json",
+      "sha256": "2c7f74285fda0de35698d5dc3339aa0704fea4759862cb4ae2b03942803d6686"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/6765.json",
+      "upstream": "hanzi-writer-data@2.0.1/来.json",
+      "sha256": "ebf3a9165522693077a8f14d25e003565409d8751ff0a4724423315d57d9a57d"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/676f.json",
+      "upstream": "hanzi-writer-data@2.0.1/杯.json",
+      "sha256": "6bb07f43f8043a1b36e7e292651e6348092e0777d44815831e01a9d5694da491"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/679c.json",
+      "upstream": "hanzi-writer-data@2.0.1/果.json",
+      "sha256": "9862414e1eab8e4ff3849cf29145d83bad8c74754c0faff35de284875ece9559"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/6821.json",
+      "upstream": "hanzi-writer-data@2.0.1/校.json",
+      "sha256": "bd810a1cf7fa8216207502a388f4593cce34b71018e8419ecff0b5364147e0bb"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/6837.json",
+      "upstream": "hanzi-writer-data@2.0.1/样.json",
+      "sha256": "df344ad329f2d7461c9ea5d2c64820f8b43d0957ecb9c23b703c5cf4266c0b09"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/684c.json",
+      "upstream": "hanzi-writer-data@2.0.1/桌.json",
+      "sha256": "ecc0365660b9cc5f03cfb1b6a3b4a8a54979ff90b84cd91a9dffa5d2b05667d6"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/6905.json",
+      "upstream": "hanzi-writer-data@2.0.1/椅.json",
+      "sha256": "5c5bf9d1e0b58d2d1d33134f57b8fdfeca191fd86e89a48940661d427beac0a8"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/6b22.json",
+      "upstream": "hanzi-writer-data@2.0.1/欢.json",
+      "sha256": "83016170e79bb66ee07caa185befb9df8ba2a49caa3d167a04149d0120a55e23"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/6b4c.json",
+      "upstream": "hanzi-writer-data@2.0.1/歌.json",
+      "sha256": "b43ff9d397eb5ec5681c215a52d8f1ecdeefd02bf5755da1c3f1da8e62a5ec41"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/6b63.json",
+      "upstream": "hanzi-writer-data@2.0.1/正.json",
+      "sha256": "bd849e7afea904faa4f630cc2f1ca5d05db8cf9023fa7aa73a8d437c53c95a86"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/6c14.json",
+      "upstream": "hanzi-writer-data@2.0.1/气.json",
+      "sha256": "32ebb998c7bd7165e10e781ff52db83e5a3413f01cb70438e2271e99773abf56"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/6c34.json",
+      "upstream": "hanzi-writer-data@2.0.1/水.json",
+      "sha256": "46e262a80f2b7da72ea04788d1c19c40339e18beaba16987cc84d55fc257c9e3"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/6c49.json",
+      "upstream": "hanzi-writer-data@2.0.1/汉.json",
+      "sha256": "24bae414f2def0d58cab2a7ae066004c62bded29331127925f4a4521264bd8e7"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/6ca1.json",
+      "upstream": "hanzi-writer-data@2.0.1/没.json",
+      "sha256": "74ed15d6773e229478cdc30bfa283dab5b2ccbaa1c7f6cfd338b0ae20216dbb6"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/6f02.json",
+      "upstream": "hanzi-writer-data@2.0.1/漂.json",
+      "sha256": "af4d64f78e5132d8af4cbf353a9147c347e486ffdbc42637f71f4ee4f743be1f"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/706b.json",
+      "upstream": "hanzi-writer-data@2.0.1/火.json",
+      "sha256": "09fc0a54adb11753319f5750dcdc127698dfb8a453f1a57b5f11b6a1ee3c64e0"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/70b9.json",
+      "upstream": "hanzi-writer-data@2.0.1/点.json",
+      "sha256": "1b5b5cd89627b1800adddb7448516283d5cb178ad1df187b3764c12aaa2d87cf"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/70ed.json",
+      "upstream": "hanzi-writer-data@2.0.1/热.json",
+      "sha256": "25f30e825e12e831de16c70bb0056ee22e3947b68ef46ea5f0eae3b6114ad20f"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/7231.json",
+      "upstream": "hanzi-writer-data@2.0.1/爱.json",
+      "sha256": "26312d0cf150b55c961e890c2a205f5143a185bd2c7337c9c3622040d61489c4"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/7238.json",
+      "upstream": "hanzi-writer-data@2.0.1/爸.json",
+      "sha256": "fa40233458f9a517bcfedea1595d348831af8f73be08fe45a9554b28c59de25c"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/725b.json",
+      "upstream": "hanzi-writer-data@2.0.1/牛.json",
+      "sha256": "cb0c578ebb919ca2ad759cc8a79159f1eff623ae7f57dacca26a1bbbc523ab98"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/72d7.json",
+      "upstream": "hanzi-writer-data@2.0.1/狗.json",
+      "sha256": "ce363f0ad41d9ccaec3d87204894a834c9f332a8e9af78d6db33281a07c3bcca"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/732b.json",
+      "upstream": "hanzi-writer-data@2.0.1/猫.json",
+      "sha256": "f4ec6d5464a2fc431779ec654c25efd4c0816180253d048daa2897075a4ad6fd"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/73a9.json",
+      "upstream": "hanzi-writer-data@2.0.1/玩.json",
+      "sha256": "65485d78931a81e1e09a77097b4915fce9442517300ef31ea1909c129b1116bf"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/73b0.json",
+      "upstream": "hanzi-writer-data@2.0.1/现.json",
+      "sha256": "488ceab2c1045a151d9caa83b3095e26533bc7df22294d167c2bcdcbec17effa"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/73ed.json",
+      "upstream": "hanzi-writer-data@2.0.1/班.json",
+      "sha256": "4ade745bbdd9f871e5aa1a3f44bdb83c1fdcad7806482a5f83fad8faf3085539"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/751f.json",
+      "upstream": "hanzi-writer-data@2.0.1/生.json",
+      "sha256": "dbe556919f5c0a95448c40997dfce35ad56ebf26d874218e7076d8c12374cfd8"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/7535.json",
+      "upstream": "hanzi-writer-data@2.0.1/电.json",
+      "sha256": "bbf199bee650b38f1d1b1da68a0c8f0eed59bdfce2302cd2abe0c5a115896850"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/7537.json",
+      "upstream": "hanzi-writer-data@2.0.1/男.json",
+      "sha256": "e380887b51e1d07f5ab62b3b366bf9a2bb28968bd2e8217f20c34ef3e2b087b2"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/75c5.json",
+      "upstream": "hanzi-writer-data@2.0.1/病.json",
+      "sha256": "7e1961f5a3d3120e7900df9da41dfee35b262fddba178433255ba5787549747b"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/767d.json",
+      "upstream": "hanzi-writer-data@2.0.1/白.json",
+      "sha256": "a3858cdfb3a8d08b8046aa4e8c9161dac017119c8f7986e52c9e6752d1721f2e"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/767e.json",
+      "upstream": "hanzi-writer-data@2.0.1/百.json",
+      "sha256": "3cc71b969c7cb35878645077365f029ad249eef5c5f80b61683df4bbbf7849b2"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/7684.json",
+      "upstream": "hanzi-writer-data@2.0.1/的.json",
+      "sha256": "d9a067e65c8c3770d5559d42bd2bc564b8e133d8fa3dc237d9c4a317adfbb32f"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/770b.json",
+      "upstream": "hanzi-writer-data@2.0.1/看.json",
+      "sha256": "bff5e00542da2f3cd5b343172777fa10c888e336224b42b8cb62c71978a7cbd4"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/771f.json",
+      "upstream": "hanzi-writer-data@2.0.1/真.json",
+      "sha256": "7aaa2b9020233fe11e0e661e5e6a0d4088d6969d493ade3b5d6e096972e51e9f"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/7761.json",
+      "upstream": "hanzi-writer-data@2.0.1/睡.json",
+      "sha256": "710a112d0619bac3b72adb23fd7e0067da7a126fc4db8f40ac82d9626588fd2b"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/77e5.json",
+      "upstream": "hanzi-writer-data@2.0.1/知.json",
+      "sha256": "cbc62a072dbcb013232ccd2b5610a7667fdf9919a19adaef8381aab46835baa5"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/79df.json",
+      "upstream": "hanzi-writer-data@2.0.1/租.json",
+      "sha256": "924242774320abf4a7cd3cb7174228c7faef94f34b9f4fa35d9590411e65b84a"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/7a7f.json",
+      "upstream": "hanzi-writer-data@2.0.1/穿.json",
+      "sha256": "af4df201e54d82c75e9f2b7557d2a42d3c10d0553b9de1392a9e2e3f6112e259"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/7b2c.json",
+      "upstream": "hanzi-writer-data@2.0.1/第.json",
+      "sha256": "b723744c52fde30f4c812c98ae7a4f85a60999dfea854bbaab1a5d05ce303b93"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/7c73.json",
+      "upstream": "hanzi-writer-data@2.0.1/米.json",
+      "sha256": "105847e8be1741677145b1e7b7168ba883e9ca3ae1abb7b60a476d430117e88e"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/7cfb.json",
+      "upstream": "hanzi-writer-data@2.0.1/系.json",
+      "sha256": "430cdc60c60c49283f62bc2cf242b9f2e99e3b05a901cfa9f19e4f4640a0ea03"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/7ed9.json",
+      "upstream": "hanzi-writer-data@2.0.1/给.json",
+      "sha256": "98226e1d98c751b961851e053a3f341ad090b0489c4b31c1f884bc52843e3257"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8001.json",
+      "upstream": "hanzi-writer-data@2.0.1/老.json",
+      "sha256": "f3130d50e757c65792633c581be89788d963819ed0df23380b6c94d5e31bf9d1"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/80fd.json",
+      "upstream": "hanzi-writer-data@2.0.1/能.json",
+      "sha256": "d0344bfcb6ba9278ffa795e084ce4a5249c9b8953c3affa731079e3cd2aacce4"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8111.json",
+      "upstream": "hanzi-writer-data@2.0.1/脑.json",
+      "sha256": "87758169856c685490d07115e3cb87dc78fc2dd4d7fa6c363cf04f6e59eebdf4"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/82f9.json",
+      "upstream": "hanzi-writer-data@2.0.1/苹.json",
+      "sha256": "32202c548dd99ad95d67281ea7373027341ea14518b80a46da36b7fbb2def514"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8336.json",
+      "upstream": "hanzi-writer-data@2.0.1/茶.json",
+      "sha256": "a9bf01e1c90c9a153d7200beb3530730fe1af14266f709d32460f1a171be004e"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/83dc.json",
+      "upstream": "hanzi-writer-data@2.0.1/菜.json",
+      "sha256": "5e869b26710889875f8947a12fc55cd429352b6e4e3a1bc8792cc6ed496b1634"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/86cb.json",
+      "upstream": "hanzi-writer-data@2.0.1/蛋.json",
+      "sha256": "7a3b56ab5a1d959471f34409f674662a2fb85aec7baf6fd035f522ea215bde0d"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8863.json",
+      "upstream": "hanzi-writer-data@2.0.1/衣.json",
+      "sha256": "bb83d26ab543feaf262f3da5622aa5d7d35591f36286ad0ef5072ee96d73b7ad"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/897f.json",
+      "upstream": "hanzi-writer-data@2.0.1/西.json",
+      "sha256": "f7599c5caa9c04e450f9c5b3e3cdd09523fd675d94f18c85997af05f023171d3"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8981.json",
+      "upstream": "hanzi-writer-data@2.0.1/要.json",
+      "sha256": "29596cde9e081fafc88b28b84c25d5b0751a272a3db9e8d665c4f6b1015c4e7f"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/89c1.json",
+      "upstream": "hanzi-writer-data@2.0.1/见.json",
+      "sha256": "38f248a32907c2061fe800b7217847f07181ec6ecfa421e194e020426b79ec3d"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/89c6.json",
+      "upstream": "hanzi-writer-data@2.0.1/视.json",
+      "sha256": "316185032960d9ce1de24772a58e579760f218f369f8dfdb5efbbea14ecfab24"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/89c9.json",
+      "upstream": "hanzi-writer-data@2.0.1/觉.json",
+      "sha256": "30a421a57239f8b7d296c3588b6459120afd1a584294b2cde788442234e471d1"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8ba4.json",
+      "upstream": "hanzi-writer-data@2.0.1/认.json",
+      "sha256": "f65b039435d480571159c393baee6e5a879cc7906b1d651a6c6954f22d943af7"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8bc6.json",
+      "upstream": "hanzi-writer-data@2.0.1/识.json",
+      "sha256": "7f1226cf490e1b9d254317ee0dd82f5a970ef12064fb6edc59cb6f9d8b33dbe1"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8bdd.json",
+      "upstream": "hanzi-writer-data@2.0.1/话.json",
+      "sha256": "8a3f1e388abfa63dd47acb0d4fc86d5e1c6cf30a82caddb2ca51061a93ea4fcc"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8bed.json",
+      "upstream": "hanzi-writer-data@2.0.1/语.json",
+      "sha256": "0999b4c39dd2763ec6c3386123c8686cb58fcb562f3b8fe681c26fdb348080d6"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8bf4.json",
+      "upstream": "hanzi-writer-data@2.0.1/说.json",
+      "sha256": "56144a5cda3da7385c3f7e640985bb69bfa8eda5b22876d08bb05126ff116d2d"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8bf7.json",
+      "upstream": "hanzi-writer-data@2.0.1/请.json",
+      "sha256": "6d48bdaeed17674221109997ed3187d71a6c8d7d3549dd277845a18828e2c82c"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8bfb.json",
+      "upstream": "hanzi-writer-data@2.0.1/读.json",
+      "sha256": "dd8de3cdf06a29c7268ed3cc51304c8be2a57881f4ccf4444f6d980c2abed09c"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8bfe.json",
+      "upstream": "hanzi-writer-data@2.0.1/课.json",
+      "sha256": "bc5a3bcf0e757ff72df8ac9c60f236f39addf51b65f1374dbef96e4fa9c2a98c"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8c01.json",
+      "upstream": "hanzi-writer-data@2.0.1/谁.json",
+      "sha256": "e2f893a3be9cb9d77ccb33115dbe7588453ea51b2fbc9ef81a5bcec9b2627058"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8c22.json",
+      "upstream": "hanzi-writer-data@2.0.1/谢.json",
+      "sha256": "9f68c6a28d3632f77ac32ea4d31945ed760b8d98a133e7516a11854991de1f39"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8d35.json",
+      "upstream": "hanzi-writer-data@2.0.1/贵.json",
+      "sha256": "34177b106cbdd621795ec13e24bdeb00e43c4e874ef9d8ef50e2bac703efd1c2"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8d77.json",
+      "upstream": "hanzi-writer-data@2.0.1/起.json",
+      "sha256": "a5301507b7db54210b4c2ff8ddd07489329117e7dd2e9b527cb595dc6f709c8c"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8d85.json",
+      "upstream": "hanzi-writer-data@2.0.1/超.json",
+      "sha256": "0b4c79350e48446c39add42a6c4b1d225fedc5e90361892bda3f991249239df1"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8f66.json",
+      "upstream": "hanzi-writer-data@2.0.1/车.json",
+      "sha256": "7f863fb9a5d558ea337928cdd50c65be932c4a35fbde2cf28bfda48f8a438ac8"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8fb9.json",
+      "upstream": "hanzi-writer-data@2.0.1/边.json",
+      "sha256": "438159da28398664d643d5d2d980aa8445544174558dc1c59dd8a920df3a657a"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8fd8.json",
+      "upstream": "hanzi-writer-data@2.0.1/还.json",
+      "sha256": "77864aaf3e6d0d31f184a55083b9be223f0bb8c1a9fee89b5f59ff7314a94890"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/8fd9.json",
+      "upstream": "hanzi-writer-data@2.0.1/这.json",
+      "sha256": "6e1b5fc05d9c852cf1f19e48fa67366b2bee3e462be22dfe37ad3ceb08c46eb6"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/9053.json",
+      "upstream": "hanzi-writer-data@2.0.1/道.json",
+      "sha256": "373d2c5a9818d0918ab38b100a75ffc9ef9b17c85948b6bd917acdb921e62c78"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/90a3.json",
+      "upstream": "hanzi-writer-data@2.0.1/那.json",
+      "sha256": "a2c276669b5820897a8e20bd10fcede3062f99460bc9a733c65f7875d3197ea5"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/90fd.json",
+      "upstream": "hanzi-writer-data@2.0.1/都.json",
+      "sha256": "5fa17c32858a0d8183096756b3789d96e5dcfcf612e4bc60e14b403d772748e1"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/91cc.json",
+      "upstream": "hanzi-writer-data@2.0.1/里.json",
+      "sha256": "5f0d84aa3b6f871759148b105314fd01c4a9019d3234afac345cbbf1ca263d5d"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/949f.json",
+      "upstream": "hanzi-writer-data@2.0.1/钟.json",
+      "sha256": "1fabcc4a9fd6f6a72549fa7b2bc4e7e8d3bda80832bd648cf0a86c61b15f803b"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/94b1.json",
+      "upstream": "hanzi-writer-data@2.0.1/钱.json",
+      "sha256": "4b008f391bb5c26ad3952de2da8bb83836bfae1615699450ba885cb77250159d"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/95ee.json",
+      "upstream": "hanzi-writer-data@2.0.1/问.json",
+      "sha256": "ccdfc03927529be7cfdd6ac29895d53040cff0648b6d087217a8572fa593e4bd"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/95f4.json",
+      "upstream": "hanzi-writer-data@2.0.1/间.json",
+      "sha256": "0f53cb30db3bb6104e432ae87831d7c0fe24ec7324fb0affefc70eb2759bb615"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/9662.json",
+      "upstream": "hanzi-writer-data@2.0.1/院.json",
+      "sha256": "8d4d9e70989cf9514d386b6eb51591e336699087eb8f852908d0300249d351d2"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/96e8.json",
+      "upstream": "hanzi-writer-data@2.0.1/雨.json",
+      "sha256": "0e249bab348c40874b194b2ba75aa185961bd190ca2e09c9a4c303aa34f62e2c"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/96ea.json",
+      "upstream": "hanzi-writer-data@2.0.1/雪.json",
+      "sha256": "d5434aa532906b64d76436c9b720df757e4cd7971093552822fdea1d95eaa174"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/96f6.json",
+      "upstream": "hanzi-writer-data@2.0.1/零.json",
+      "sha256": "6c64a74984c0c0f19e49a1f4a94097c8db07838436d7df902ee6082fcf042c88"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/975e.json",
+      "upstream": "hanzi-writer-data@2.0.1/非.json",
+      "sha256": "cb6dd22e1c2410f3d7edf71987173f4bc9b2737308a1433975c1993aa6f2b69f"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/9762.json",
+      "upstream": "hanzi-writer-data@2.0.1/面.json",
+      "sha256": "720049f194a8d51d6cc01669f1319bed7510650a584d7185f0fa289d9f487ca2"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/9898.json",
+      "upstream": "hanzi-writer-data@2.0.1/题.json",
+      "sha256": "0935d29ab0ec76a69aea203187a9247fddb89712b3d370c2862549edb8529057"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/98de.json",
+      "upstream": "hanzi-writer-data@2.0.1/飞.json",
+      "sha256": "dbc770bc5fa91957ce1b1b171a493dcff730f430c1df765c1ce59cf7d3496ba4"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/996d.json",
+      "upstream": "hanzi-writer-data@2.0.1/饭.json",
+      "sha256": "cc1fa66270ac4250e36825e9c45d7af0b43a5ae271483fc15dfc14fd95a60026"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/997a.json",
+      "upstream": "hanzi-writer-data@2.0.1/饺.json",
+      "sha256": "be8cc405325dbbe0b0b95d2b556f4027f67bd8dfdf9faf947cc8167e0e02312f"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/9ad8.json",
+      "upstream": "hanzi-writer-data@2.0.1/高.json",
+      "sha256": "99d078f0a742511e3225a994169678c2b35ed42d4a39e4f5c41946c1e4c04567"
+    },
+    {
+      "path": "vendor/hanzi-writer-data/2.0.1/9e21.json",
+      "upstream": "hanzi-writer-data@2.0.1/鸡.json",
+      "sha256": "33c721c906b0d67468161d7b107393b775829c540fe26aa0d101dd8f2cdb9d73"
     }
   ],
   "characters": [
+    {
+      "character": "一",
+      "codepoint": "U+4E00",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4e00.json",
+      "sha256": "ed728673d86fb9aa559c5b150e59ffbee666b085d4a55597c524079a91ebc8ce",
+      "stroke_count": 1
+    },
+    {
+      "character": "七",
+      "codepoint": "U+4E03",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4e03.json",
+      "sha256": "03b69a950dffb72be4dafb6226641d9182858d439af9c945f2b0d52b5bc55510",
+      "stroke_count": 2
+    },
+    {
+      "character": "三",
+      "codepoint": "U+4E09",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4e09.json",
+      "sha256": "917763e15ac14a5ece5067913da4156f3060f33ae0e172d3533275a494cec99c",
+      "stroke_count": 3
+    },
+    {
+      "character": "上",
+      "codepoint": "U+4E0A",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4e0a.json",
+      "sha256": "9eed5643ff92171f9bf1ae5d4b70d717f2a3fd6961f72e81c0245ce13523d865",
+      "stroke_count": 3
+    },
+    {
+      "character": "下",
+      "codepoint": "U+4E0B",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4e0b.json",
+      "sha256": "34984a2541baae9132f32e3dfe758ca29df64829558dc5a1c553c3d3011da880",
+      "stroke_count": 3
+    },
+    {
+      "character": "不",
+      "codepoint": "U+4E0D",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4e0d.json",
+      "sha256": "2b4d1cabdf4af0788cba2d2e4645b87b4a56cdcc33907d2f61205bfd607572b6",
+      "stroke_count": 4
+    },
+    {
+      "character": "东",
+      "codepoint": "U+4E1C",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4e1c.json",
+      "sha256": "80c3dfd836941d9507af3bfbc2257564483e134954f11d412d165f445e4f5a20",
+      "stroke_count": 5
+    },
+    {
+      "character": "两",
+      "codepoint": "U+4E24",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4e24.json",
+      "sha256": "d0a75c5e35abf6e97f381e02092d46f4c64ad53eb507b925cfb09f42094c79a7",
+      "stroke_count": 7
+    },
+    {
+      "character": "个",
+      "codepoint": "U+4E2A",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4e2a.json",
+      "sha256": "d8c4bbbbd3fe835eeb07441afb37e19045797ce664aa0078204571c6597b6101",
+      "stroke_count": 3
+    },
+    {
+      "character": "中",
+      "codepoint": "U+4E2D",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4e2d.json",
+      "sha256": "6982c8c16e7e7f769011edef0608289443711dbb34046dd9ca763e79ec29192f",
+      "stroke_count": 4
+    },
+    {
+      "character": "么",
+      "codepoint": "U+4E48",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4e48.json",
+      "sha256": "9bdbdeb1694fa92721c6f1d210a688a1db74b78a8888c99bbeeae5e0b45e5178",
+      "stroke_count": 3
+    },
+    {
+      "character": "九",
+      "codepoint": "U+4E5D",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4e5d.json",
+      "sha256": "ec8fa16237207544c76a014c552c5f7c227813e300875a287f07a0b8b86dbe54",
+      "stroke_count": 2
+    },
+    {
+      "character": "也",
+      "codepoint": "U+4E5F",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4e5f.json",
+      "sha256": "b382d98d228813ea32074caf8fee764b136593b5094579f4c00b2dd407c38dd3",
+      "stroke_count": 3
+    },
+    {
+      "character": "习",
+      "codepoint": "U+4E60",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4e60.json",
+      "sha256": "c990f81baacb5b6ebd333f0a8c95eaf2e52847765622001f1c71c058105f021c",
+      "stroke_count": 3
+    },
+    {
+      "character": "书",
+      "codepoint": "U+4E66",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4e66.json",
+      "sha256": "d913959d55b2bc53bec49bf50e44d6cf6df84d664cad9940c3983f061e4a6704",
+      "stroke_count": 4
+    },
+    {
+      "character": "买",
+      "codepoint": "U+4E70",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4e70.json",
+      "sha256": "bc317b3af63af2e775ba0f0dd1086a5eed65abb98f726f86acbfe35740572174",
+      "stroke_count": 6
+    },
+    {
+      "character": "了",
+      "codepoint": "U+4E86",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4e86.json",
+      "sha256": "63e33d9aece5d5a55d890793025d4964342f80ae92dee94232687deee76538be",
+      "stroke_count": 2
+    },
+    {
+      "character": "事",
+      "codepoint": "U+4E8B",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4e8b.json",
+      "sha256": "98b2e3488270e7bfa6b2d2ac9cc0254786ffef5d2fd75af7ab25b356aabaa752",
+      "stroke_count": 8
+    },
+    {
+      "character": "二",
+      "codepoint": "U+4E8C",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4e8c.json",
+      "sha256": "24d4225b8514e5b169f44230ba38169f63e9d9875f31b478457841114dbe1faa",
+      "stroke_count": 2
+    },
+    {
+      "character": "五",
+      "codepoint": "U+4E94",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4e94.json",
+      "sha256": "c2d064e88c2acde1faecc4ff45f0d4ec7cd5889a3e4b7e8145019150ad6db7bd",
+      "stroke_count": 4
+    },
+    {
+      "character": "些",
+      "codepoint": "U+4E9B",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4e9b.json",
+      "sha256": "67e9de28e8ea417c45c94b7cac97aaaa2e18eb4ceadffab109a46ea00fe2253d",
+      "stroke_count": 8
+    },
+    {
+      "character": "亮",
+      "codepoint": "U+4EAE",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4eae.json",
+      "sha256": "5bd3e9921530588754ba63b062674b26482fd240e95d67d2943f3fde1449edda",
+      "stroke_count": 9
+    },
+    {
+      "character": "人",
+      "codepoint": "U+4EBA",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4eba.json",
+      "sha256": "18ffb9fb727576b0c3e7dc44914be7ffd43164de9ba121710824b83f27bd3bb1",
+      "stroke_count": 2
+    },
+    {
+      "character": "什",
+      "codepoint": "U+4EC0",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4ec0.json",
+      "sha256": "9bc6bb09b416264a378bd94f848b6a295b081d641f51ea6ced53927a66350e4a",
+      "stroke_count": 4
+    },
+    {
+      "character": "今",
+      "codepoint": "U+4ECA",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4eca.json",
+      "sha256": "09dc680091ec729b8a214c59099cb1dcbc0eabe51d5b4c4b5465ca2ff8fc9b6d",
+      "stroke_count": 4
+    },
+    {
+      "character": "他",
+      "codepoint": "U+4ED6",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4ed6.json",
+      "sha256": "93c72a3fb00f00e9d7c3da8e2bf25e913bd3eba3c71eaafacc69f55891dc5625",
+      "stroke_count": 5
+    },
+    {
+      "character": "以",
+      "codepoint": "U+4EE5",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4ee5.json",
+      "sha256": "90bcd05b200e7335bcbc6677f715dfe67b7d15ebb4ea083256a4bfdd377ca030",
+      "stroke_count": 4
+    },
+    {
+      "character": "们",
+      "codepoint": "U+4EEC",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4eec.json",
+      "sha256": "0a25764ae60803a9958ae3cade375c57d8743d7db0e0bf2031e73b0d0449609e",
+      "stroke_count": 5
+    },
+    {
+      "character": "件",
+      "codepoint": "U+4EF6",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4ef6.json",
+      "sha256": "f3c7a57d23ec650db9147ea34732ef3d57c1eddb8ded94125172921f46442e6a",
+      "stroke_count": 6
+    },
+    {
+      "character": "休",
+      "codepoint": "U+4F11",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4f11.json",
+      "sha256": "38d9571fe1ec07e7563fbae70241a75ed42785dd1ba8c1162708d6c156c978bc",
+      "stroke_count": 6
+    },
+    {
+      "character": "会",
+      "codepoint": "U+4F1A",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4f1a.json",
+      "sha256": "0eb3173ca95ffa3b8dfcf2f5ea11b312b3af7290dbf674c2dab04338351d09e4",
+      "stroke_count": 6
+    },
+    {
+      "character": "住",
+      "codepoint": "U+4F4F",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4f4f.json",
+      "sha256": "dfb9531477f68c78f709729d9fc1a0700621fe649322113e99cf2e64ae1e81db",
+      "stroke_count": 7
+    },
+    {
+      "character": "作",
+      "codepoint": "U+4F5C",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4f5c.json",
+      "sha256": "546808c69ae8980719427a33a6b10a785dc4e51ff5900c3b3a4558ac4c2a2113",
+      "stroke_count": 7
+    },
     {
       "character": "你",
       "codepoint": "U+4F60",
@@ -59,12 +1553,1716 @@
       "stroke_count": 7
     },
     {
+      "character": "便",
+      "codepoint": "U+4FBF",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/4fbf.json",
+      "sha256": "ce0a14a78ac9c2d2fcc2562d0b38c49bd6fe563ab3a8ee6db5b58083da567cc0",
+      "stroke_count": 9
+    },
+    {
+      "character": "候",
+      "codepoint": "U+5019",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5019.json",
+      "sha256": "9b69049cabf23133ffac7e20245f70bd5200ee5901b76303d7e2a36652ba52c3",
+      "stroke_count": 10
+    },
+    {
+      "character": "做",
+      "codepoint": "U+505A",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/505a.json",
+      "sha256": "d1beaea85e2d7fe88662573226ffc5ceb6700c24c4d364d0628c6088dae6cc5c",
+      "stroke_count": 11
+    },
+    {
+      "character": "儿",
+      "codepoint": "U+513F",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/513f.json",
+      "sha256": "9f1e8515ba0fbf39f3b03e0fdd2342771f0c7197fff7c2ceee64674b95bf2c68",
+      "stroke_count": 2
+    },
+    {
+      "character": "元",
+      "codepoint": "U+5143",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5143.json",
+      "sha256": "3853b0c44be20d7e40e467d0ee7636bc20e2408620230ec0ddba2c6695a67581",
+      "stroke_count": 4
+    },
+    {
+      "character": "先",
+      "codepoint": "U+5148",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5148.json",
+      "sha256": "20b7475d7a76d3e2233ef9bd28c1239392630fb1407565c325d3efbdc0445c19",
+      "stroke_count": 6
+    },
+    {
+      "character": "八",
+      "codepoint": "U+516B",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/516b.json",
+      "sha256": "650e961eefa88d95cc119146ff6606275ecad54c3f8ad1442c08889f928ec5af",
+      "stroke_count": 2
+    },
+    {
+      "character": "公",
+      "codepoint": "U+516C",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/516c.json",
+      "sha256": "f486cccfeb549f77756de2d5086c83c1ebfcb7ce4cfafa2ba332b9700d1c8738",
+      "stroke_count": 4
+    },
+    {
+      "character": "六",
+      "codepoint": "U+516D",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/516d.json",
+      "sha256": "54216db5e4bcd45583584fbff169a25d10c3a34e0fa64f3c7a2267bc94398f86",
+      "stroke_count": 4
+    },
+    {
+      "character": "关",
+      "codepoint": "U+5173",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5173.json",
+      "sha256": "28d1c30ed1cda1ac8e0618bfe53010b6dc5bb5537670905a760a51d4d5a81399",
+      "stroke_count": 6
+    },
+    {
+      "character": "兴",
+      "codepoint": "U+5174",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5174.json",
+      "sha256": "4138d58275de5a75c66be925ce5f789a1e90cad3bf897deaa454c5054f660713",
+      "stroke_count": 6
+    },
+    {
+      "character": "再",
+      "codepoint": "U+518D",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/518d.json",
+      "sha256": "63c13624816b79b2edb3f6d04c494a1bc8fe89175e06c4f1e7452e2016e5224c",
+      "stroke_count": 6
+    },
+    {
+      "character": "写",
+      "codepoint": "U+5199",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5199.json",
+      "sha256": "803022b32271801f05bd0931a18608b3319f7a9ffe0ea88093b19d539cf1941f",
+      "stroke_count": 5
+    },
+    {
+      "character": "冷",
+      "codepoint": "U+51B7",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/51b7.json",
+      "sha256": "21d62c3489dcf2cd434ba6d5e10d62fa46f15fa2d196b2f465f8c6342db23283",
+      "stroke_count": 7
+    },
+    {
+      "character": "几",
+      "codepoint": "U+51E0",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/51e0.json",
+      "sha256": "b730f3432a2e0697863f512fe5fbf8bef705a296fe657be4c7433102e1961a37",
+      "stroke_count": 2
+    },
+    {
+      "character": "出",
+      "codepoint": "U+51FA",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/51fa.json",
+      "sha256": "1b7e7176d1c5ca47f340e9ce28937f33929b6768ee20ea79f9129118b87f00a2",
+      "stroke_count": 5
+    },
+    {
+      "character": "分",
+      "codepoint": "U+5206",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5206.json",
+      "sha256": "9bcdcf1103921fb4ab942c08d05ca9b4cf363cea0cb92f91a6c8da8c40344587",
+      "stroke_count": 4
+    },
+    {
+      "character": "到",
+      "codepoint": "U+5230",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5230.json",
+      "sha256": "6aa5dd0897e0717edeae53ac983a92b81d22845423b59c5d7afe579f8096764d",
+      "stroke_count": 8
+    },
+    {
+      "character": "前",
+      "codepoint": "U+524D",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/524d.json",
+      "sha256": "8126272afc54ca3a5bd512086901f4b3b40fcc43bcdf391fb60de3cb0dcd5c62",
+      "stroke_count": 9
+    },
+    {
+      "character": "包",
+      "codepoint": "U+5305",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5305.json",
+      "sha256": "06c5b55a0acfd21621f9eef34bfb18c9de54320913d6b5f0aea44b36c6117d78",
+      "stroke_count": 5
+    },
+    {
+      "character": "医",
+      "codepoint": "U+533B",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/533b.json",
+      "sha256": "a46207024347cd188a40d7056edf6e4d8b8e870b1d69464aa36444244381ea7e",
+      "stroke_count": 7
+    },
+    {
+      "character": "十",
+      "codepoint": "U+5341",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5341.json",
+      "sha256": "257a0939af5742ca31a980adfa1421d0302d5e90491ab3215c1934bea9a59bef",
+      "stroke_count": 2
+    },
+    {
+      "character": "千",
+      "codepoint": "U+5343",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5343.json",
+      "sha256": "f18da1869ef65a45deb8dca2eb558febc6b573abd420498d408ea3ae6455f06f",
+      "stroke_count": 3
+    },
+    {
+      "character": "午",
+      "codepoint": "U+5348",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5348.json",
+      "sha256": "9a520ddf8ad36f8ddece42e7bbc28b3cd9572d810d369c9e36e089913672a714",
+      "stroke_count": 4
+    },
+    {
+      "character": "半",
+      "codepoint": "U+534A",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/534a.json",
+      "sha256": "7f3a9c1766ccd8a44224babb7e106ad95e831b9a6f850fc89c6fd6f41e7b7099",
+      "stroke_count": 5
+    },
+    {
+      "character": "卖",
+      "codepoint": "U+5356",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5356.json",
+      "sha256": "de66316a09d6203d2a1a39761e5d491b1e82842bbacef43dbfcb1a05d864f842",
+      "stroke_count": 8
+    },
+    {
+      "character": "去",
+      "codepoint": "U+53BB",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/53bb.json",
+      "sha256": "96e01168e8c76add5a05de734f18ef282451ca9107757977e5d83d8eea2bc281",
+      "stroke_count": 5
+    },
+    {
+      "character": "友",
+      "codepoint": "U+53CB",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/53cb.json",
+      "sha256": "71a33320fedcb2d37b92c5bcc4b7d6aa9bd94dbd022719561711b5eb2338547b",
+      "stroke_count": 4
+    },
+    {
+      "character": "口",
+      "codepoint": "U+53E3",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/53e3.json",
+      "sha256": "ac208865e3166fc35214cec326f00a4b6788a8cac9b4c5a6a37745077e32ddab",
+      "stroke_count": 3
+    },
+    {
+      "character": "只",
+      "codepoint": "U+53EA",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/53ea.json",
+      "sha256": "ec97976657b097708528825c2b48ee6e5436f38982f279c9c79bcf77281cf274",
+      "stroke_count": 5
+    },
+    {
+      "character": "叫",
+      "codepoint": "U+53EB",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/53eb.json",
+      "sha256": "a5cc36373dc1a8ee08e4d3f1eb05ce1048c9a6d7dfc1936ce5ae17833c927278",
+      "stroke_count": 5
+    },
+    {
+      "character": "可",
+      "codepoint": "U+53EF",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/53ef.json",
+      "sha256": "70e04def3d8d3048392138b4c38132f9307eee194cfa2779b446baebf8163f12",
+      "stroke_count": 5
+    },
+    {
+      "character": "号",
+      "codepoint": "U+53F7",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/53f7.json",
+      "sha256": "b70263ecc4e57909087d83873337cecb8b642220761be8083636c4a9e6e212be",
+      "stroke_count": 5
+    },
+    {
+      "character": "司",
+      "codepoint": "U+53F8",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/53f8.json",
+      "sha256": "17963d4ce5fb97b6588d832e3ba1345498894ddab9895756a62491972be70ba8",
+      "stroke_count": 5
+    },
+    {
+      "character": "吃",
+      "codepoint": "U+5403",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5403.json",
+      "sha256": "7030e0da002dbc77d79821e9b78ab848777a8b9c0dabd1340b41b5fc1dd63a36",
+      "stroke_count": 6
+    },
+    {
+      "character": "同",
+      "codepoint": "U+540C",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/540c.json",
+      "sha256": "ebac44738a64a0f7cb202363be8abfafe4aed2fc20965dd66f9b1f7555766967",
+      "stroke_count": 6
+    },
+    {
+      "character": "名",
+      "codepoint": "U+540D",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/540d.json",
+      "sha256": "3dc8c37774349653b6e4732d505bcdd84585f092ab461221ef77984cffb7e98d",
+      "stroke_count": 6
+    },
+    {
+      "character": "后",
+      "codepoint": "U+540E",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/540e.json",
+      "sha256": "1db954c5aa12b7c8efab666a716899c98e27c2b20312ae75df405bcf68cc5c91",
+      "stroke_count": 6
+    },
+    {
+      "character": "吗",
+      "codepoint": "U+5417",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5417.json",
+      "sha256": "fd15dc345d5413ebf4bb3517b7b616890b0a948f62a70a21a2a8eed4eed78583",
+      "stroke_count": 6
+    },
+    {
+      "character": "吧",
+      "codepoint": "U+5427",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5427.json",
+      "sha256": "1fbe8a6edb50ccf565fc6bac3e9ba17f6402631f46708fb87591a564e6e83dca",
+      "stroke_count": 7
+    },
+    {
+      "character": "听",
+      "codepoint": "U+542C",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/542c.json",
+      "sha256": "f4be99b28792eb4915420affcc4ce6e73f1c7e0f8dd458b75095b24ca841bd51",
+      "stroke_count": 7
+    },
+    {
+      "character": "呢",
+      "codepoint": "U+5462",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5462.json",
+      "sha256": "258288d04eca768919eaa16a095a3ea2407139fefeda74772efcf408d3f92fa6",
+      "stroke_count": 8
+    },
+    {
+      "character": "和",
+      "codepoint": "U+548C",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/548c.json",
+      "sha256": "bf6e21b489970be6af9bb0e8337920632072b1dbbe0e9d216c314623cbd1c0e8",
+      "stroke_count": 8
+    },
+    {
+      "character": "哥",
+      "codepoint": "U+54E5",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/54e5.json",
+      "sha256": "0a0ccb90dba97ea99d1850523f46a7731bc0754e24b2fde3b880f00816e4edfa",
+      "stroke_count": 10
+    },
+    {
+      "character": "哪",
+      "codepoint": "U+54EA",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/54ea.json",
+      "sha256": "726b6fc78897b2164f79a564d54ada987cf8cdb960ed1ce9f848e8e787bae509",
+      "stroke_count": 9
+    },
+    {
+      "character": "唱",
+      "codepoint": "U+5531",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5531.json",
+      "sha256": "474d06fd4fd9ba7b070603274c97854e0daf787bc2cc26f9a472454549f018d4",
+      "stroke_count": 11
+    },
+    {
+      "character": "商",
+      "codepoint": "U+5546",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5546.json",
+      "sha256": "75bd5dc4f2d847527a0dd0f8674a4fa0b3cce132af72ca1d3234240b383850c1",
+      "stroke_count": 11
+    },
+    {
+      "character": "喂",
+      "codepoint": "U+5582",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5582.json",
+      "sha256": "6707bfe48946f449db5d031c1cec74b52b011869b9147d5546b288a994395a45",
+      "stroke_count": 12
+    },
+    {
+      "character": "喜",
+      "codepoint": "U+559C",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/559c.json",
+      "sha256": "779326b147f56c81159f2d732347e50549a994e0b0b190845dc6355a74215a43",
+      "stroke_count": 12
+    },
+    {
+      "character": "喝",
+      "codepoint": "U+559D",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/559d.json",
+      "sha256": "bf7840cc0811e59e4db4a35f476af88054625cac10e87b0338c2c267b37dca9a",
+      "stroke_count": 12
+    },
+    {
+      "character": "四",
+      "codepoint": "U+56DB",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/56db.json",
+      "sha256": "8aa7b3e16a0c3f67fc4ed3b08c7f24e80b2e90d8f6ade512d20109a625bea3b9",
+      "stroke_count": 5
+    },
+    {
+      "character": "回",
+      "codepoint": "U+56DE",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/56de.json",
+      "sha256": "2987e137d9a4bdbb061bd78dd315fe0d520eaa6d65dc5e48e3d6f8c907a06e8b",
+      "stroke_count": 6
+    },
+    {
+      "character": "国",
+      "codepoint": "U+56FD",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/56fd.json",
+      "sha256": "40b46b7cbe5c292abcf79507dc544c5424c9cfa4df0376aa3b8fa42e535c2f7f",
+      "stroke_count": 8
+    },
+    {
+      "character": "在",
+      "codepoint": "U+5728",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5728.json",
+      "sha256": "ec45f668f3181cd2c612797ff557f5b53f8823f120eca5d9a68e0fd8b1b0f21c",
+      "stroke_count": 6
+    },
+    {
+      "character": "坐",
+      "codepoint": "U+5750",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5750.json",
+      "sha256": "b01ef6333805198f5b9d9443b6a157ae94d3233a30fa9d090a72e586b116d255",
+      "stroke_count": 7
+    },
+    {
+      "character": "块",
+      "codepoint": "U+5757",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5757.json",
+      "sha256": "8617e40d636a86f106819470b0bb3d1a17500ee2ea4427935c2a880596b352f8",
+      "stroke_count": 7
+    },
+    {
+      "character": "士",
+      "codepoint": "U+58EB",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/58eb.json",
+      "sha256": "9ef5774bf258ffa9d75d25b5598cbeccdc0bc36634e536b4b54f0fe3ef028006",
+      "stroke_count": 3
+    },
+    {
+      "character": "外",
+      "codepoint": "U+5916",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5916.json",
+      "sha256": "bab290c36ee093d6c2df1b9d95d3dbbcdf492dc108f3a7e81f0ac13cd8726d5c",
+      "stroke_count": 5
+    },
+    {
+      "character": "多",
+      "codepoint": "U+591A",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/591a.json",
+      "sha256": "d7bc212fe60eaa766209b36e5e9642940892cf43b472accedaf55f517d8313dc",
+      "stroke_count": 6
+    },
+    {
+      "character": "大",
+      "codepoint": "U+5927",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5927.json",
+      "sha256": "83c82950e903c915aa50d0d62b084a2d31c85fe68dce21e0acf39e2f9607e611",
+      "stroke_count": 3
+    },
+    {
+      "character": "天",
+      "codepoint": "U+5929",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5929.json",
+      "sha256": "8cacde3b91b815c7c667e80e6d4838e3b7dc30ab457763e32d29c1586b0d2446",
+      "stroke_count": 4
+    },
+    {
+      "character": "太",
+      "codepoint": "U+592A",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/592a.json",
+      "sha256": "b71a20e1c0c68563b8a58a75749f48ac4a095c7d05136c5dbd858a318fbe234e",
+      "stroke_count": 4
+    },
+    {
+      "character": "女",
+      "codepoint": "U+5973",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5973.json",
+      "sha256": "8a17d3644493617f0090476873c0e01c25d83271e586c097e40ef0256ced5ac8",
+      "stroke_count": 3
+    },
+    {
+      "character": "奶",
+      "codepoint": "U+5976",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5976.json",
+      "sha256": "151460436d8c0f29b05af02b03e456d0232f4dc9f1bfae3b2b551aa8a99d3aa9",
+      "stroke_count": 5
+    },
+    {
+      "character": "她",
+      "codepoint": "U+5979",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5979.json",
+      "sha256": "4e69fc6340529cfbdf572a98f3bd6f934233186943b931b59e1a3c65464518c2",
+      "stroke_count": 6
+    },
+    {
       "character": "好",
       "codepoint": "U+597D",
       "data_version": "2.0.1",
       "path": "vendor/hanzi-writer-data/2.0.1/597d.json",
       "sha256": "c9f085fe6519e2b2c9653c7edf51bdbc78339fcc0b10f94c1f33c7f4f4d4a3a5",
       "stroke_count": 6
+    },
+    {
+      "character": "妈",
+      "codepoint": "U+5988",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5988.json",
+      "sha256": "0b288b695765e1294ca2cbc2b463227b637047932ebdab2ff9cddba6c1d576b2",
+      "stroke_count": 6
+    },
+    {
+      "character": "妹",
+      "codepoint": "U+59B9",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/59b9.json",
+      "sha256": "10b03e84339e4b9033d1bd9a4b1fba91ab872f810af3f6633c667872e606a7c3",
+      "stroke_count": 8
+    },
+    {
+      "character": "姐",
+      "codepoint": "U+59D0",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/59d0.json",
+      "sha256": "e4fcebaec74b9a53077e2d6e067fdfdca4470aa36f23246c7a03f96e5ab000c6",
+      "stroke_count": 8
+    },
+    {
+      "character": "子",
+      "codepoint": "U+5B50",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5b50.json",
+      "sha256": "f5b7ff9aa3de64ec676e3f06e7c22795aa834eb11eec43b9423f355db5f46474",
+      "stroke_count": 3
+    },
+    {
+      "character": "字",
+      "codepoint": "U+5B57",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5b57.json",
+      "sha256": "d4e20f90c64acc1427d41e693c7151f3ea389eb10d8ce7f2c98613b01c6d1baf",
+      "stroke_count": 6
+    },
+    {
+      "character": "学",
+      "codepoint": "U+5B66",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5b66.json",
+      "sha256": "9f2bdcab70ecf93632b6cf1ce9b5339cc8018d742eed7839037d146f8c294193",
+      "stroke_count": 8
+    },
+    {
+      "character": "孩",
+      "codepoint": "U+5B69",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5b69.json",
+      "sha256": "6fa9400ce8f719a6a6fb46784fb92faacd0244e2096adacaab36412cae755950",
+      "stroke_count": 9
+    },
+    {
+      "character": "它",
+      "codepoint": "U+5B83",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5b83.json",
+      "sha256": "a0928b9f0c278b71354633c9b3f3b57279c6bc2bf055beefc9589fde6951f524",
+      "stroke_count": 5
+    },
+    {
+      "character": "宜",
+      "codepoint": "U+5B9C",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5b9c.json",
+      "sha256": "680b27a6f00851dce5d750e02947e94e7ae1ac0eaa2f00020c702887d1c0a91d",
+      "stroke_count": 8
+    },
+    {
+      "character": "客",
+      "codepoint": "U+5BA2",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5ba2.json",
+      "sha256": "372961044841f9f6829d9152419b7081c9378621dfd55215c3cd067ad76368e5",
+      "stroke_count": 9
+    },
+    {
+      "character": "家",
+      "codepoint": "U+5BB6",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5bb6.json",
+      "sha256": "390ad42ee60491df2ae9ddfd59358d4d6ff69208ccdac902aae0431b7e5f9aef",
+      "stroke_count": 10
+    },
+    {
+      "character": "对",
+      "codepoint": "U+5BF9",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5bf9.json",
+      "sha256": "34cb1a64ee2a7794faec417b950b8a026efe6fc3779d09e363d6b383461f569a",
+      "stroke_count": 5
+    },
+    {
+      "character": "小",
+      "codepoint": "U+5C0F",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5c0f.json",
+      "sha256": "72bf769c8c3426bffa578502eb8b1532fb1e622ddb6f40ded04e484290c0fe8c",
+      "stroke_count": 3
+    },
+    {
+      "character": "少",
+      "codepoint": "U+5C11",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5c11.json",
+      "sha256": "de5cd9d5b1bbd468411f82f7d57881b11b3a9b9c7bb812ff891ac66c06b31ef7",
+      "stroke_count": 4
+    },
+    {
+      "character": "岁",
+      "codepoint": "U+5C81",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5c81.json",
+      "sha256": "b35bac3e29ec6b1b7d1525232bd8f820900fcb857cf10a70154f218db49cbb2c",
+      "stroke_count": 6
+    },
+    {
+      "character": "工",
+      "codepoint": "U+5DE5",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5de5.json",
+      "sha256": "a1d8521d2b9c64ed6818fc9314dea0b59499b2652dad15a4cf361d37893c4bcb",
+      "stroke_count": 3
+    },
+    {
+      "character": "市",
+      "codepoint": "U+5E02",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5e02.json",
+      "sha256": "ef79fe1efa67b4592ca7feaa156474a2bf3bf4588774ae9ba8a60bda396b6b51",
+      "stroke_count": 5
+    },
+    {
+      "character": "师",
+      "codepoint": "U+5E08",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5e08.json",
+      "sha256": "80d528921fbb75b21ed1737f622adbb8e9da7b71b143a64382568f22ff812093",
+      "stroke_count": 6
+    },
+    {
+      "character": "常",
+      "codepoint": "U+5E38",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5e38.json",
+      "sha256": "e2adfad55f16edc7de6c7dff6cf78cd79b874f7387aa63d61971900fc3d09db0",
+      "stroke_count": 11
+    },
+    {
+      "character": "年",
+      "codepoint": "U+5E74",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5e74.json",
+      "sha256": "2da9f7d7526442de1cad442cce66970ac1b41f72c2a388dc851d503ebab554c0",
+      "stroke_count": 6
+    },
+    {
+      "character": "床",
+      "codepoint": "U+5E8A",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5e8a.json",
+      "sha256": "61e32987825856552772bfaf429cc5ef9a9f4b7a7a61b415b749670c07cb1954",
+      "stroke_count": 7
+    },
+    {
+      "character": "店",
+      "codepoint": "U+5E97",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5e97.json",
+      "sha256": "1d5d0424731bf4b7f76f38258b575d1c8c209ed2055ae59810745e12b6119878",
+      "stroke_count": 8
+    },
+    {
+      "character": "开",
+      "codepoint": "U+5F00",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5f00.json",
+      "sha256": "0b4efab7fc994927f4244f1c6d79a7012668a9c7cbdbc40a45d0bcf9b4cbbd49",
+      "stroke_count": 4
+    },
+    {
+      "character": "弟",
+      "codepoint": "U+5F1F",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5f1f.json",
+      "sha256": "9a89eaf0eef53c73f69bd3cd9f53fd0e628c4c663b13f6c0a4c3773b3071a735",
+      "stroke_count": 7
+    },
+    {
+      "character": "影",
+      "codepoint": "U+5F71",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5f71.json",
+      "sha256": "41b27a6aa001477b3a27aaabae5306c86e6d50f28cef825cea2869acc85cd1d1",
+      "stroke_count": 15
+    },
+    {
+      "character": "很",
+      "codepoint": "U+5F88",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5f88.json",
+      "sha256": "b34ddabdd9034dfa73a413d9f83aec96451f97d75e8a553505a7fbe442c57356",
+      "stroke_count": 9
+    },
+    {
+      "character": "得",
+      "codepoint": "U+5F97",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5f97.json",
+      "sha256": "46fe32f6570275a05e5a8de5b78e847e8d8c2c6b1d20e45c9f9e77a183c73f68",
+      "stroke_count": 11
+    },
+    {
+      "character": "忙",
+      "codepoint": "U+5FD9",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/5fd9.json",
+      "sha256": "18bea80c64cb21470e90361694ba1dc3ca3edfa1c44365e44429c691776cc3aa",
+      "stroke_count": 6
+    },
+    {
+      "character": "怎",
+      "codepoint": "U+600E",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/600e.json",
+      "sha256": "a3f5b3be91848f0396185458d9810ab0c037e6d99bb4a2f3cb38b3475e79ee2d",
+      "stroke_count": 9
+    },
+    {
+      "character": "息",
+      "codepoint": "U+606F",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/606f.json",
+      "sha256": "429a66a7e77a9e35885f4a27c526c5f9199351068840ced9bbedb5ace41d05ac",
+      "stroke_count": 10
+    },
+    {
+      "character": "您",
+      "codepoint": "U+60A8",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/60a8.json",
+      "sha256": "a60e0990ebe31bdad5defa50c9e94af61a3aa8982d8e7460f935aa798e51db39",
+      "stroke_count": 11
+    },
+    {
+      "character": "想",
+      "codepoint": "U+60F3",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/60f3.json",
+      "sha256": "9e3bf868a8170c4deb5c1fc39ffd42ef1a119bb55d742028777fb7ebfb23e885",
+      "stroke_count": 13
+    },
+    {
+      "character": "我",
+      "codepoint": "U+6211",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/6211.json",
+      "sha256": "08616462fc64b4c18c76a3f68a992305e98946f468bf42ec76ca9be1cd6c5ac8",
+      "stroke_count": 7
+    },
+    {
+      "character": "房",
+      "codepoint": "U+623F",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/623f.json",
+      "sha256": "8f595e59111f1bd1044fb117f7d26485885367982c49ed044c9536bc42633718",
+      "stroke_count": 8
+    },
+    {
+      "character": "手",
+      "codepoint": "U+624B",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/624b.json",
+      "sha256": "7964eac3bced473343f5741f98fea3eb2dd842eecd57ec20b4369912570964a7",
+      "stroke_count": 4
+    },
+    {
+      "character": "打",
+      "codepoint": "U+6253",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/6253.json",
+      "sha256": "d87d2a216a25000dd03a25c69365ab4780a432f81edba42c1671d60f9872afe9",
+      "stroke_count": 5
+    },
+    {
+      "character": "找",
+      "codepoint": "U+627E",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/627e.json",
+      "sha256": "b7c89c6071338aa348a62a1051dbbb0a1ef2b97477ae531db4825ea1b764d098",
+      "stroke_count": 7
+    },
+    {
+      "character": "文",
+      "codepoint": "U+6587",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/6587.json",
+      "sha256": "da58df874e176b10cbda075bb800aaa486fc716476a563fcc83f8f06b2169dbe",
+      "stroke_count": 4
+    },
+    {
+      "character": "新",
+      "codepoint": "U+65B0",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/65b0.json",
+      "sha256": "8f631d5c3b6bce07807edcbd80f38c6966c0e982f8d051b56b3fe73642e3503c",
+      "stroke_count": 13
+    },
+    {
+      "character": "日",
+      "codepoint": "U+65E5",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/65e5.json",
+      "sha256": "5c6bad210149abac8bd645cb12b1394edea5681f224154c27f422134299520fb",
+      "stroke_count": 4
+    },
+    {
+      "character": "早",
+      "codepoint": "U+65E9",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/65e9.json",
+      "sha256": "4d6b2979bd1167355372cf73800a2ce13032febb989b8bf5901e6a7dbe773454",
+      "stroke_count": 6
+    },
+    {
+      "character": "时",
+      "codepoint": "U+65F6",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/65f6.json",
+      "sha256": "c5f769e6b0df9b9ca252c43220cc339b2e8cd88dce12933f2f204f33db4b78b0",
+      "stroke_count": 7
+    },
+    {
+      "character": "明",
+      "codepoint": "U+660E",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/660e.json",
+      "sha256": "15468d4fcd2c430aa5b57e8765ce043f6965d421e24cabdf66d2c899b16c6943",
+      "stroke_count": 8
+    },
+    {
+      "character": "星",
+      "codepoint": "U+661F",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/661f.json",
+      "sha256": "21780a0d4c52c4e5f236bd18d3aacb4101d5ce17375442cdc64564a000330945",
+      "stroke_count": 9
+    },
+    {
+      "character": "昨",
+      "codepoint": "U+6628",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/6628.json",
+      "sha256": "6e5daca94483c96d1e4c2cadf281d196a498d0159a7801a725f9c73ed5721c18",
+      "stroke_count": 9
+    },
+    {
+      "character": "是",
+      "codepoint": "U+662F",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/662f.json",
+      "sha256": "73249157dc9e08c1eb3fb029ca12288b15c597f85eb4a6c72f5bdc6893ded27b",
+      "stroke_count": 9
+    },
+    {
+      "character": "晚",
+      "codepoint": "U+665A",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/665a.json",
+      "sha256": "b545c3866d2705e569fe1784f74f505ae6f10eaa7a7fdb4068bc539569485085",
+      "stroke_count": 11
+    },
+    {
+      "character": "月",
+      "codepoint": "U+6708",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/6708.json",
+      "sha256": "441949321eb706def6e8d0c1eeca6b461141703dcc07619939a32d681e08fc46",
+      "stroke_count": 4
+    },
+    {
+      "character": "有",
+      "codepoint": "U+6709",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/6709.json",
+      "sha256": "cee2fb732f41de30a7b0c84880d2d47af0a9fda6fda795d99c77a57f2ee4c8e4",
+      "stroke_count": 6
+    },
+    {
+      "character": "朋",
+      "codepoint": "U+670B",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/670b.json",
+      "sha256": "f67483634bf14bcd59db35d94c7e1f560ee78be33c14754c43ad201cf98d7622",
+      "stroke_count": 8
+    },
+    {
+      "character": "服",
+      "codepoint": "U+670D",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/670d.json",
+      "sha256": "b6b4c141c9abab48aa7b7e9d00d159cf922cf8627783921d81288df95bfe7115",
+      "stroke_count": 8
+    },
+    {
+      "character": "期",
+      "codepoint": "U+671F",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/671f.json",
+      "sha256": "806ca46deb664ece4372b7201d1eca656d34c38848537fb8adbae719170e227a",
+      "stroke_count": 12
+    },
+    {
+      "character": "本",
+      "codepoint": "U+672C",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/672c.json",
+      "sha256": "1507bfab8ff404936abc31790252d16b5eddf769b85791d89bc9c61c668fa838",
+      "stroke_count": 5
+    },
+    {
+      "character": "机",
+      "codepoint": "U+673A",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/673a.json",
+      "sha256": "42a5a786f303e3e08b268ecd35c872ae3668e170261b4109fbffc4a0a55c6bbc",
+      "stroke_count": 6
+    },
+    {
+      "character": "条",
+      "codepoint": "U+6761",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/6761.json",
+      "sha256": "2c7f74285fda0de35698d5dc3339aa0704fea4759862cb4ae2b03942803d6686",
+      "stroke_count": 7
+    },
+    {
+      "character": "来",
+      "codepoint": "U+6765",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/6765.json",
+      "sha256": "ebf3a9165522693077a8f14d25e003565409d8751ff0a4724423315d57d9a57d",
+      "stroke_count": 7
+    },
+    {
+      "character": "杯",
+      "codepoint": "U+676F",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/676f.json",
+      "sha256": "6bb07f43f8043a1b36e7e292651e6348092e0777d44815831e01a9d5694da491",
+      "stroke_count": 8
+    },
+    {
+      "character": "果",
+      "codepoint": "U+679C",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/679c.json",
+      "sha256": "9862414e1eab8e4ff3849cf29145d83bad8c74754c0faff35de284875ece9559",
+      "stroke_count": 8
+    },
+    {
+      "character": "校",
+      "codepoint": "U+6821",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/6821.json",
+      "sha256": "bd810a1cf7fa8216207502a388f4593cce34b71018e8419ecff0b5364147e0bb",
+      "stroke_count": 10
+    },
+    {
+      "character": "样",
+      "codepoint": "U+6837",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/6837.json",
+      "sha256": "df344ad329f2d7461c9ea5d2c64820f8b43d0957ecb9c23b703c5cf4266c0b09",
+      "stroke_count": 10
+    },
+    {
+      "character": "桌",
+      "codepoint": "U+684C",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/684c.json",
+      "sha256": "ecc0365660b9cc5f03cfb1b6a3b4a8a54979ff90b84cd91a9dffa5d2b05667d6",
+      "stroke_count": 10
+    },
+    {
+      "character": "椅",
+      "codepoint": "U+6905",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/6905.json",
+      "sha256": "5c5bf9d1e0b58d2d1d33134f57b8fdfeca191fd86e89a48940661d427beac0a8",
+      "stroke_count": 12
+    },
+    {
+      "character": "欢",
+      "codepoint": "U+6B22",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/6b22.json",
+      "sha256": "83016170e79bb66ee07caa185befb9df8ba2a49caa3d167a04149d0120a55e23",
+      "stroke_count": 6
+    },
+    {
+      "character": "歌",
+      "codepoint": "U+6B4C",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/6b4c.json",
+      "sha256": "b43ff9d397eb5ec5681c215a52d8f1ecdeefd02bf5755da1c3f1da8e62a5ec41",
+      "stroke_count": 14
+    },
+    {
+      "character": "正",
+      "codepoint": "U+6B63",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/6b63.json",
+      "sha256": "bd849e7afea904faa4f630cc2f1ca5d05db8cf9023fa7aa73a8d437c53c95a86",
+      "stroke_count": 5
+    },
+    {
+      "character": "气",
+      "codepoint": "U+6C14",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/6c14.json",
+      "sha256": "32ebb998c7bd7165e10e781ff52db83e5a3413f01cb70438e2271e99773abf56",
+      "stroke_count": 4
+    },
+    {
+      "character": "水",
+      "codepoint": "U+6C34",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/6c34.json",
+      "sha256": "46e262a80f2b7da72ea04788d1c19c40339e18beaba16987cc84d55fc257c9e3",
+      "stroke_count": 4
+    },
+    {
+      "character": "汉",
+      "codepoint": "U+6C49",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/6c49.json",
+      "sha256": "24bae414f2def0d58cab2a7ae066004c62bded29331127925f4a4521264bd8e7",
+      "stroke_count": 5
+    },
+    {
+      "character": "没",
+      "codepoint": "U+6CA1",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/6ca1.json",
+      "sha256": "74ed15d6773e229478cdc30bfa283dab5b2ccbaa1c7f6cfd338b0ae20216dbb6",
+      "stroke_count": 7
+    },
+    {
+      "character": "漂",
+      "codepoint": "U+6F02",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/6f02.json",
+      "sha256": "af4d64f78e5132d8af4cbf353a9147c347e486ffdbc42637f71f4ee4f743be1f",
+      "stroke_count": 14
+    },
+    {
+      "character": "火",
+      "codepoint": "U+706B",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/706b.json",
+      "sha256": "09fc0a54adb11753319f5750dcdc127698dfb8a453f1a57b5f11b6a1ee3c64e0",
+      "stroke_count": 4
+    },
+    {
+      "character": "点",
+      "codepoint": "U+70B9",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/70b9.json",
+      "sha256": "1b5b5cd89627b1800adddb7448516283d5cb178ad1df187b3764c12aaa2d87cf",
+      "stroke_count": 9
+    },
+    {
+      "character": "热",
+      "codepoint": "U+70ED",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/70ed.json",
+      "sha256": "25f30e825e12e831de16c70bb0056ee22e3947b68ef46ea5f0eae3b6114ad20f",
+      "stroke_count": 10
+    },
+    {
+      "character": "爱",
+      "codepoint": "U+7231",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/7231.json",
+      "sha256": "26312d0cf150b55c961e890c2a205f5143a185bd2c7337c9c3622040d61489c4",
+      "stroke_count": 10
+    },
+    {
+      "character": "爸",
+      "codepoint": "U+7238",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/7238.json",
+      "sha256": "fa40233458f9a517bcfedea1595d348831af8f73be08fe45a9554b28c59de25c",
+      "stroke_count": 8
+    },
+    {
+      "character": "牛",
+      "codepoint": "U+725B",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/725b.json",
+      "sha256": "cb0c578ebb919ca2ad759cc8a79159f1eff623ae7f57dacca26a1bbbc523ab98",
+      "stroke_count": 4
+    },
+    {
+      "character": "狗",
+      "codepoint": "U+72D7",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/72d7.json",
+      "sha256": "ce363f0ad41d9ccaec3d87204894a834c9f332a8e9af78d6db33281a07c3bcca",
+      "stroke_count": 8
+    },
+    {
+      "character": "猫",
+      "codepoint": "U+732B",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/732b.json",
+      "sha256": "f4ec6d5464a2fc431779ec654c25efd4c0816180253d048daa2897075a4ad6fd",
+      "stroke_count": 11
+    },
+    {
+      "character": "玩",
+      "codepoint": "U+73A9",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/73a9.json",
+      "sha256": "65485d78931a81e1e09a77097b4915fce9442517300ef31ea1909c129b1116bf",
+      "stroke_count": 8
+    },
+    {
+      "character": "现",
+      "codepoint": "U+73B0",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/73b0.json",
+      "sha256": "488ceab2c1045a151d9caa83b3095e26533bc7df22294d167c2bcdcbec17effa",
+      "stroke_count": 8
+    },
+    {
+      "character": "班",
+      "codepoint": "U+73ED",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/73ed.json",
+      "sha256": "4ade745bbdd9f871e5aa1a3f44bdb83c1fdcad7806482a5f83fad8faf3085539",
+      "stroke_count": 10
+    },
+    {
+      "character": "生",
+      "codepoint": "U+751F",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/751f.json",
+      "sha256": "dbe556919f5c0a95448c40997dfce35ad56ebf26d874218e7076d8c12374cfd8",
+      "stroke_count": 5
+    },
+    {
+      "character": "电",
+      "codepoint": "U+7535",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/7535.json",
+      "sha256": "bbf199bee650b38f1d1b1da68a0c8f0eed59bdfce2302cd2abe0c5a115896850",
+      "stroke_count": 5
+    },
+    {
+      "character": "男",
+      "codepoint": "U+7537",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/7537.json",
+      "sha256": "e380887b51e1d07f5ab62b3b366bf9a2bb28968bd2e8217f20c34ef3e2b087b2",
+      "stroke_count": 7
+    },
+    {
+      "character": "病",
+      "codepoint": "U+75C5",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/75c5.json",
+      "sha256": "7e1961f5a3d3120e7900df9da41dfee35b262fddba178433255ba5787549747b",
+      "stroke_count": 10
+    },
+    {
+      "character": "白",
+      "codepoint": "U+767D",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/767d.json",
+      "sha256": "a3858cdfb3a8d08b8046aa4e8c9161dac017119c8f7986e52c9e6752d1721f2e",
+      "stroke_count": 5
+    },
+    {
+      "character": "百",
+      "codepoint": "U+767E",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/767e.json",
+      "sha256": "3cc71b969c7cb35878645077365f029ad249eef5c5f80b61683df4bbbf7849b2",
+      "stroke_count": 6
+    },
+    {
+      "character": "的",
+      "codepoint": "U+7684",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/7684.json",
+      "sha256": "d9a067e65c8c3770d5559d42bd2bc564b8e133d8fa3dc237d9c4a317adfbb32f",
+      "stroke_count": 8
+    },
+    {
+      "character": "看",
+      "codepoint": "U+770B",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/770b.json",
+      "sha256": "bff5e00542da2f3cd5b343172777fa10c888e336224b42b8cb62c71978a7cbd4",
+      "stroke_count": 9
+    },
+    {
+      "character": "真",
+      "codepoint": "U+771F",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/771f.json",
+      "sha256": "7aaa2b9020233fe11e0e661e5e6a0d4088d6969d493ade3b5d6e096972e51e9f",
+      "stroke_count": 10
+    },
+    {
+      "character": "睡",
+      "codepoint": "U+7761",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/7761.json",
+      "sha256": "710a112d0619bac3b72adb23fd7e0067da7a126fc4db8f40ac82d9626588fd2b",
+      "stroke_count": 13
+    },
+    {
+      "character": "知",
+      "codepoint": "U+77E5",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/77e5.json",
+      "sha256": "cbc62a072dbcb013232ccd2b5610a7667fdf9919a19adaef8381aab46835baa5",
+      "stroke_count": 8
+    },
+    {
+      "character": "租",
+      "codepoint": "U+79DF",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/79df.json",
+      "sha256": "924242774320abf4a7cd3cb7174228c7faef94f34b9f4fa35d9590411e65b84a",
+      "stroke_count": 10
+    },
+    {
+      "character": "穿",
+      "codepoint": "U+7A7F",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/7a7f.json",
+      "sha256": "af4df201e54d82c75e9f2b7557d2a42d3c10d0553b9de1392a9e2e3f6112e259",
+      "stroke_count": 9
+    },
+    {
+      "character": "第",
+      "codepoint": "U+7B2C",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/7b2c.json",
+      "sha256": "b723744c52fde30f4c812c98ae7a4f85a60999dfea854bbaab1a5d05ce303b93",
+      "stroke_count": 11
+    },
+    {
+      "character": "米",
+      "codepoint": "U+7C73",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/7c73.json",
+      "sha256": "105847e8be1741677145b1e7b7168ba883e9ca3ae1abb7b60a476d430117e88e",
+      "stroke_count": 6
+    },
+    {
+      "character": "系",
+      "codepoint": "U+7CFB",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/7cfb.json",
+      "sha256": "430cdc60c60c49283f62bc2cf242b9f2e99e3b05a901cfa9f19e4f4640a0ea03",
+      "stroke_count": 7
+    },
+    {
+      "character": "给",
+      "codepoint": "U+7ED9",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/7ed9.json",
+      "sha256": "98226e1d98c751b961851e053a3f341ad090b0489c4b31c1f884bc52843e3257",
+      "stroke_count": 9
+    },
+    {
+      "character": "老",
+      "codepoint": "U+8001",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8001.json",
+      "sha256": "f3130d50e757c65792633c581be89788d963819ed0df23380b6c94d5e31bf9d1",
+      "stroke_count": 6
+    },
+    {
+      "character": "能",
+      "codepoint": "U+80FD",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/80fd.json",
+      "sha256": "d0344bfcb6ba9278ffa795e084ce4a5249c9b8953c3affa731079e3cd2aacce4",
+      "stroke_count": 10
+    },
+    {
+      "character": "脑",
+      "codepoint": "U+8111",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8111.json",
+      "sha256": "87758169856c685490d07115e3cb87dc78fc2dd4d7fa6c363cf04f6e59eebdf4",
+      "stroke_count": 10
+    },
+    {
+      "character": "苹",
+      "codepoint": "U+82F9",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/82f9.json",
+      "sha256": "32202c548dd99ad95d67281ea7373027341ea14518b80a46da36b7fbb2def514",
+      "stroke_count": 8
+    },
+    {
+      "character": "茶",
+      "codepoint": "U+8336",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8336.json",
+      "sha256": "a9bf01e1c90c9a153d7200beb3530730fe1af14266f709d32460f1a171be004e",
+      "stroke_count": 9
+    },
+    {
+      "character": "菜",
+      "codepoint": "U+83DC",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/83dc.json",
+      "sha256": "5e869b26710889875f8947a12fc55cd429352b6e4e3a1bc8792cc6ed496b1634",
+      "stroke_count": 11
+    },
+    {
+      "character": "蛋",
+      "codepoint": "U+86CB",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/86cb.json",
+      "sha256": "7a3b56ab5a1d959471f34409f674662a2fb85aec7baf6fd035f522ea215bde0d",
+      "stroke_count": 11
+    },
+    {
+      "character": "衣",
+      "codepoint": "U+8863",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8863.json",
+      "sha256": "bb83d26ab543feaf262f3da5622aa5d7d35591f36286ad0ef5072ee96d73b7ad",
+      "stroke_count": 6
+    },
+    {
+      "character": "西",
+      "codepoint": "U+897F",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/897f.json",
+      "sha256": "f7599c5caa9c04e450f9c5b3e3cdd09523fd675d94f18c85997af05f023171d3",
+      "stroke_count": 6
+    },
+    {
+      "character": "要",
+      "codepoint": "U+8981",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8981.json",
+      "sha256": "29596cde9e081fafc88b28b84c25d5b0751a272a3db9e8d665c4f6b1015c4e7f",
+      "stroke_count": 9
+    },
+    {
+      "character": "见",
+      "codepoint": "U+89C1",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/89c1.json",
+      "sha256": "38f248a32907c2061fe800b7217847f07181ec6ecfa421e194e020426b79ec3d",
+      "stroke_count": 4
+    },
+    {
+      "character": "视",
+      "codepoint": "U+89C6",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/89c6.json",
+      "sha256": "316185032960d9ce1de24772a58e579760f218f369f8dfdb5efbbea14ecfab24",
+      "stroke_count": 8
+    },
+    {
+      "character": "觉",
+      "codepoint": "U+89C9",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/89c9.json",
+      "sha256": "30a421a57239f8b7d296c3588b6459120afd1a584294b2cde788442234e471d1",
+      "stroke_count": 9
+    },
+    {
+      "character": "认",
+      "codepoint": "U+8BA4",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8ba4.json",
+      "sha256": "f65b039435d480571159c393baee6e5a879cc7906b1d651a6c6954f22d943af7",
+      "stroke_count": 4
+    },
+    {
+      "character": "识",
+      "codepoint": "U+8BC6",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8bc6.json",
+      "sha256": "7f1226cf490e1b9d254317ee0dd82f5a970ef12064fb6edc59cb6f9d8b33dbe1",
+      "stroke_count": 7
+    },
+    {
+      "character": "话",
+      "codepoint": "U+8BDD",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8bdd.json",
+      "sha256": "8a3f1e388abfa63dd47acb0d4fc86d5e1c6cf30a82caddb2ca51061a93ea4fcc",
+      "stroke_count": 8
+    },
+    {
+      "character": "语",
+      "codepoint": "U+8BED",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8bed.json",
+      "sha256": "0999b4c39dd2763ec6c3386123c8686cb58fcb562f3b8fe681c26fdb348080d6",
+      "stroke_count": 9
+    },
+    {
+      "character": "说",
+      "codepoint": "U+8BF4",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8bf4.json",
+      "sha256": "56144a5cda3da7385c3f7e640985bb69bfa8eda5b22876d08bb05126ff116d2d",
+      "stroke_count": 9
+    },
+    {
+      "character": "请",
+      "codepoint": "U+8BF7",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8bf7.json",
+      "sha256": "6d48bdaeed17674221109997ed3187d71a6c8d7d3549dd277845a18828e2c82c",
+      "stroke_count": 10
+    },
+    {
+      "character": "读",
+      "codepoint": "U+8BFB",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8bfb.json",
+      "sha256": "dd8de3cdf06a29c7268ed3cc51304c8be2a57881f4ccf4444f6d980c2abed09c",
+      "stroke_count": 10
+    },
+    {
+      "character": "课",
+      "codepoint": "U+8BFE",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8bfe.json",
+      "sha256": "bc5a3bcf0e757ff72df8ac9c60f236f39addf51b65f1374dbef96e4fa9c2a98c",
+      "stroke_count": 10
+    },
+    {
+      "character": "谁",
+      "codepoint": "U+8C01",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8c01.json",
+      "sha256": "e2f893a3be9cb9d77ccb33115dbe7588453ea51b2fbc9ef81a5bcec9b2627058",
+      "stroke_count": 10
+    },
+    {
+      "character": "谢",
+      "codepoint": "U+8C22",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8c22.json",
+      "sha256": "9f68c6a28d3632f77ac32ea4d31945ed760b8d98a133e7516a11854991de1f39",
+      "stroke_count": 12
+    },
+    {
+      "character": "贵",
+      "codepoint": "U+8D35",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8d35.json",
+      "sha256": "34177b106cbdd621795ec13e24bdeb00e43c4e874ef9d8ef50e2bac703efd1c2",
+      "stroke_count": 9
+    },
+    {
+      "character": "起",
+      "codepoint": "U+8D77",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8d77.json",
+      "sha256": "a5301507b7db54210b4c2ff8ddd07489329117e7dd2e9b527cb595dc6f709c8c",
+      "stroke_count": 10
+    },
+    {
+      "character": "超",
+      "codepoint": "U+8D85",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8d85.json",
+      "sha256": "0b4c79350e48446c39add42a6c4b1d225fedc5e90361892bda3f991249239df1",
+      "stroke_count": 12
+    },
+    {
+      "character": "车",
+      "codepoint": "U+8F66",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8f66.json",
+      "sha256": "7f863fb9a5d558ea337928cdd50c65be932c4a35fbde2cf28bfda48f8a438ac8",
+      "stroke_count": 4
+    },
+    {
+      "character": "边",
+      "codepoint": "U+8FB9",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8fb9.json",
+      "sha256": "438159da28398664d643d5d2d980aa8445544174558dc1c59dd8a920df3a657a",
+      "stroke_count": 5
+    },
+    {
+      "character": "还",
+      "codepoint": "U+8FD8",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8fd8.json",
+      "sha256": "77864aaf3e6d0d31f184a55083b9be223f0bb8c1a9fee89b5f59ff7314a94890",
+      "stroke_count": 7
+    },
+    {
+      "character": "这",
+      "codepoint": "U+8FD9",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/8fd9.json",
+      "sha256": "6e1b5fc05d9c852cf1f19e48fa67366b2bee3e462be22dfe37ad3ceb08c46eb6",
+      "stroke_count": 7
+    },
+    {
+      "character": "道",
+      "codepoint": "U+9053",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/9053.json",
+      "sha256": "373d2c5a9818d0918ab38b100a75ffc9ef9b17c85948b6bd917acdb921e62c78",
+      "stroke_count": 12
+    },
+    {
+      "character": "那",
+      "codepoint": "U+90A3",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/90a3.json",
+      "sha256": "a2c276669b5820897a8e20bd10fcede3062f99460bc9a733c65f7875d3197ea5",
+      "stroke_count": 6
+    },
+    {
+      "character": "都",
+      "codepoint": "U+90FD",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/90fd.json",
+      "sha256": "5fa17c32858a0d8183096756b3789d96e5dcfcf612e4bc60e14b403d772748e1",
+      "stroke_count": 10
+    },
+    {
+      "character": "里",
+      "codepoint": "U+91CC",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/91cc.json",
+      "sha256": "5f0d84aa3b6f871759148b105314fd01c4a9019d3234afac345cbbf1ca263d5d",
+      "stroke_count": 7
+    },
+    {
+      "character": "钟",
+      "codepoint": "U+949F",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/949f.json",
+      "sha256": "1fabcc4a9fd6f6a72549fa7b2bc4e7e8d3bda80832bd648cf0a86c61b15f803b",
+      "stroke_count": 9
+    },
+    {
+      "character": "钱",
+      "codepoint": "U+94B1",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/94b1.json",
+      "sha256": "4b008f391bb5c26ad3952de2da8bb83836bfae1615699450ba885cb77250159d",
+      "stroke_count": 10
+    },
+    {
+      "character": "问",
+      "codepoint": "U+95EE",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/95ee.json",
+      "sha256": "ccdfc03927529be7cfdd6ac29895d53040cff0648b6d087217a8572fa593e4bd",
+      "stroke_count": 6
+    },
+    {
+      "character": "间",
+      "codepoint": "U+95F4",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/95f4.json",
+      "sha256": "0f53cb30db3bb6104e432ae87831d7c0fe24ec7324fb0affefc70eb2759bb615",
+      "stroke_count": 7
+    },
+    {
+      "character": "院",
+      "codepoint": "U+9662",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/9662.json",
+      "sha256": "8d4d9e70989cf9514d386b6eb51591e336699087eb8f852908d0300249d351d2",
+      "stroke_count": 9
+    },
+    {
+      "character": "雨",
+      "codepoint": "U+96E8",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/96e8.json",
+      "sha256": "0e249bab348c40874b194b2ba75aa185961bd190ca2e09c9a4c303aa34f62e2c",
+      "stroke_count": 8
+    },
+    {
+      "character": "雪",
+      "codepoint": "U+96EA",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/96ea.json",
+      "sha256": "d5434aa532906b64d76436c9b720df757e4cd7971093552822fdea1d95eaa174",
+      "stroke_count": 11
+    },
+    {
+      "character": "零",
+      "codepoint": "U+96F6",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/96f6.json",
+      "sha256": "6c64a74984c0c0f19e49a1f4a94097c8db07838436d7df902ee6082fcf042c88",
+      "stroke_count": 13
+    },
+    {
+      "character": "非",
+      "codepoint": "U+975E",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/975e.json",
+      "sha256": "cb6dd22e1c2410f3d7edf71987173f4bc9b2737308a1433975c1993aa6f2b69f",
+      "stroke_count": 8
+    },
+    {
+      "character": "面",
+      "codepoint": "U+9762",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/9762.json",
+      "sha256": "720049f194a8d51d6cc01669f1319bed7510650a584d7185f0fa289d9f487ca2",
+      "stroke_count": 9
+    },
+    {
+      "character": "题",
+      "codepoint": "U+9898",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/9898.json",
+      "sha256": "0935d29ab0ec76a69aea203187a9247fddb89712b3d370c2862549edb8529057",
+      "stroke_count": 15
+    },
+    {
+      "character": "飞",
+      "codepoint": "U+98DE",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/98de.json",
+      "sha256": "dbc770bc5fa91957ce1b1b171a493dcff730f430c1df765c1ce59cf7d3496ba4",
+      "stroke_count": 3
+    },
+    {
+      "character": "饭",
+      "codepoint": "U+996D",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/996d.json",
+      "sha256": "cc1fa66270ac4250e36825e9c45d7af0b43a5ae271483fc15dfc14fd95a60026",
+      "stroke_count": 7
+    },
+    {
+      "character": "饺",
+      "codepoint": "U+997A",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/997a.json",
+      "sha256": "be8cc405325dbbe0b0b95d2b556f4027f67bd8dfdf9faf947cc8167e0e02312f",
+      "stroke_count": 9
+    },
+    {
+      "character": "高",
+      "codepoint": "U+9AD8",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/9ad8.json",
+      "sha256": "99d078f0a742511e3225a994169678c2b35ed42d4a39e4f5c41946c1e4c04567",
+      "stroke_count": 10
+    },
+    {
+      "character": "鸡",
+      "codepoint": "U+9E21",
+      "data_version": "2.0.1",
+      "path": "vendor/hanzi-writer-data/2.0.1/9e21.json",
+      "sha256": "33c721c906b0d67468161d7b107393b775829c540fe26aa0d101dd8f2cdb9d73",
+      "stroke_count": 7
     }
   ]
 }

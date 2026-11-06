@@ -901,7 +901,8 @@ async function syncVocabulary() {
   const sourceReady = sourceLanguage === 'zh'
     ? globalThis.LangslySourceLanguage.isChineseVocabularyResponseReady(data)
     : data.source_language_ready !== false;
-  const words = sourceReady && Array.isArray(data.words) ? readyVocabularyRows(data.words, data) : [];
+  const pageRows = sourceLanguage === 'zh' ? globalThis.LangslySourceLanguage.chinesePageRows(data) : data.words;
+  const words = sourceReady && Array.isArray(pageRows) ? readyVocabularyRows(pageRows, data) : [];
   const matchableWordCount = countMatchableWords(words);
   const { vocabWords: previousWords } = await browser.storage.local.get('vocabWords');
   const vocabularyChanged = _stableJson(previousWords || []) !== _stableJson(words);
@@ -1607,7 +1608,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
     return (async () => {
       const generation = authGeneration;
       const items = Array.isArray(message.items) ? message.items.slice(0, 20) : [];
-      if (!items.length || !_consumeAutomaticBudget(sender, 'disambiguate', items.length, 60, 300)) {
+      if (!items.length || !_consumeAutomaticBudget(sender, 'disambiguate', items.length, 240, 1200)) {
         return { results: [], error: 'quota_exceeded' };
       }
       try {
@@ -1678,7 +1679,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
         const generation = authGeneration;
         const { items } = message;
         if (!items || items.length === 0) return { results: [] };
-        if (!_consumeAutomaticBudget(sender, 'disambiguate', Math.min(items.length, 50), 60, 300)) return { results: [], error: 'quota_exceeded' };
+        if (!_consumeAutomaticBudget(sender, 'disambiguate', Math.min(items.length, 50), 240, 1200)) return { results: [], error: 'quota_exceeded' };
 
         // 1. Check browser cache for each item
         const results = new Array(items.length).fill(null);

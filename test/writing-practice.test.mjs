@@ -340,7 +340,7 @@ test('character data is served only from packaged files that match their checksu
   const ok = await practice.characterData({ character: '你', data_version: '2.0.1', sha256: packaged['你'].sha256 });
   assert.equal(ok.success, true);
   assert.equal(ok.data.strokes.length, 7);
-  assert.equal((await practice.characterData({ character: '吗', data_version: '2.0.1', sha256: 'x' })).error, 'not_packaged');
+  assert.equal((await practice.characterData({ character: '㬎', data_version: '2.0.1', sha256: 'x' })).error, 'not_packaged');
   assert.equal((await practice.characterData({ character: '你', data_version: '9.9.9', sha256: packaged['你'].sha256 })).error, 'version_mismatch');
   files[packaged['好'].path] = new TextEncoder().encode('{"strokes":[]}').buffer;
   assert.equal((await practice.characterData({ character: '好', data_version: '2.0.1', sha256: packaged['好'].sha256 })).error, 'checksum_mismatch');

@@ -4,7 +4,7 @@
 //   node release/hanzi-writer-vendor.mjs <dir>
 //
 // The npm tarballs are checked against pinned integrity values, then the library
-// build, its notices, the pilot character files and the Arphic license are copied
+// build, its notices, the course character files and the Arphic license are copied
 // unmodified into vendor/. build.mjs refuses to package if any vendored byte differs.
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -34,8 +34,9 @@ export const PINS = {
   },
 };
 
-// Pilot set: the reviewed characters of the "Hello — 你好" lesson.
-export const PILOT_CHARACTERS = ['你', '好'];
+// Every character of the Chinese course's vocabulary (HSK 1 syllabus plus the
+// course's extras). Keep backend EXTENSION_PACKAGED_CHARACTERS in step.
+export const COURSE_CHARACTERS = [...'一七三上下不东两个中么九也习书买了事二五些亮人什今他以们件休会住作你便候做儿元先八公六关兴再写冷几出分到前包医十千午半卖去友口只叫可号司吃同名后吗吧听呢和哥哪唱商喂喜喝四回国在坐块士外多大天太女奶她好妈妹姐子字学孩它宜客家对小少岁工市师常年床店开弟影很得忙怎息您想我房手打找文新日早时明星昨是晚月有朋服期本机条来杯果校样桌椅欢歌正气水汉没漂火点热爱爸牛狗猫玩现班生电男病白百的看真睡知租穿第米系给老能脑苹茶菜蛋衣西要见视觉认识话语说请读课谁谢贵起超车边还这道那都里钟钱问间院雨雪零非面题飞饭饺高鸡'];
 
 export const codepointFile = char => `${char.codePointAt(0).toString(16).padStart(4, '0')}.json`;
 export const dataPath = char => `vendor/hanzi-writer-data/${PINS['hanzi-writer-data'].version}/${codepointFile(char)}`;
@@ -68,7 +69,7 @@ export function vendorFromTarballs(root, tarballDir) {
     const entries = untar(gunzipSync(tarball));
     const wanted = { ...pin.files };
     if (name === 'hanzi-writer-data') {
-      for (const char of PILOT_CHARACTERS) wanted[`package/${char}.json`] = dataPath(char);
+      for (const char of COURSE_CHARACTERS) wanted[`package/${char}.json`] = dataPath(char);
     }
     for (const [source, target] of Object.entries(wanted)) {
       const bytes = entries.get(source);
@@ -79,7 +80,7 @@ export function vendorFromTarballs(root, tarballDir) {
     }
     manifest.packages.push({ name, version: pin.version, license: pin.license, npm_integrity: pin.integrity, modified: false });
   }
-  for (const char of PILOT_CHARACTERS) {
+  for (const char of COURSE_CHARACTERS) {
     const path = dataPath(char);
     const data = JSON.parse(readFileSync(join(root, path), 'utf8'));
     manifest.characters.push({

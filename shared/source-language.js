@@ -17,22 +17,29 @@
     return tag.split('-')[0];
   }
 
-  function isChineseVocabularyResponseReady(data) {
-    if (!data || data.source_language_ready !== true || data.source_language !== 'zh'
-      || !Array.isArray(data.words) || data.words.length === 0
-      || !Array.isArray(data.validation_versions)
-      || data.validation_versions.length !== 1 || data.validation_versions[0] !== 2) return false;
-
-    const targets = new Set(data.words.map(word => word?.term_language));
-    if (targets.size !== 1) return false;
-    return data.words.every(word => word && typeof word.id === 'string' && word.id.trim()
-      && typeof word.term === 'string' && word.term.trim()
-      && typeof word.translation === 'string' && word.translation.trim()
+  // A word a Chinese page may swap: exact reviewed Chinese forms for one English
+  // or Spanish term, validated by the single-word path. Anything else is dropped;
+  // one unfinished word does not take the learner's other words with it.
+  function isUsableChinesePageRow(word) {
+    return !!word && typeof word.id === 'string' && !!word.id.trim()
+      && typeof word.term === 'string' && !!word.term.trim()
+      && typeof word.translation === 'string' && !!word.translation.trim()
       && word.search_language === 'zh'
       && ['es', 'en'].includes(word.term_language)
+      && word.validation_version !== 3
       && Array.isArray(word.source_forms) && word.source_forms.length > 0
       && word.source_forms.every(form => typeof form === 'string' && form.trim()
-        && !/[\/／]/.test(form)));
+        && !/[\/／]/.test(form));
+  }
+
+  function chinesePageRows(data) {
+    return data && Array.isArray(data.words) ? data.words.filter(isUsableChinesePageRow) : [];
+  }
+
+  function isChineseVocabularyResponseReady(data) {
+    return !!data && data.source_language_ready === true && data.source_language === 'zh'
+      && Array.isArray(data.validation_versions) && data.validation_versions.includes(2)
+      && chinesePageRows(data).length > 0;
   }
 
   function containsCjk(text) {
@@ -74,6 +81,6 @@
   }
 
   global.LangslySourceLanguage = {
-    resolve, isChineseVocabularyResponseReady, containsCjk, isChineseTargetWord, isReadyChineseTargetRow,
+    resolve, isChineseVocabularyResponseReady, chinesePageRows, containsCjk, isChineseTargetWord, isReadyChineseTargetRow,
   };
 })(globalThis);

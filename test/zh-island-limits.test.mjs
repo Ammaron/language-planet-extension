@@ -97,6 +97,54 @@ test('in-app navigation starts the limits again', async () => {
   assert.ok(loaded.islands().length > before, `still ${loaded.islands().length}`);
 });
 
+test('a long page keeps showing words: the limits are per screenful of text', async () => {
+  // Far more than one screenful (about 1800 characters).
+  const filler = 'The quick brown fox jumps over a lazy dog while people talk about their day and walk along the river path.';
+  const long = Array.from({ length: 80 }, (_, index) => `<p>${filler} See line ${index} ${TRIGGERS[index % TRIGGERS.length]}.</p>`).join('');
+  const loaded = await load(long);
+  assert.ok(loaded.islands().length > 10, `only ${loaded.islands().length}`);
+  const counts = {};
+  for (const island of loaded.islands()) {
+    const state = loaded.privateState.get(island);
+    counts[state.zhScreen] = (counts[state.zhScreen] || 0) + 1;
+  }
+  assert.ok(Object.keys(counts).length > 1, 'spread over more than one screen');
+  assert.ok(Object.values(counts).every(count => count <= 10), JSON.stringify(counts));
+});
+
+test('a word glued to something else stays in English', async () => {
+  for (const sentence of ["The apple's skin is thin.", 'An apple-shaped box.', 'A crab-apple tree.', "The rivers' apple' is odd."]) {
+    const loaded = await load(`<p>${sentence}</p>`);
+    assert.equal(loaded.islands().length, 0, sentence);
+  }
+  const plain = await load('<p>See the apple, please.</p>');
+  assert.equal(plain.islands().length, 1);
+});
+
+test('only English text gets Chinese words', async () => {
+  for (const html of ['<p lang="es">See the apple.</p>', '<div lang="fr"><p>See the apple.</p></div>', '<p lang="zh">See the apple.</p>']) {
+    const loaded = await load(html);
+    assert.equal(loaded.islands().length, 0, html);
+  }
+  for (const html of ['<p lang="en">See the apple.</p>', '<div lang="en-GB"><p>See the apple.</p></div>', '<p>See the apple.</p>']) {
+    const loaded = await load(html);
+    assert.equal(loaded.islands().length, 1, html);
+  }
+});
+
+test('the browser language detector blocks a page only when it is confident', async () => {
+  const answer = result => async () => result;
+  const page = '<p>See the apple.</p>';
+  const spanish = await load(page, { detectLanguage: answer({ isReliable: true, languages: [{ language: 'es', percentage: 99 }] }) });
+  assert.equal(spanish.islands().length, 0);
+  const unsure = await load(page, { detectLanguage: answer({ isReliable: false, languages: [{ language: 'es', percentage: 40 }] }) });
+  assert.equal(unsure.islands().length, 1);
+  const english = await load(page, { detectLanguage: answer({ isReliable: true, languages: [{ language: 'en', percentage: 99 }] }) });
+  assert.equal(english.islands().length, 1);
+  const broken = await load(page, { detectLanguage: async () => { throw new Error('unavailable'); } });
+  assert.equal(broken.islands().length, 1);
+});
+
 test('a scan that swaps nothing leaves the page text nodes untouched', async () => {
   const loaded = await load('<p id="seen">Skip this apple.</p>');
   const paragraph = loaded.document.querySelector('p');

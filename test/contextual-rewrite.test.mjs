@@ -18,7 +18,7 @@ test('contextual rewrites share the bounded versioned validation path', () => {
   assert.match(contentSource, /validation_version: state\.validationVersion \|\| 2/);
   assert.match(workerSource, /items\.filter\(item => item\.validation_version === version\)/);
   assert.match(workerSource, /message\.type === 'VALIDATE_REPLACEMENTS'/);
-  assert.match(workerSource, /_consumeAutomaticBudget\(sender, 'disambiguate', items\.length, 60, 300\)/);
+  assert.match(workerSource, /_consumeAutomaticBudget\(sender, 'disambiguate', items.length, 240, 1200\)/);
 });
 
 test('contextual cache keys include pair, offset, and candidate IDs and clear on logout', () => {
