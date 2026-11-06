@@ -44,7 +44,7 @@ async function copy(relativePath, target) {
   await copyFile(source, destination);
 }
 
-// Pinned, unmodified Hanzi Writer build, notices and pilot stroke data.
+// Pinned, unmodified Hanzi Writer build, notices and course stroke data.
 // verifyHanziVendor fails the build if any byte differs from the manifest.
 const hanziVendorFiles = [...verifyHanziVendor(root), 'vendor/hanzi-writing-manifest.json'];
 

@@ -1,6 +1,8 @@
-# Release QA matrix — 0.2.11
+# Release QA matrix — 0.2.12
 
-Version 0.2.11 is the current source candidate: 0.2.10 plus course-change sync. The Langsly site signals a course switch through the connection bridge and the worker refetches words at once (at most one sync per 10 seconds); the popup explains an empty new course. Store artifacts for 0.2.11 are not built yet; the 0.2.10 results and hashes below stay as the last recorded release.
+Version 0.2.12 is the current source candidate: 0.2.11 plus the Chinese word and reporting fixes. "Wrong meaning?" reports now reach the server, and "Flagged" shows only after one is saved. Chinese word limits apply per screenful of text and count only words pending or on show; a page sends at most 30 attempts per screenful, and limits reset on in-app navigation. Every language validates only within half a screen of the viewport, at up to 240 occurrences a minute. Possessives and hyphenated words stay in English, and Chinese words appear only on English text (the lang attribute, then the browser's language detector). Chinese page mode accepts the backend's real response and drops unusable words one by one. Writing practice packages stroke data for all 248 course characters (Chrome zip 382 KB to about 676 KB). The Chinese features stay off until the server switch is on.
+
+Version 0.2.11: 0.2.10 plus course-change sync. The Langsly site signals a course switch through the connection bridge and the worker refetches words at once (at most one sync per 10 seconds); the popup explains an empty new course. Store artifacts for 0.2.11 are not built yet; the 0.2.10 results and hashes below stay as the last recorded release.
 
 Version 0.2.10: 0.2.9 plus one popup fix. The page script answered the popup's `GET_PAGE_STATE` question with a plain object, which webextension-polyfill and Firefox drop (an `onMessage` reply must be a Promise), so since the UI redesign the popup said "Unavailable" with a blank word count on every site while swaps kept working. It now replies with a Promise.
 
@@ -21,6 +23,8 @@ Use this as an evidence log. Do not mark a row passed without device- or browser
 | Chrome unpacked (0.2.9, local QA) | Playwright Chromium 1243 (chrome-win64) | `dist/chrome` from feature/vocab-pass-0.2.9 (same code, built before the version bump) loaded with `--load-extension`, Langsly API mocked inside the worker: four "Hello" paragraphs swapped three times (fourth stays plain) and "Goodbye, friend; hello again." swapped once; a `keep`/`deadline_exceeded` on the goodbye item was re-sent alone on the retry and judged; a 402 `vocab_pass_subscription_required` on the validation path restored both open pages after one POST and set `subscriptionRequired`/`syncStatus` with the session kept; `chrome.runtime.setUninstallURL` present, no worker warnings, no page console errors. Evidence: `output/vocab-pass-tiering-2026-10-14/evidence-0.2.9/` (Langsly root) | Passed locally (mocked API) |
 | Automated release gate (0.2.10) | Node 24.13.1 | `npm run release` on release/vocab-pass-0.2.10, 2026-10-16: build, 225 tests (1 new in `test/content-lifecycle.test.mjs`: `GET_PAGE_STATE` replies with a Promise carrying state and word count), `web-ext lint --warnings-as-errors` 0/0/0, artifact check; hashes below | Passed locally |
 | Chrome unpacked popup state (0.2.10, local QA) | Playwright Chromium 1243 (chrome-win64) | `dist/chrome` loaded with `--load-extension`, Langsly API mocked inside the worker; `popup/popup.html` opened in a tab with its active-tab lookup pointed at the site tab (Playwright cannot capture the toolbar popup), then the shipped `loadActiveTab` ran. Local fixture, en.wikipedia.org/wiki/Cat, example.com, www.facebook.com: 0.2.9 said "Unavailable" / "–" on all four (empty reply) even with swaps on the page; 0.2.10 says "On" with counts 2, 3, 0, 0 matching the swaps, site switch visible. Evidence: `output/vocab-pass-tiering-2026-10-14/evidence-0.2.10/` (Langsly root) | Passed locally (mocked API) |
+| Automated release gate (0.2.12) | Node 24.13.1 | `npm run release` from a clean checkout of the release commit, 2026-11-05: build, 245 tests (`test/zh-island-limits.test.mjs` covers reports, limits, navigation, glued words and page language), `web-ext lint --warnings-as-errors` 0/0/0, artifact check; hashes below | Passed locally |
+| Chromium smoke (0.2.12, local QA) | Playwright Chromium 1243 (chrome-win64) | `npm run test:browser` on a temporary copy of the Chrome build that allows the local mock: trap sentences, popup, report payload, rejected words freeing slots, the 30-attempt cap, long-page scrolling, undeclared Spanish page, glued words, in-app navigation, stroke data with its hash check, and the Chinese-page sync recovery test | Passed locally; Firefox not run |
 | Backend device flow | Test database | approval, denial, expiry, malformed code, slow polling, replay, inactive user, Android switch | Ready locally |
 | Website approval | Desktop and 390x844 / tablet viewport | preserved login route, request identity, disclosure, Approve/Deny, success | Ready locally |
 | Firefox Desktop | 140 minimum and current stable | fresh install, sign-in states, all parity features, logout/reconnect | Pending signed build/device run |
@@ -41,6 +45,16 @@ Built 2026-10-14 with `npm ci && npm run release` on Node 24.13.1 from branch fi
 | `dist/langsly-vocab-pass-chrome-0.2.8.zip` | `365f42d64f80205adac1e6d57c675cd92c23202cc297f44f21b0f9eb4c5bc57b` |
 | `dist/langsly-vocab-pass-firefox-amo-0.2.8.zip` | `0ac503c41c75652d869386336a1deb6cb238ab3c555e939bb188b3258562662a` |
 | `dist/langsly-vocab-pass-amo-source-0.2.8.zip` | Recorded in the release commit message: the source archive contains this file, so writing its hash here would change it. |
+
+## Artifact SHA-256 (0.2.12)
+
+Built 2026-11-05 with `npm run release` on Node 24.13.1 from a clean checkout of the release commit. Zip entries carry a fixed 1980-01-01 timestamp, so a rebuild of the same commit on a checkout with the same line endings reproduces these values.
+
+| Artifact | SHA-256 |
+| --- | --- |
+| `dist/langsly-vocab-pass-chrome-0.2.12.zip` | `5edcc2545b4c22a9941685aa6cb0ea52d3ed48f7e69a76dda88024bee15344a8` |
+| `dist/langsly-vocab-pass-firefox-amo-0.2.12.zip` | `349fbd765ad0f9beaceb97ea440fa20762cc8ead57383058512961c87de02f7b` |
+| `dist/langsly-vocab-pass-amo-source-0.2.12.zip` | Recorded in the release commit message: the source archive contains this file, so writing its hash here would change it. |
 
 ## Artifact SHA-256 (0.2.10)
 

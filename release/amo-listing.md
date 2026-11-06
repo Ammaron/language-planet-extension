@@ -1,6 +1,6 @@
-# AMO listing copy — Langsly Vocab Pass 0.2.11
+# AMO listing copy — Langsly Vocab Pass 0.2.12
 
-Version 0.2.11 is the current source candidate. These instructions do not establish a signed artifact, store submission, publication, or installed-device acceptance.
+Version 0.2.12 is the current source candidate. These instructions do not establish a signed artifact, store submission, publication, or installed-device acceptance.
 
 ## Summary
 
