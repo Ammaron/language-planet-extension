@@ -97,6 +97,9 @@
   "matchableWords": {
     "message": "Detectables"
   },
+  "noCourseWordsYet": {
+    "message": "Aún no hay palabras de tu curso actual de Langsly. Termina una lección allí para verlas aquí."
+  },
   "noMatchableWordsWarning": {
     "message": "Las palabras se sincronizaron, pero ninguna tiene activadores de texto para el idioma de página seleccionado."
   },

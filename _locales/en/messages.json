@@ -97,6 +97,9 @@
   "matchableWords": {
     "message": "Matchable"
   },
+  "noCourseWordsYet": {
+    "message": "No words yet in your current Langsly course. Finish a lesson there to see them here."
+  },
   "noMatchableWordsWarning": {
     "message": "Words synced, but none have page text triggers for the selected source language."
   },

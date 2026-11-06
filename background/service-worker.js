@@ -1153,6 +1153,33 @@ async function requestVocabularySync({ maxAgeMs = 0 } = {}) {
   return sharedVocabularySync;
 }
 
+// The Langsly site says the learner's active course changed. That changes what
+// the sync must fetch, so it bypasses the age check; a newer sync supersedes one
+// in flight. Bursts collapse into one trailing sync to respect the words rate limit.
+const COURSE_SYNC_MIN_GAP_MS = 10 * 1000;
+let courseSyncTimer = null;
+let lastCourseSyncAt = 0;
+
+function scheduleCourseSync() {
+  if (courseSyncTimer !== null) return;
+  const wait = Math.max(0, lastCourseSyncAt + COURSE_SYNC_MIN_GAP_MS - Date.now());
+  courseSyncTimer = setTimeout(() => {
+    courseSyncTimer = null;
+    lastCourseSyncAt = Date.now();
+    void syncVocabulary();
+  }, wait);
+}
+
+async function handleCourseChanged(sender) {
+  if (!sender || sender.id !== browser.runtime.id || sender.frameId !== 0) return { success: false, error: 'untrusted_sender' };
+  const { frontendUrl } = await getConfig();
+  let origin;
+  try { origin = new URL(sender.url).origin; } catch { return { success: false, error: 'untrusted_sender' }; }
+  if (origin !== new URL(frontendUrl).origin) return { success: false, error: 'untrusted_sender' };
+  scheduleCourseSync();
+  return { success: true };
+}
+
 // ─── Alarms ──────────────────────────────────────
 const MIN_SYNC_INTERVAL_MINUTES = 15;
 const MAX_SYNC_INTERVAL_MINUTES = 24 * 60;
@@ -1199,6 +1226,7 @@ browser.alarms.onAlarm.addListener((alarm) => {
 // ─── Message Handling ────────────────────────────
 browser.runtime.onMessage.addListener((message, sender) => {
   if (message.type === 'DEVICE_CONNECTION_BRIDGE') return deviceConnection.bridge(message, sender);
+  if (message.type === 'COURSE_CHANGED') return handleCourseChanged(sender);
   const connectionMessage = ['START_DEVICE_LOGIN', 'DEVICE_CONNECTION_BEGIN', 'DEVICE_CONNECTION_STATUS', 'DEVICE_CONNECTION_OPEN', 'DEVICE_CONNECTION_CANCEL', 'COMPLETE_DEVICE_LOGIN'].includes(message.type);
   if (connectionMessage && !(sender.url || '').startsWith(browser.runtime.getURL('popup/'))) return Promise.resolve({ success: false, error: 'untrusted_sender' });
   if (message.type === 'DEVICE_CONNECTION_BEGIN') return deviceConnection.begin(message.platform, message.locale, Boolean(message.restart));

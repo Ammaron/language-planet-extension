@@ -30,6 +30,7 @@
   "pageLanguageSpanish": "西班牙语",
   "pageLanguageSimplifiedChinese": "简体中文",
   "matchableWords": "可匹配词汇",
+  "noCourseWordsYet": "你当前的 Langsly 课程还没有词汇。在那里完成一节课后,词汇就会显示在这里。",
   "noMatchableWordsWarning": "词汇已同步，但所选网页语言中没有可用于匹配的触发词。",
   "sourceLanguageUnsupported": "不支持此网页语言。请在 Langsly 中选择受支持的语言。",
   "sourceLanguageUnavailable": "此网页语言和课程尚无经过审核的词汇。",

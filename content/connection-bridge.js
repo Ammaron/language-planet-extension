@@ -1,7 +1,12 @@
 /* Only installed on Langsly. This channel carries status, never account tokens. */
 (() => {
   window.addEventListener('message', async (event) => {
-    if (event.source !== window || event.origin !== location.origin || location.pathname !== '/extension-connect') return;
+    if (event.source !== window || event.origin !== location.origin) return;
+    if (event.data?.type === 'LANGSLY_COURSE_CHANGED') {
+      browser.runtime.sendMessage({ type: 'COURSE_CHANGED' }).catch(() => {});
+      return;
+    }
+    if (location.pathname !== '/extension-connect') return;
     const message = event.data;
     if (!message || message.type !== 'LANGSLY_CONNECTION_REQUEST' ||
         !['status', 'restart', 'return', 'resume'].includes(message.action) ||

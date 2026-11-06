@@ -296,6 +296,11 @@ function updateStatus(status) {
     lastSyncEl.textContent = '–';
   }
 
+  if ((status.wordCount || 0) === 0 && status.syncStatus === 'success' && statusBanner) {
+    statusBanner.textContent = t('noCourseWordsYet', 'No words yet in your current Langsly course. Finish a lesson there to see them here.');
+    statusBanner.className = 'lp-note';
+    statusBanner.classList.remove('hidden');
+  }
   if ((status.wordCount || 0) > 0 && matchableWordCount === 0 && statusBanner) {
     statusBanner.textContent = t('noMatchableWordsWarning', 'Words synced, but none have page text triggers for the selected source language.');
     statusBanner.className = 'lp-note';
