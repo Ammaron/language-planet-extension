@@ -1,6 +1,8 @@
-# Release QA matrix — 0.2.13
+# Release QA matrix — 0.2.14
 
-Version 0.2.13 is the current source candidate: 0.2.12 plus a stronger page language check for Chinese words. The check samples only text a person can see, never page code or hidden text. While it is unsure, and for a moment after in-app navigation, Chinese words wait up to 1.5 seconds; text that loads later re-opens the question, and words already shown come off if the page turns out not to be English. Spanish and English targets are unaffected. 0.2.12 was built but never uploaded.
+Version 0.2.14 is the current source candidate: 0.2.13 with the real Langsly cat logo in the toolbar icons (16, 48, 128) and the popup, onboarding, connect and options pages, replacing a vector redraw. No code or permission changes.
+
+Version 0.2.13: 0.2.12 plus a stronger page language check for Chinese words. The check samples only text a person can see, never page code or hidden text. While it is unsure, and for a moment after in-app navigation, Chinese words wait up to 1.5 seconds; text that loads later re-opens the question, and words already shown come off if the page turns out not to be English. Spanish and English targets are unaffected. 0.2.12 was built but never uploaded.
 
 Version 0.2.12: 0.2.11 plus the Chinese word and reporting fixes. "Wrong meaning?" reports now reach the server, and "Flagged" shows only after one is saved. Chinese word limits apply per screenful of text and count only words pending or on show; a page sends at most 30 attempts per screenful, and limits reset on in-app navigation. Every language validates only within half a screen of the viewport, at up to 240 occurrences a minute. Possessives and hyphenated words stay in English, and Chinese words appear only on English text (the lang attribute, then the browser's language detector). Chinese page mode accepts the backend's real response and drops unusable words one by one. Writing practice packages stroke data for all 248 course characters (Chrome zip 382 KB to about 676 KB). The Chinese features stay off until the server switch is on.
 
