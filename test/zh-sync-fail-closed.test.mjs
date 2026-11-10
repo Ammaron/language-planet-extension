@@ -136,7 +136,7 @@ test('a superseded vocabulary broadcast sends no stale page update', async () =>
   let resolveTabs;
   let current = true;
   const sent = [];
-  const context = vm.createContext({ browser: { tabs: {
+  const context = vm.createContext({ browser: { storage: { local: { get: async () => ({}) } }, tabs: {
     query: () => new Promise(resolve => { resolveTabs = resolve; }),
     sendMessage: async (id, message) => sent.push({ id, words: message.words }),
   } } });
@@ -146,6 +146,7 @@ test('a superseded vocabulary broadcast sends no stale page update', async () =>
   ), context, { filename: 'worker-broadcast.js' });
   context.isCurrent = () => current;
   const pending = vm.runInContext('broadcastVocabulary([{ id: "stale" }], isCurrent)', context);
+  for (let i = 0; i < 10 && !resolveTabs; i++) await new Promise(resolve => setImmediate(resolve));
   current = false;
   resolveTabs([{ id: 1 }]);
   await pending;

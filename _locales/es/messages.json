@@ -83,7 +83,10 @@
     "message": "Idioma del texto de la página"
   },
   "pageTextLanguageHelp": {
-    "message": "Elige el idioma de las páginas donde Vocab Pass debe detectar palabras. El curso de Langsly se selecciona por separado en tu cuenta."
+    "message": "Automático busca tus palabras en páginas en inglés y en chino simplificado. Elige un idioma para buscar solo en ese. El curso de Langsly se selecciona por separado en tu cuenta."
+  },
+  "pageLanguageAuto": {
+    "message": "Automático"
   },
   "pageLanguageEnglish": {
     "message": "Inglés"

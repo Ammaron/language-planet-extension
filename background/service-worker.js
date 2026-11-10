@@ -212,6 +212,7 @@ async function clearTokens() {
     'authToken',
     'refreshToken',
     'vocabWords',
+    'vocabWordsZhPage',
     'lastSync',
     'matchableWordCount',
     'difficulty',
@@ -253,6 +254,14 @@ async function clearSession() {
 
 function normalizeLanguageCode(value) {
   return globalThis.LangslySourceLanguage.resolve(value);
+}
+
+// Automatic page language (the default): pages written in Simplified Chinese use
+// a second word list, synced beside the usual one, and every other page keeps the
+// usual list. Each page decides for itself; the learner sets nothing.
+async function isPageLanguageAuto() {
+  const { pageLanguageAuto, extensionSourceLanguage } = await browser.storage.local.get(['pageLanguageAuto', 'extensionSourceLanguage']);
+  return globalThis.LangslySourceLanguage.isAutoPageLanguage(pageLanguageAuto, extensionSourceLanguage);
 }
 
 async function getExtensionSourceLanguage() {
@@ -334,7 +343,7 @@ async function completeLoginWithTokens(data, isCurrent = () => true) {
       key.startsWith('phrase_') || key.startsWith('disambig_') || key.startsWith('contextual_')
     ));
     await browser.storage.local.remove([
-      'vocabWords', 'lastSync', 'wordCount', 'matchableWordCount',
+      'vocabWords', 'vocabWordsZhPage', 'lastSync', 'wordCount', 'matchableWordCount',
       'pendingEncounters', 'hanziPracticeQueue', 'rotation_salt', 'difficulty',
       'themePacks', 'activeThemeSlug', 'activeThemeName', 'themeTokens',
       'themeSyncStatus', 'extensionSourceLanguage', 'pageTextLanguage', 'pausedSites', ...cacheKeys,
@@ -353,11 +362,13 @@ async function completeLoginWithTokens(data, isCurrent = () => true) {
 }
 
 async function broadcastVocabulary(words, isCurrent = () => true) {
+  const { vocabWordsZhPage } = await browser.storage.local.get('vocabWordsZhPage');
+  const zhPageWords = Array.isArray(vocabWordsZhPage) ? vocabWordsZhPage : [];
   const tabs = await browser.tabs.query({ url: ['http://*/*', 'https://*/*'] });
   for (const tab of tabs) {
     if (!isCurrent()) return;
     if (tab.id) {
-      browser.tabs.sendMessage(tab.id, { type: 'VOCAB_UPDATED', words }).catch(() => {});
+      browser.tabs.sendMessage(tab.id, { type: 'VOCAB_UPDATED', words, zhPageWords }).catch(() => {});
     }
   }
 }
@@ -707,6 +718,16 @@ async function applyTheme(themeSlug) {
 }
 
 async function failVocabularySync(sourceLanguage, generation, sourceRevision, syncRevision) {
+  // The Chinese-page list is never kept through a failed sync either.
+  const { vocabWordsZhPage } = await browser.storage.local.get('vocabWordsZhPage');
+  if (Array.isArray(vocabWordsZhPage) && vocabWordsZhPage.length) {
+    const cleared = await _setSessionStorage({ vocabWordsZhPage: [] }, generation, sourceRevision, syncRevision);
+    if (cleared && sourceLanguage !== 'zh') {
+      const { vocabWords } = await browser.storage.local.get('vocabWords');
+      await broadcastVocabulary(withoutChineseTargets(Array.isArray(vocabWords) ? vocabWords : []),
+        () => generation === authGeneration && sourceRevision === sourceGeneration && syncRevision === vocabularySyncGeneration);
+    }
+  }
   if (sourceLanguage !== 'zh') {
     // Cached English/Spanish words stay usable through a transient failure, but
     // Chinese targets need a fresh, reviewed sync: purge them from storage and pages.
@@ -920,12 +941,37 @@ async function syncVocabulary() {
   // Changed words make every page start over; let them validate again right
   // away instead of waiting out the previous scan's budget. Pages cannot
   // trigger a sync, so this does not loosen the per-page abuse limit.
-  if (vocabularyChanged) _resetAutomaticBudget('disambiguate');
+  const zhPageChanged = await syncChinesePageWords({
+    sourceLanguage, apiBase, level, generation, sourceRevision, syncRevision,
+  });
+  if (vocabularyChanged || zhPageChanged) _resetAutomaticBudget('disambiguate');
 
-  if (sourceRevision === sourceGeneration && syncRevision === vocabularySyncGeneration) {
-    await broadcastVocabulary(words, () => generation === authGeneration
-      && sourceRevision === sourceGeneration && syncRevision === vocabularySyncGeneration);
+  const isCurrent = () => generation === authGeneration
+    && sourceRevision === sourceGeneration && syncRevision === vocabularySyncGeneration;
+  if (isCurrent()) await broadcastVocabulary(words, isCurrent);
+}
+
+// The second list for automatic page language: the learner's words as they
+// appear on Simplified Chinese pages. Fails closed: anything short of a ready
+// reply leaves the list empty, so Chinese pages simply show nothing. Returns
+// whether the stored list changed.
+async function syncChinesePageWords({ sourceLanguage, apiBase, level, generation, sourceRevision, syncRevision }) {
+  const source = globalThis.LangslySourceLanguage;
+  const { vocabWordsZhPage: previous } = await browser.storage.local.get('vocabWordsZhPage');
+  let rows = [];
+  if (sourceLanguage !== 'zh' && await isPageLanguageAuto()) {
+    try {
+      const res = await authFetch(`${apiBase}/lessons/vocabpass/words/?difficulty=${level}&source_language=zh&validation_version=3&capabilities=${ZH_TARGET_CAPABILITY}`);
+      const data = res && res.ok ? await res.json() : null;
+      if (data && typeof data === 'object' && !Array.isArray(data) && source.isChineseVocabularyResponseReady(data)) {
+        rows = readyVocabularyRows(source.chinesePageRows(data), data);
+      }
+    } catch (error) {
+      console.warn('[Langsly] Chinese page word sync failed', error);
+    }
   }
+  if (_stableJson(previous || []) === _stableJson(rows)) return false;
+  return _setSessionStorage({ vocabWordsZhPage: rows }, generation, sourceRevision, syncRevision);
 }
 
 // ─── Vocab Pass subscription (HTTP 402 from the paywall) ─────
@@ -1389,7 +1435,10 @@ browser.runtime.onMessage.addListener((message, sender) => {
         'difficulty',
         'syncStatus',
         'extensionSourceLanguage',
-    'pageTextLanguage',
+        'pageTextLanguage',
+        'pageLanguageAuto',
+        'vocabWords',
+        'vocabWordsZhPage',
         'matchableWordCount',
         'themePacks',
         'activeThemeSlug',
@@ -1413,6 +1462,9 @@ browser.runtime.onMessage.addListener((message, sender) => {
         syncStatus,
         extensionSourceLanguage,
         pageTextLanguage,
+        pageLanguageAuto,
+        vocabWords,
+        vocabWordsZhPage,
         matchableWordCount,
         themePacks,
         activeThemeSlug,
@@ -1434,6 +1486,13 @@ browser.runtime.onMessage.addListener((message, sender) => {
         isLoggedIn: !!(authToken || refreshToken),
         lastSync: lastSync || null,
         wordCount: wordCount || 0,
+        // Chinese-page words the usual list does not already count.
+        zhPageWordCount: (() => {
+          const usualIds = new Set((Array.isArray(vocabWords) ? vocabWords : []).map(word => String(word && word.id)));
+          return (Array.isArray(vocabWordsZhPage) ? vocabWordsZhPage : [])
+            .filter(word => !usualIds.has(String(word && word.id))).length;
+        })(),
+        pageLanguageAuto: globalThis.LangslySourceLanguage.isAutoPageLanguage(pageLanguageAuto, extensionSourceLanguage),
         difficulty: difficulty || 'normal',
         syncStatus: syncStatus || 'unknown',
         extensionSourceLanguage: extensionSourceLanguage || DEFAULT_EXTENSION_SOURCE_LANGUAGE,

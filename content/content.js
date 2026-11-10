@@ -149,6 +149,91 @@ function vocabularyForPage(words) {
   return chinese.length ? chinese : list;
 }
 
+// ─── Automatic page language ─────────────────────
+// Learners whose course is taught in Chinese also get a second word list: their
+// words as they appear on Simplified Chinese pages (你好 → hello). A page written
+// in Simplified Chinese uses that list and every other page keeps the usual one,
+// so nobody has to tell the extension what they are reading.
+const HAN_CHARS = /\p{Script=Han}/gu;
+const JAPANESE_OR_KOREAN = /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
+const LATIN_LETTERS = /\p{Script=Latin}/gu;
+const TRADITIONAL_TAG = /^zh-(?:.*-)?(?:hant|tw|hk|mo)(?:-|$)/i;
+const SIMPLIFIED_TAG = /^zh(?:-(?:hans|cn|sg)(?:-.*)?)?$/i;
+const CHINESE_PAGE_MIN_HAN = 20;
+const CHINESE_PAGE_RECHECKS_MS = [1500, 4000];
+let pageUsesChineseList = false;
+let chinesePageRecheckTimers = [];
+
+async function pageIsSimplifiedChinese() {
+  const tag = String(document.documentElement.getAttribute('lang') || '').trim().replace(/_/g, '-');
+  if (TRADITIONAL_TAG.test(tag)) return false;
+  if (SIMPLIFIED_TAG.test(tag)) return true;
+  // No tag, or a template default such as lang="en": go by the visible text.
+  const sample = visibleTextSample();
+  const han = (sample.match(HAN_CHARS) || []).length;
+  if (han < CHINESE_PAGE_MIN_HAN || JAPANESE_OR_KOREAN.test(sample)) return false;
+  // One Han character carries about as much as a short English word.
+  if (han * 3 < (sample.match(LATIN_LETTERS) || []).length) return false;
+  try {
+    const result = await browser.i18n.detectLanguage(sample);
+    const top = result && result.isReliable && Array.isArray(result.languages) ? result.languages[0] : null;
+    if (top && TRADITIONAL_TAG.test(String(top.language || ''))) return false;
+  } catch {
+    // No detector: the character counts above decide.
+  }
+  return true;
+}
+
+function chinesePageListOf(zhPageWords) {
+  return Array.isArray(zhPageWords) ? zhPageWords : [];
+}
+
+// The list this page should match, and whether that is the Chinese-page list.
+async function wordsForThisPage(vocabWords, zhPageWords) {
+  const zhList = chinesePageListOf(zhPageWords);
+  pageUsesChineseList = zhList.length > 0 && await pageIsSimplifiedChinese();
+  return pageUsesChineseList ? zhList : (Array.isArray(vocabWords) ? vocabWords : []);
+}
+
+async function waitForChinesePage() {
+  let waited = 0;
+  for (const at of CHINESE_PAGE_RECHECKS_MS) {
+    await new Promise(resolve => setTimeout(resolve, at - waited));
+    waited = at;
+    if (await pageIsSimplifiedChinese()) return true;
+  }
+  return false;
+}
+
+function cancelChinesePageRechecks() {
+  for (const timer of chinesePageRecheckTimers) clearTimeout(timer);
+  chinesePageRecheckTimers = [];
+}
+
+// Pages that fetch their text after opening look empty at first. Look again a
+// couple of times, and switch to the Chinese-page list if the text turns out Chinese.
+function scheduleChinesePageRechecks(zhPageWords) {
+  cancelChinesePageRechecks();
+  const zhList = chinesePageListOf(zhPageWords);
+  if (pageUsesChineseList || zhList.length === 0) return;
+  const generation = lifecycleGeneration;
+  chinesePageRecheckTimers = CHINESE_PAGE_RECHECKS_MS.map(delay => setTimeout(async () => {
+    if (generation !== lifecycleGeneration || !extensionActive || pageUsesChineseList) return;
+    if (!await pageIsSimplifiedChinese()) return;
+    if (generation !== lifecycleGeneration || !extensionActive) return;
+    cancelChinesePageRechecks();
+    pageUsesChineseList = true;
+    vocabularySignature = vocabularySignatureOf(zhList);
+    cancelValidationRetry();
+    vocabularyRevision += 1;
+    validationCoordinator.cancel();
+    restoreOriginalPageText();
+    stopLanguageWatch();
+    matcher = new VocabMatcher(zhList, { rotationSalt });
+    processDocument();
+  }, delay));
+}
+
 function ownBlockText(block) {
   let text = '';
   const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
@@ -684,14 +769,14 @@ async function runInit(generation) {
     // frontendUrl is malformed — skip check, allow translation
   }
 
-  const { vocabWords, rotation_salt } = await browser.storage.local.get(['vocabWords', 'rotation_salt']);
+  const { vocabWords: storedWords, vocabWordsZhPage, rotation_salt } = await browser.storage.local.get(['vocabWords', 'vocabWordsZhPage', 'rotation_salt']);
   if (generation !== lifecycleGeneration) return;
-  if (!vocabWords || vocabWords.length === 0) {
+  const hasUsualWords = Array.isArray(storedWords) && storedWords.length > 0;
+  if (!hasUsualWords && chinesePageListOf(vocabWordsZhPage).length === 0) {
     enterUnavailable();
     return;
   }
   rotationSalt = rotation_salt || '';
-  vocabularySignature = vocabularySignatureOf(vocabWords);
 
   // Paused sites. The worker answers from its cached list; while the list is
   // unknown (never fetched and the API unreachable) the page stays paused.
@@ -710,6 +795,21 @@ async function runInit(generation) {
 
   await loadPinyinPreferences();
   if (generation !== lifecycleGeneration) return;
+  let vocabWords = await wordsForThisPage(storedWords, vocabWordsZhPage);
+  if (generation !== lifecycleGeneration) return;
+  // Only Chinese-page words and the page is not Chinese (or not yet): give late
+  // text a moment, otherwise there is nothing to do here.
+  if (vocabWords.length === 0) {
+    const chinese = await waitForChinesePage();
+    if (generation !== lifecycleGeneration) return;
+    if (!chinese) {
+      enterUnavailable();
+      return;
+    }
+    pageUsesChineseList = true;
+    vocabWords = chinesePageListOf(vocabWordsZhPage);
+  }
+  vocabularySignature = vocabularySignatureOf(vocabWords);
   if (vocabWords.some(isZhTarget)) {
     await startLanguageWatch();
     if (generation !== lifecycleGeneration) return;
@@ -723,6 +823,7 @@ async function runInit(generation) {
   processDocument();
   observeMutations();
   startUrlWatch();
+  scheduleChinesePageRechecks(vocabWordsZhPage);
 
   // Flush encounters on page unload
   window.removeEventListener('beforeunload', flushEncounterBuffer);
@@ -1421,38 +1522,46 @@ browser.runtime.onMessage.addListener((message) => {
   }
 
   if (message.type === 'VOCAB_UPDATED' && message.words) {
-    const signature = vocabularySignatureOf(message.words);
-    if (extensionActive && matcher && signature === vocabularySignature) {
-      // Same words (e.g. "Sync now" with nothing new): keep the page as it is
-      // and finish whatever is still waiting instead of starting over.
-      cancelValidationRetry();
-      processDocument();
-      requestPendingValidations();
-      return;
-    }
-    vocabularySignature = signature;
-    cancelValidationRetry();
-    vocabularyRevision += 1;
-    validationCoordinator.cancel();
-    restoreOriginalPageText();
-    browser.storage.local.get('rotation_salt').then(({ rotation_salt }) => {
-      rotationSalt = rotation_salt || '';
-      if (extensionActive) {
-        matcher = new VocabMatcher(vocabularyForPage(message.words), { rotationSalt });
-        // Words can turn Chinese on a page that was opened before the course changed.
-        if (message.words.some(isZhTarget)) void startLanguageWatch();
-        else stopLanguageWatch();
-        processDocument();
-      } else {
-        lifecycleGeneration += 1;
-        initPromise = null;
-        lifecycleState = 'idle';
-        startSafetyController();
-        void init();
-      }
-    });
+    void applyUpdatedVocabulary(message.words, message.zhPageWords);
   }
 });
+
+async function applyUpdatedVocabulary(usualWords, zhPageWords) {
+  const generation = lifecycleGeneration;
+  const words = extensionActive ? await wordsForThisPage(usualWords, zhPageWords) : usualWords;
+  if (generation !== lifecycleGeneration) return;
+  if (extensionActive) scheduleChinesePageRechecks(zhPageWords);
+  const signature = vocabularySignatureOf(words);
+  if (extensionActive && matcher && signature === vocabularySignature) {
+    // Same words (e.g. "Sync now" with nothing new): keep the page as it is
+    // and finish whatever is still waiting instead of starting over.
+    cancelValidationRetry();
+    processDocument();
+    requestPendingValidations();
+    return;
+  }
+  vocabularySignature = signature;
+  cancelValidationRetry();
+  vocabularyRevision += 1;
+  validationCoordinator.cancel();
+  restoreOriginalPageText();
+  browser.storage.local.get('rotation_salt').then(({ rotation_salt }) => {
+    rotationSalt = rotation_salt || '';
+    if (extensionActive) {
+      matcher = new VocabMatcher(vocabularyForPage(words), { rotationSalt });
+      // Words can turn Chinese on a page that was opened before the course changed.
+      if (words.some(isZhTarget)) void startLanguageWatch();
+      else stopLanguageWatch();
+      processDocument();
+    } else {
+      lifecycleGeneration += 1;
+      initPromise = null;
+      lifecycleState = 'idle';
+      startSafetyController();
+      void init();
+    }
+  });
+}
 
 // ─── Start ───────────────────────────────────────
 function restoreOriginalPageText() {
@@ -1477,6 +1586,8 @@ function restoreOriginalPageText() {
 
 function stopDocumentWork({ loggedOut = false } = {}) {
   lifecycleGeneration += 1;
+  cancelChinesePageRechecks();
+  pageUsesChineseList = false;
   vocabularyRevision += 1;
   validationCoordinator.cancel();
   cancelValidationRetry();
@@ -1640,14 +1751,16 @@ browser.storage.onChanged.addListener((changes, areaName) => {
   }).catch(() => {});
 });
 
-const RESUME_STORAGE_KEYS = ['vocabWords', 'subscriptionRequired'];
+const WORD_LIST_KEYS = ['vocabWords', 'vocabWordsZhPage'];
+const RESUME_STORAGE_KEYS = [...WORD_LIST_KEYS, 'subscriptionRequired'];
 browser.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== 'local' || !RESUME_STORAGE_KEYS.some(key => key in changes)) return;
   if (extensionContextOrphaned) return;
   if (!['unavailable', 'logged-out'].includes(lifecycleState) || extensionActive) return;
-  if ('vocabWords' in changes) {
-    const words = changes.vocabWords.newValue;
-    if (!Array.isArray(words) || words.length === 0) return;
+  if (WORD_LIST_KEYS.some(key => key in changes)) {
+    const filled = WORD_LIST_KEYS.some(key => key in changes
+      && Array.isArray(changes[key].newValue) && changes[key].newValue.length > 0);
+    if (!filled) return;
   } else if (changes.subscriptionRequired.newValue !== false) {
     return;
   }

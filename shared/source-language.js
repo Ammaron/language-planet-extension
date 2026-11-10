@@ -80,7 +80,14 @@
       && !!profile.review && profile.review.state === 'approved';
   }
 
+  // Automatic page language is the default. Before the setting existed, people
+  // who picked Spanish or Chinese pages by hand keep that choice.
+  function isAutoPageLanguage(pageLanguageAuto, extensionSourceLanguage) {
+    if (pageLanguageAuto === true || pageLanguageAuto === false) return pageLanguageAuto;
+    return !['es', 'zh'].includes(resolve(extensionSourceLanguage));
+  }
+
   global.LangslySourceLanguage = {
-    resolve, isChineseVocabularyResponseReady, chinesePageRows, containsCjk, isChineseTargetWord, isReadyChineseTargetRow,
+    resolve, isAutoPageLanguage, isChineseVocabularyResponseReady, chinesePageRows, containsCjk, isChineseTargetWord, isReadyChineseTargetRow,
   };
 })(globalThis);

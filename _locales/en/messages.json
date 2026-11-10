@@ -83,7 +83,10 @@
     "message": "Page text language"
   },
   "pageTextLanguageHelp": {
-    "message": "Choose the language of the pages where Vocab Pass should match words. Your Langsly course stays selected in your account."
+    "message": "Automatic finds your words on English pages and on Simplified Chinese pages. Pick one language to match only that. Your Langsly course stays selected in your account."
+  },
+  "pageLanguageAuto": {
+    "message": "Automatic"
   },
   "pageLanguageEnglish": {
     "message": "English"

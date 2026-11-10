@@ -191,7 +191,7 @@ test('unjudged words are retried, not dropped, and an unchanged sync keeps the p
   assert.match(content, /signature === vocabularySignature\) \{[\s\S]{0,400}requestPendingValidations\(\);\s*return;/);
   assert.match(content, /Object\.keys\(value\)\.sort\(\)/);
   // Changed vocabulary restarts validation budgets in the background.
-  assert.match(worker, /if \(vocabularyChanged\) _resetAutomaticBudget\('disambiguate'\)/);
+  assert.match(worker, /if \(vocabularyChanged \|\| zhPageChanged\) _resetAutomaticBudget\('disambiguate'\)/);
 });
 
 // ─── Validation client: precheck, 400, 429, backoff ───

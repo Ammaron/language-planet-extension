@@ -267,12 +267,17 @@ async function init() {
 
 function updateStatus(status) {
   latestStatus = status;
-  wordCountEl.textContent = status.wordCount || 0;
-  const matchableWordCount = Number.isFinite(status.matchableWordCount)
+  // Words for Chinese pages count too; they match on their own pages.
+  const zhPageWordCount = Number.isFinite(status.zhPageWordCount) ? status.zhPageWordCount : 0;
+  const wordCount = (status.wordCount || 0) + zhPageWordCount;
+  wordCountEl.textContent = wordCount;
+  const matchableWordCount = (Number.isFinite(status.matchableWordCount)
     ? status.matchableWordCount
-    : 0;
+    : 0) + zhPageWordCount;
   if (sourceLanguageEl) {
-    sourceLanguageEl.textContent = String(status.pageTextLanguage || status.extensionSourceLanguage || 'en').toUpperCase();
+    sourceLanguageEl.textContent = status.pageLanguageAuto
+      ? t('pageLanguageAuto', 'Automatic')
+      : String(status.pageTextLanguage || status.extensionSourceLanguage || 'en').toUpperCase();
   }
   if (matchableWordCountEl) {
     matchableWordCountEl.textContent = matchableWordCount;
@@ -296,17 +301,17 @@ function updateStatus(status) {
     lastSyncEl.textContent = '–';
   }
 
-  if ((status.wordCount || 0) === 0 && status.syncStatus === 'success' && statusBanner) {
+  if (wordCount === 0 && status.syncStatus === 'success' && statusBanner) {
     statusBanner.textContent = t('noCourseWordsYet', 'No words yet in your current Langsly course. Finish a lesson there to see them here.');
     statusBanner.className = 'lp-note';
     statusBanner.classList.remove('hidden');
   }
-  if ((status.wordCount || 0) > 0 && matchableWordCount === 0 && statusBanner) {
+  if (wordCount > 0 && matchableWordCount === 0 && statusBanner) {
     statusBanner.textContent = t('noMatchableWordsWarning', 'Words synced, but none have page text triggers for the selected source language.');
     statusBanner.className = 'lp-note';
     statusBanner.classList.remove('hidden');
   }
-  if (statusBanner && ['unsupported_locale', 'source_unavailable'].includes(status.syncStatus)) {
+  if (statusBanner && zhPageWordCount === 0 && ['unsupported_locale', 'source_unavailable'].includes(status.syncStatus)) {
     statusBanner.textContent = status.syncStatus === 'unsupported_locale'
       ? t('sourceLanguageUnsupported', 'This page language is not supported. Choose a supported language in Langsly.')
       : t('sourceLanguageUnavailable', 'Reviewed vocabulary is not yet available for this page language and course.');

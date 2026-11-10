@@ -1,5 +1,5 @@
 /* global browser */
-const DEFAULTS = { syncInterval: 60, extensionSourceLanguage: 'en', hanziWritingPracticeEnabled: true, zhPinyinMode: 'auto' };
+const DEFAULTS = { syncInterval: 60, extensionSourceLanguage: 'en', pageLanguageAuto: true, hanziWritingPracticeEnabled: true, zhPinyinMode: 'auto' };
 const PINYIN_MODES = ['auto', 'always', 'popup'];
 const LEGACY_FRONTEND_URL = 'http://localhost:3000';
 const DEFAULT_FRONTEND_URL = 'https://langsly.com';
@@ -108,6 +108,7 @@ subscriptionRecheck.addEventListener('click', async () => {
 function applyPreferenceValues({
   syncInterval = DEFAULTS.syncInterval,
   extensionSourceLanguage = DEFAULTS.extensionSourceLanguage,
+  pageLanguageAuto,
   hanziWritingPracticeEnabled = DEFAULTS.hanziWritingPracticeEnabled,
   zhPinyinMode = DEFAULTS.zhPinyinMode,
 }) {
@@ -115,14 +116,18 @@ function applyPreferenceValues({
   syncIntervalSlider.value = syncInterval;
   writingPracticeEnabled.checked = hanziWritingPracticeEnabled !== false;
   syncIntervalLabel.textContent = formatMinutes(syncInterval);
-  const source = window.LangslySourceLanguage.resolve(extensionSourceLanguage);
-  pageSourceLanguage.value = ['en', 'es', 'zh'].includes(source) ? source : DEFAULTS.extensionSourceLanguage;
+  const languages = window.LangslySourceLanguage;
+  const source = languages.resolve(extensionSourceLanguage);
+  pageSourceLanguage.value = languages.isAutoPageLanguage(pageLanguageAuto, extensionSourceLanguage)
+    ? 'auto'
+    : (['en', 'es', 'zh'].includes(source) ? source : DEFAULTS.extensionSourceLanguage);
 }
 
 async function loadSettings() {
-  const { syncInterval, extensionSourceLanguage, hanziWritingPracticeEnabled, zhPinyinMode } = await browser.storage.local.get([
+  const { syncInterval, extensionSourceLanguage, pageLanguageAuto, hanziWritingPracticeEnabled, zhPinyinMode } = await browser.storage.local.get([
     'syncInterval',
     'extensionSourceLanguage',
+    'pageLanguageAuto',
     'hanziWritingPracticeEnabled',
     'zhPinyinMode',
   ]);
@@ -130,6 +135,7 @@ async function loadSettings() {
   applyPreferenceValues({
     syncInterval: syncInterval || DEFAULTS.syncInterval,
     extensionSourceLanguage: extensionSourceLanguage || DEFAULTS.extensionSourceLanguage,
+    pageLanguageAuto,
     hanziWritingPracticeEnabled: hanziWritingPracticeEnabled !== false,
     zhPinyinMode: zhPinyinMode || DEFAULTS.zhPinyinMode,
   });
@@ -172,7 +178,13 @@ async function persistPreferences() {
     zhPinyinMode: PINYIN_MODES.includes(zhPinyinModeSelect.value) ? zhPinyinModeSelect.value : DEFAULTS.zhPinyinMode,
   };
 
-  const previous = await browser.storage.local.get(['syncInterval', 'extensionSourceLanguage']);
+  const previous = await browser.storage.local.get(['syncInterval', 'extensionSourceLanguage', 'pageLanguageAuto']);
+  const wasAuto = window.LangslySourceLanguage.isAutoPageLanguage(previous.pageLanguageAuto, previous.extensionSourceLanguage);
+  const auto = pageSourceLanguage.value === 'auto';
+  // Automatic keeps the English or Spanish list as the usual one; Chinese pages get their own.
+  const previousSource = previous.extensionSourceLanguage || DEFAULTS.extensionSourceLanguage;
+  const sourceLanguage = auto ? (previousSource === 'es' ? 'es' : 'en') : pageSourceLanguage.value;
+  settings.pageLanguageAuto = auto;
   await browser.storage.local.set(settings);
 
   // Only real changes reach the worker: an interval change re-creates the sync
@@ -181,10 +193,12 @@ async function persistPreferences() {
   if (previous.syncInterval !== settings.syncInterval) {
     await browser.runtime.sendMessage({ type: 'UPDATE_CONFIG', syncInterval: settings.syncInterval });
   }
-  const sourceLanguage = pageSourceLanguage.value;
-  if ((previous.extensionSourceLanguage || DEFAULTS.extensionSourceLanguage) !== sourceLanguage) {
+  if (previousSource !== sourceLanguage) {
     const sourceResult = await browser.runtime.sendMessage({ type: 'SET_SOURCE_LANGUAGE', sourceLanguage });
     if (!sourceResult?.success) return;
+  } else if (wasAuto !== auto) {
+    // Same usual list; only the Chinese-page list is added or dropped.
+    await browser.runtime.sendMessage({ type: 'SYNC_NOW' });
   }
   showSaved();
 }

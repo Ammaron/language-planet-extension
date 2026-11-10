@@ -1,0 +1,963 @@
+{
+  "extName": {
+    "message": "词汇积累 · Langsly Vocab Pass",
+    "description": "Extension name shown in the browser and extension stores."
+  },
+  "extDescription": {
+    "message": "在你常看的网站上学习 Langsly 单词。点一下高亮的单词，即可查看释义和发音。",
+    "description": "Extension description shown in the browser and extension stores."
+  },
+  "popupTitle": {
+    "message": "Langsly Vocab Pass 扩展",
+    "description": "Toolbar popup window title."
+  },
+  "popupBrandName": {
+    "message": "Langsly Vocab Pass"
+  },
+  "popupHeroTitle": {
+    "message": "课程里的单词，出现在你读的每个页面。",
+    "description": "Signed-out popup headline."
+  },
+  "popupHeroSubtitle": {
+    "message": "Vocab Pass 会把你正在学的单词换进你本来就在读的文章里，边浏览边复习。",
+    "description": "Signed-out popup subtitle."
+  },
+  "emailLabel": {
+    "message": "电子邮箱"
+  },
+  "emailPlaceholder": {
+    "message": "you@langsly.com"
+  },
+  "passwordLabel": {
+    "message": "密码"
+  },
+  "passwordPlaceholder": {
+    "message": "你的密码"
+  },
+  "loginButton": {
+    "message": "登录"
+  },
+  "loginLoading": {
+    "message": "正在登录…"
+  },
+  "orContinueWith": {
+    "message": "或使用内部密码账号"
+  },
+  "loginWithGoogle": {
+    "message": "登录你的 Langsly 账号"
+  },
+  "googleLoginLoading": {
+    "message": "正在打开安全登录页面…"
+  },
+  "googleLoginFailed": {
+    "message": "Google 登录失败。"
+  },
+  "googleLoginCancelled": {
+    "message": "已取消 Google 登录。"
+  },
+  "googleLoginUnavailable": {
+    "message": "此浏览器无法使用 Google 登录。"
+  },
+  "loginFormNote": {
+    "message": "在安全的 Langsly 登录窗口完成登录后，系统会自动返回 Vocab Pass。"
+  },
+  "extensionStatus": {
+    "message": "扩展程序状态"
+  },
+  "connectionLabel": {
+    "message": "连接状态"
+  },
+  "logoutButton": {
+    "message": "退出登录"
+  },
+  "wordsLoaded": {
+    "message": "已加载词汇"
+  },
+  "lastSync": {
+    "message": "上次同步"
+  },
+  "sourceLanguage": {
+    "message": "网页语言"
+  },
+  "pageTextLanguage": {
+    "message": "网页文字语言"
+  },
+  "pageTextLanguageHelp": {
+    "message": "“自动”会在英文网页和简体中文网页上查找你的单词。选择某一种语言，则只在该语言的网页上匹配。Langsly 课程仍由你的账号设置决定。"
+  },
+  "pageLanguageAuto": {
+    "message": "自动"
+  },
+  "pageLanguageEnglish": {
+    "message": "英语"
+  },
+  "pageLanguageSpanish": {
+    "message": "西班牙语"
+  },
+  "pageLanguageSimplifiedChinese": {
+    "message": "简体中文"
+  },
+  "matchableWords": {
+    "message": "可匹配词汇"
+  },
+  "noCourseWordsYet": {
+    "message": "你当前的 Langsly 课程还没有词汇。在那里完成一节课后，词汇就会显示在这里。"
+  },
+  "noMatchableWordsWarning": {
+    "message": "词汇已同步，但所选网页语言中没有可用于匹配的触发词。"
+  },
+  "sourceLanguageUnsupported": {
+    "message": "不支持此网页语言。请在 Langsly 中选择受支持的语言。"
+  },
+  "sourceLanguageUnavailable": {
+    "message": "此网页语言和课程尚无经过审核的词汇。"
+  },
+  "currentPage": {
+    "message": "当前网页"
+  },
+  "activeOnThisSite": {
+    "message": "在此网站启用"
+  },
+  "difficultyLabel": {
+    "message": "难度"
+  },
+  "difficultyEasy": {
+    "message": "简单"
+  },
+  "difficultyNormal": {
+    "message": "普通"
+  },
+  "difficultyChallenge": {
+    "message": "挑战"
+  },
+  "actionsLabel": {
+    "message": "操作"
+  },
+  "syncNow": {
+    "message": "立即同步"
+  },
+  "syncing": {
+    "message": "正在同步…"
+  },
+  "openDashboard": {
+    "message": "打开 Langsly 控制面板"
+  },
+  "themeLabel": {
+    "message": "主题"
+  },
+  "themeSynced": {
+    "message": "已从控制面板同步"
+  },
+  "themeUsingLastSynced": {
+    "message": "正在使用上次同步的主题"
+  },
+  "themeApplying": {
+    "message": "正在应用…"
+  },
+  "themeCouldNotApply": {
+    "message": "无法应用主题"
+  },
+  "dataStaleWarning": {
+    "message": "你的单词已超过一天未同步。",
+    "description": "Banner when the last sync is older than 24 hours."
+  },
+  "offlineCachedVocabulary": {
+    "message": "离线。正在使用本设备保存的单词。",
+    "description": "Banner when the last sync failed for lack of connection."
+  },
+  "statusConnected": {
+    "message": "已连接"
+  },
+  "statusOffline": {
+    "message": "离线"
+  },
+  "statusSyncFailed": {
+    "message": "同步失败"
+  },
+  "statusUnknown": {
+    "message": "未知"
+  },
+  "notAvailable": {
+    "message": "不适用"
+  },
+  "loginFailed": {
+    "message": "登录失败"
+  },
+  "optionsTitle": {
+    "message": "Vocab Pass 设置",
+    "description": "Settings page title."
+  },
+  "serverConfiguration": {
+    "message": "服务器配置"
+  },
+  "apiBaseUrl": {
+    "message": "API 基础地址"
+  },
+  "apiBasePlaceholder": {
+    "message": "https://api.langsly.com/api"
+  },
+  "frontendUrl": {
+    "message": "网站地址"
+  },
+  "frontendPlaceholder": {
+    "message": "https://langsly.com"
+  },
+  "resetToDefaults": {
+    "message": "恢复默认",
+    "description": "Footer button."
+  },
+  "syncInterval": {
+    "message": "同步频率",
+    "description": "Settings row title for the sync interval."
+  },
+  "minuteLabel": {
+    "message": "$MINUTES$ 分钟",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "behaviorLabel": {
+    "message": "受保护页面",
+    "description": "Settings section heading for the always-on exclusions."
+  },
+  "autoExcludeSensitiveSites": {
+    "message": "自动排除敏感网站（银行、政府、登录页面）"
+  },
+  "saveSettings": {
+    "message": "保存设置"
+  },
+  "settingsSaved": {
+    "message": "已保存",
+    "description": "Toast after a setting is stored."
+  },
+  "onboardingTitle": {
+    "message": "欢迎使用 Langsly"
+  },
+  "learnWhileBrowse": {
+    "message": "浏览网页时也能学习。"
+  },
+  "bringDashboardVocabulary": {
+    "message": "将控制面板中的西班牙语和英语词汇带到你平时阅读的网页。"
+  },
+  "onboardingFeatureWordsInContext": {
+    "message": "阅读时，词汇会出现在语境中。"
+  },
+  "onboardingFeatureDetails": {
+    "message": "点击词汇可查看详情和发音。"
+  },
+  "onboardingFeatureProgress": {
+    "message": "学习进度会同步到你的 Langsly 账号。"
+  },
+  "getStarted": {
+    "message": "开始使用"
+  },
+  "signInEyebrow": {
+    "message": "登录"
+  },
+  "connectAccount": {
+    "message": "连接你的账号。"
+  },
+  "loginToSyncTheme": {
+    "message": "使用 Langsly 账号登录，以同步词汇和控制面板主题。"
+  },
+  "needAccount": {
+    "message": "还没有账号？请前往 langsly.com 注册。"
+  },
+  "readyEyebrow": {
+    "message": "准备就绪"
+  },
+  "vocabPassSet": {
+    "message": "Vocab Pass 已设置完成。"
+  },
+  "vocabThemeSynced": {
+    "message": "词汇和主题已同步。你可以在弹出窗口中调整难度和网站访问设置。"
+  },
+  "readyFeatureHover": {
+    "message": "将鼠标悬停在翻译后的词汇上，可查看原文。"
+  },
+  "readyFeaturePauseSite": {
+    "message": "使用弹出窗口暂停在某个网站上运行。"
+  },
+  "readyFeatureThemes": {
+    "message": "可在控制面板或弹出窗口中更换主题。"
+  },
+  "startBrowsing": {
+    "message": "开始浏览"
+  },
+  "listenButton": {
+    "message": "听发音"
+  },
+  "formAudioUnavailable": {
+    "message": "此词形暂无音频"
+  },
+  "grammarRelatedForm": {
+    "message": "已学范围内的相关词形"
+  },
+  "grammarIntroducedForm": {
+    "message": "已介绍的词形"
+  },
+  "grammarFeature_masculine": {
+    "message": "阳性"
+  },
+  "grammarFeature_feminine": {
+    "message": "阴性"
+  },
+  "grammarFeature_common": {
+    "message": "通性"
+  },
+  "grammarFeature_not_applicable": {
+    "message": "不适用"
+  },
+  "grammarFeature_singular": {
+    "message": "单数"
+  },
+  "grammarFeature_plural": {
+    "message": "复数"
+  },
+  "grammarFeature_invariant": {
+    "message": "不变形式"
+  },
+  "grammarFeature_present": {
+    "message": "现在时"
+  },
+  "grammarFeature_past": {
+    "message": "过去时"
+  },
+  "grammarFeature_imperfect": {
+    "message": "未完成过去时"
+  },
+  "grammarFeature_future": {
+    "message": "将来时"
+  },
+  "grammarFeature_conditional": {
+    "message": "条件式"
+  },
+  "grammarFeature_indicative": {
+    "message": "陈述式"
+  },
+  "grammarFeature_subjunctive": {
+    "message": "虚拟式"
+  },
+  "grammarFeature_imperative": {
+    "message": "命令式"
+  },
+  "grammarFeature_infinitive": {
+    "message": "不定式"
+  },
+  "grammarFeature_participle": {
+    "message": "分词"
+  },
+  "grammarFeature_gerund": {
+    "message": "动名词"
+  },
+  "grammarFeature_positive": {
+    "message": "原级"
+  },
+  "grammarFeature_comparative": {
+    "message": "比较级"
+  },
+  "grammarFeature_superlative": {
+    "message": "最高级"
+  },
+  "listenVoiceSpanish": {
+    "message": "聆听（语音）"
+  },
+  "listenVoiceDefault": {
+    "message": "聆听（语音）"
+  },
+  "noPronunciationTitleSpanish": {
+    "message": "暂无发音音频；将使用浏览器语音"
+  },
+  "noPronunciationTitleDefault": {
+    "message": "暂无发音音频；将使用浏览器语音"
+  },
+  "playPronunciationTitleSpanish": {
+    "message": "播放发音音频"
+  },
+  "playPronunciationTitleDefault": {
+    "message": "播放发音音频"
+  },
+  "uncertainBadge": {
+    "message": "待确认"
+  },
+  "alsoUsedAs": {
+    "message": "也可作："
+  },
+  "wrongMeaning": {
+    "message": "词义不对？"
+  },
+  "corrected": {
+    "message": "已更正"
+  },
+  "noLearnedAlternatives": {
+    "message": "尚无已学过的其他词义。标记此问题有助于改进以后的判断。"
+  },
+  "markIncorrect": {
+    "message": "标记为错误"
+  },
+  "flagged": {
+    "message": "已标记"
+  },
+  "phraseBadge": {
+    "message": "短语"
+  },
+  "report": {
+    "message": "报告问题"
+  },
+  "reported": {
+    "message": "已报告"
+  },
+  "invalidEmailOrPassword": {
+    "message": "邮箱或密码不正确"
+  },
+  "unexpectedServerResponse": {
+    "message": "服务器返回了意外结果"
+  },
+  "cannotReachServer": {
+    "message": "无法连接服务器。请检查网络连接或设置中的服务器地址。"
+  },
+  "networkError": {
+    "message": "网络错误：$ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "translationRequestFailed": {
+    "message": "翻译请求失败"
+  },
+  "connectLangslyAccount": {
+    "message": "使用 Langsly 登录",
+    "description": "Primary sign-in button."
+  },
+  "deviceLoginOpening": {
+    "message": "正在打开安全连接…"
+  },
+  "accountConnectionFailed": {
+    "message": "无法连接你的 Langsly 账号。"
+  },
+  "deviceLoginContinueInTab": {
+    "message": "请在 Langsly 页面继续。批准后将自动完成设置。"
+  },
+  "advancedSettings": {
+    "message": "高级设置"
+  },
+  "sensitiveProtectionLocked": {
+    "message": "身份验证、银行、支付、政府、医疗、法律、密码输入、浏览器内部页面以及 Langsly 页面始终受到敏感页面保护。"
+  },
+  "connectPageTitle": {
+    "message": "连接 Vocab Pass"
+  },
+  "connectBrowserTitle": {
+    "message": "连接此浏览器",
+    "description": "Connect page headline."
+  },
+  "connectBrowserIntro": {
+    "message": "在 Langsly 登录并批准此浏览器，设置会在这里自动完成。",
+    "description": "Connect page intro."
+  },
+  "connectPreparing": {
+    "message": "正在准备安全连接…"
+  },
+  "connectCodeLabel": {
+    "message": "你的连接代码"
+  },
+  "connectComputerInstructions": {
+    "message": "请在另一台设备上打开此链接并输入代码："
+  },
+  "connectCopyUrl": {
+    "message": "复制链接"
+  },
+  "connectUrlCopied": {
+    "message": "链接已复制。"
+  },
+  "connectUrlCopyFallback": {
+    "message": "长按链接即可复制。"
+  },
+  "accountSettingsTitle": {
+    "message": "Langsly 账号"
+  },
+  "accountConnected": {
+    "message": "已连接 Langsly。"
+  },
+  "accountNotConnected": {
+    "message": "未连接 Langsly。"
+  },
+  "connectWaiting": {
+    "message": "正在等待你在 Langsly 上批准…",
+    "description": "Status while the device connection is pending."
+  },
+  "connectOpenApproval": {
+    "message": "在 Langsly 继续",
+    "description": "Primary button on the pending connect page."
+  },
+  "connectCancel": {
+    "message": "取消"
+  },
+  "connectSuccessTitle": {
+    "message": "已连接",
+    "description": "Connect page success headline."
+  },
+  "connectSuccessBody": {
+    "message": "打开任意文章，课程里的单词就会开始出现。",
+    "description": "Connect page success body."
+  },
+  "connectClose": {
+    "message": "打开 Vocab Pass"
+  },
+  "connectProblemTitle": {
+    "message": "连接需要处理"
+  },
+  "connectRetry": {
+    "message": "重试"
+  },
+  "connectPrivacyTitle": {
+    "message": "Vocab Pass 会读取什么",
+    "description": "Heading of the short privacy summary on the connect page."
+  },
+  "connectPrivacyBody": {
+    "message": "Vocab Pass 会自动检查非敏感网站上的可见文字、同步词汇并记录域名和可信交互；它可能会将匹配的短语或有限的可见句子语境发送给 Langsly 和 OpenRouter。它不会发送完整网页、表单内容、隐藏文字或完整网址。"
+  },
+  "connectPrivacyLink": {
+    "message": "阅读 Langsly 隐私政策"
+  },
+  "systemThemeName": {
+    "message": "跟随系统"
+  },
+  "connectOtherDevice": {
+    "message": "使用另一台设备"
+  },
+  "connectExpired": {
+    "message": "此连接已过期。请重新开始，并使用已登录的账号继续。"
+  },
+  "connectDenied": {
+    "message": "连接未获批准。准备好后可以重新开始。"
+  },
+  "connectOffline": {
+    "message": "连接中断。我们会自动重试。"
+  },
+  "connectContinue": {
+    "message": "继续连接"
+  },
+  "connectRestart": {
+    "message": "重新开始连接"
+  },
+  "accountPending": {
+    "message": "设置尚未完成。请继续登录并批准。"
+  },
+  "practiceWritingButton": {
+    "message": "练习书写"
+  },
+  "practiceWritingTitle": {
+    "message": "练习书写"
+  },
+  "writingModeTrace": {
+    "message": "描写"
+  },
+  "writingModeWatch": {
+    "message": "观看"
+  },
+  "writingModeWrite": {
+    "message": "书写"
+  },
+  "writingBackToWord": {
+    "message": "返回词语"
+  },
+  "writingClose": {
+    "message": "关闭"
+  },
+  "writingPrevCharacter": {
+    "message": "上一个字"
+  },
+  "writingNextCharacter": {
+    "message": "下一个字"
+  },
+  "writingHint": {
+    "message": "提示"
+  },
+  "writingShowMe": {
+    "message": "演示给我看"
+  },
+  "writingRestart": {
+    "message": "重新开始"
+  },
+  "writingPlay": {
+    "message": "播放"
+  },
+  "writingNextStroke": {
+    "message": "下一笔"
+  },
+  "writingLoading": {
+    "message": "正在加载笔画…"
+  },
+  "writingUnavailable": {
+    "message": "暂时无法获取笔画数据。"
+  },
+  "writingRetry": {
+    "message": "重试"
+  },
+  "writingUnsupported": {
+    "message": "这个字还没有经过审核的笔画数据。"
+  },
+  "writingTraceReady": {
+    "message": "沿着轮廓按顺序描写每一笔。"
+  },
+  "writingWriteReady": {
+    "message": "凭记忆一笔一笔写出这个字。"
+  },
+  "writingWatchReady": {
+    "message": "播放全部笔画，或一笔一笔地查看。"
+  },
+  "writingMistake": {
+    "message": "不太对，请再写一次这一笔。"
+  },
+  "writingBackwards": {
+    "message": "这一笔方向反了，请按提示的方向再写一次。"
+  },
+  "writingStrokeCancelled": {
+    "message": "这一笔被中断了，请重新写。"
+  },
+  "writingComplete": {
+    "message": "写得好！试试其他步骤或下一个字。"
+  },
+  "writingOrderNote": {
+    "message": "笔顺和笔画方向遵循中国大陆标准。仅供练习，不会影响课程或分数。"
+  },
+  "writingPracticeSettingsTitle": {
+    "message": "汉字书写"
+  },
+  "writingPracticeSetting": {
+    "message": "在符合条件的中文词语上显示“练习书写”"
+  },
+  "writingPracticeSettingHelp": {
+    "message": "词语弹窗中的可选按钮。它不会自动打开，也不会影响课程或分数。"
+  },
+  "aboutTitle": {
+    "message": "关于"
+  },
+  "openSourceLicenses": {
+    "message": "开源许可"
+  },
+  "licensesIntro": {
+    "message": "Vocab Pass 包含以下开源软件和数据。每份声明均完整显示。"
+  },
+  "hanziDataProvenance": {
+    "message": "笔画数据由 hanzi-writer-data 项目基于 Make Me a Hanzi（版权所有 2016 Shaunak Kishore）整理，而后者源自 Arphic PL KaitiM GB 和 UKai（版权所有 1999 Arphic Technology Co., Ltd.）。Vocab Pass 按原样提供这些字符文件。"
+  },
+  "zhSaidLabel": {
+    "message": "读作"
+  },
+  "zhNoReviewedAudio": {
+    "message": "暂无审核过的音频"
+  },
+  "zhAudioUnavailable": {
+    "message": "音频不可用"
+  },
+  "zhMeasureWordLabel": {
+    "message": "量词"
+  },
+  "pinyinModeTitle": {
+    "message": "中文词语上方的拼音"
+  },
+  "pinyinModeAuto": {
+    "message": "随着学习逐渐淡出（默认）"
+  },
+  "pinyinModeAlways": {
+    "message": "始终显示"
+  },
+  "pinyinModePopupOnly": {
+    "message": "仅在单词弹窗中显示"
+  },
+  "pinyinModeHelp": {
+    "message": "学会一个词后，拼音会逐渐淡出。一周内点击同一个词两次，拼音会重新显示。"
+  },
+  "subscriptionRequiredTitle": {
+    "message": "Vocab Pass 需要有效订阅（每月 $$5）",
+    "description": "Heading shown when the Vocab Pass subscription is missing or ended."
+  },
+  "subscriptionRequiredBody": {
+    "message": "高亮显示已暂停。请在 Langsly 上订阅，然后选择“立即同步”。",
+    "description": "Explains that page highlighting stopped until the learner subscribes."
+  },
+  "subscribeOnLangsly": {
+    "message": "在 Langsly 上订阅",
+    "description": "Button that opens the Langsly subscription page in a new tab."
+  },
+  "statusSubscriptionRequired": {
+    "message": "需要订阅",
+    "description": "Connection status tooltip when the subscription is missing."
+  },
+  "popupBrandShort": {
+    "message": "Vocab Pass 词汇通",
+    "description": "Short product name shown next to the mascot."
+  },
+  "popupSampleLead": {
+    "message": "这座",
+    "description": "Sample sentence, first part (page language)."
+  },
+  "popupSampleWordOne": {
+    "message": "house",
+    "description": "Sample sentence, first swapped word (target language)."
+  },
+  "popupSampleMiddle": {
+    "message": "离",
+    "description": "Sample sentence, middle part (page language)."
+  },
+  "popupSampleWordTwo": {
+    "message": "market",
+    "description": "Sample sentence, second swapped word (target language)."
+  },
+  "popupSampleTail": {
+    "message": "很近。",
+    "description": "Sample sentence punctuation."
+  },
+  "popupSampleMeaning": {
+    "message": "房子",
+    "description": "Meaning shown in the sample tooltip for the first swapped word."
+  },
+  "popupPriceLine": {
+    "message": "登录后 $$5/月 · 随时取消",
+    "description": "Price line under the sign-in button."
+  },
+  "popupLearnMore": {
+    "message": "什么是 Vocab Pass？",
+    "description": "Link to the Vocab Pass page on langsly.com."
+  },
+  "settingsLink": {
+    "message": "设置",
+    "description": "Opens the extension settings page."
+  },
+  "wordsOnThisPage": {
+    "message": "个单词出现在此页面",
+    "description": "Label after the count of swapped words on the active tab."
+  },
+  "wordOnThisPage": {
+    "message": "个单词出现在此页面",
+    "description": "Singular label after the count of swapped words."
+  },
+  "wordsReadyLabel": {
+    "message": "个单词已就绪",
+    "description": "Footer: number of synced words."
+  },
+  "pagesLabel": {
+    "message": "页面",
+    "description": "Footer: follows the page language code, e.g. \"EN pages\"."
+  },
+  "syncedLabel": {
+    "message": "同步于",
+    "description": "Footer: precedes the relative sync time."
+  },
+  "openDashboardShort": {
+    "message": "控制面板",
+    "description": "Button that opens the Vocab Pass dashboard on langsly.com."
+  },
+  "thisPage": {
+    "message": "此页面",
+    "description": "Shown instead of a domain when the tab has no web address."
+  },
+  "justNow": {
+    "message": "刚刚",
+    "description": "Relative time."
+  },
+  "minutesAgo": {
+    "message": "$MINUTES$ 分钟前",
+    "description": "Relative time in minutes.",
+    "placeholders": {
+      "minutes": {
+        "content": "$1",
+        "example": "8"
+      }
+    }
+  },
+  "hoursAgo": {
+    "message": "$HOURS$ 小时前",
+    "description": "Relative time in hours.",
+    "placeholders": {
+      "hours": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "pageStateOn": {
+    "message": "已开启",
+    "description": "Status pill: Vocab Pass is working on this tab."
+  },
+  "pageStatePaused": {
+    "message": "此处已暂停",
+    "description": "Status pill: the user paused this site."
+  },
+  "pageStateProtected": {
+    "message": "受保护页面",
+    "description": "Status pill: sensitive page, never read."
+  },
+  "pageStateOffline": {
+    "message": "离线",
+    "description": "Status pill: no connection, cached words in use."
+  },
+  "pageStateUnavailable": {
+    "message": "不可用",
+    "description": "Status pill: browser or store page without a content script."
+  },
+  "siteHelpOn": {
+    "message": "阅读时，Langsly 课程里的单词会出现在这里。",
+    "description": "Help text under the site switch when on."
+  },
+  "siteHelpOff": {
+    "message": "重新开启后，会在此网站高亮单词。",
+    "description": "Help text under the site switch when paused."
+  },
+  "siteHelpProtected": {
+    "message": "登录、银行等页面绝不会被读取。",
+    "description": "Help text on protected pages."
+  },
+  "siteHelpUnavailable": {
+    "message": "Vocab Pass 只在普通网页上工作，不包括浏览器或商店页面。",
+    "description": "Help text when the tab cannot run the extension."
+  },
+  "connectStepSignIn": {
+    "message": "在 Langsly 登录",
+    "description": "Connect page step 1."
+  },
+  "connectStepApprove": {
+    "message": "批准此浏览器",
+    "description": "Connect page step 2."
+  },
+  "connectStepDone": {
+    "message": "开始阅读",
+    "description": "Connect page step 3."
+  },
+  "connectPrivacyPointOne": {
+    "message": "普通页面上的可见文本，用于查找课程里的单词。",
+    "description": "Privacy summary bullet 1."
+  },
+  "connectPrivacyPointTwo": {
+    "message": "匹配到的短语及其前后一小段句子，会发送给 Langsly 和 OpenRouter 以核对匹配。",
+    "description": "Privacy summary bullet 2."
+  },
+  "connectPrivacyPointThree": {
+    "message": "绝不会读取整页内容、表单字段、隐藏文本、完整网址，以及登录、银行和健康类页面。",
+    "description": "Privacy summary bullet 3."
+  },
+  "connectTryArticle": {
+    "message": "用一篇文章试试",
+    "description": "Success button that opens a sample article."
+  },
+  "planLabel": {
+    "message": "方案",
+    "description": "Label for the subscription row."
+  },
+  "planActive": {
+    "message": "Vocab Pass · 已激活",
+    "description": "Plan row when the subscription is active without a known end date."
+  },
+  "planRenews": {
+    "message": "Vocab Pass · $DATE$ 续订",
+    "description": "Plan row when the subscription renews.",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "Nov 12"
+      }
+    }
+  },
+  "planEnds": {
+    "message": "Vocab Pass · $DATE$ 到期",
+    "description": "Plan row when the subscription is set to end.",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "Nov 12"
+      }
+    }
+  },
+  "planTrialUntil": {
+    "message": "免费试用 · 至 $DATE$",
+    "description": "Plan row during a trial.",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "Nov 12"
+      }
+    }
+  },
+  "planComplimentary": {
+    "message": "Vocab Pass · 赠送",
+    "description": "Plan row for comp or staff access."
+  },
+  "planInactive": {
+    "message": "没有有效的 Vocab Pass",
+    "description": "Plan row when there is no access."
+  },
+  "manageBilling": {
+    "message": "管理方案",
+    "description": "Link to the Vocab Pass page on langsly.com."
+  },
+  "syncIntervalHelp": {
+    "message": "Vocab Pass 从 Langsly 刷新单词列表的频率。",
+    "description": "Help text for the sync interval."
+  },
+  "settingsSectionReading": {
+    "message": "阅读",
+    "description": "Settings section heading."
+  },
+  "settingsSectionChinese": {
+    "message": "中文",
+    "description": "Settings section heading."
+  },
+  "pageStateSubscription": {
+    "message": "通行证已到期",
+    "description": "Status pill: the Vocab Pass subscription has lapsed."
+  },
+  "posNoun": {
+    "message": "名词",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posVerb": {
+    "message": "动词",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posAdjective": {
+    "message": "形容词",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posAdverb": {
+    "message": "副词",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posPronoun": {
+    "message": "代词",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posPreposition": {
+    "message": "介词",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posConjunction": {
+    "message": "连词",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posInterjection": {
+    "message": "感叹词",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posArticle": {
+    "message": "冠词",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posDeterminer": {
+    "message": "限定词",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posNumber": {
+    "message": "数词",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  },
+  "posExpression": {
+    "message": "表达",
+    "description": "Part-of-speech label on a word card (shown uppercase)."
+  }
+}

@@ -1,13 +1,13 @@
 {
   "name": "langsly-vocab-pass-extension",
-  "version": "0.2.14",
+  "version": "0.2.15",
   "private": true,
   "engines": {
     "node": "24.13.1"
   },
   "scripts": {
     "test": "node --test test/*.test.mjs *.test.mjs",
-    "test:browser": "node test/browser/zh-target-chromium-smoke.cjs && node test/browser/zh-sync-chromium-smoke.cjs",
+    "test:browser": "node test/browser/zh-target-chromium-smoke.cjs && node test/browser/zh-sync-chromium-smoke.cjs && node test/browser/zh-page-auto-chromium-smoke.cjs",
     "build": "node build.mjs",
     "lint:firefox": "web-ext lint --source-dir dist/firefox --warnings-as-errors",
     "release": "npm run build && npm test && npm run lint:firefox && node test/artifact-content.test.mjs"

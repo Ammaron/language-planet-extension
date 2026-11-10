@@ -1,6 +1,8 @@
-# Release QA matrix — 0.2.14
+# Release QA matrix — 0.2.15
 
-Version 0.2.14 is the current source candidate: 0.2.13 with the real Langsly cat logo in the toolbar icons (16, 48, 128) and the popup, onboarding, connect and options pages, replacing a vector redraw. No code or permission changes.
+Version 0.2.15 is the current source candidate: 0.2.14 plus a Simplified Chinese interface and automatic page language. The popup, options and word cards follow the browser language, now including Simplified Chinese (zh_CN, shipped on the owner's release decision in `release/zh_CN.release-policy.json` before reviewer sign-off; the copy checks still run). Page text language defaults to Automatic: learners whose course is taught in Chinese also sync a Chinese-page word list, and a page written in Simplified Chinese (its lang tag, otherwise its visible text) uses that list while every other page keeps the usual one. Traditional Chinese, Japanese and Korean pages never use it. People who picked Spanish or Chinese pages by hand keep that choice. Chromium smoke: `test/browser/zh-page-auto-chromium-smoke.cjs`. No new permissions.
+
+Version 0.2.14: 0.2.13 with the real Langsly cat logo in the toolbar icons (16, 48, 128) and the popup, onboarding, connect and options pages, replacing a vector redraw. No code or permission changes.
 
 Version 0.2.13: 0.2.12 plus a stronger page language check for Chinese words. The check samples only text a person can see, never page code or hidden text. While it is unsure, and for a moment after in-app navigation, Chinese words wait up to 1.5 seconds; text that loads later re-opens the question, and words already shown come off if the page turns out not to be English. Spanish and English targets are unaffected. 0.2.12 was built but never uploaded.
 

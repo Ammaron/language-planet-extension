@@ -1,0 +1,10 @@
+{
+  "locale": "zh-Hans",
+  "extension_locale": "zh_CN",
+  "unreviewed_release": true,
+  "approved_by": "owner",
+  "approved_on": "2026-11-10",
+  "note": "The owner chose to ship the Chinese interface before reviewer sign-off, as with the website (frontend src/i18n/zh-Hans.release-policy.json). Only the approval and attestation checks are skipped; the copy must still match the English source exactly in keys, placeholders and product names, and be bound to the current English text by hash.",
+  "source_sha256": "ac3255b48e217210ac173528109d43270a797b2446f805272e9159f26e775380",
+  "runtime_sha256": "970777bada2493ca77b54c5320be239ec48b75a9b8812e66881c91b2af40d4e1"
+}
